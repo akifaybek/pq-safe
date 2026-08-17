@@ -109,3 +109,23 @@ RPC gecikmesi, testnet ETH bulma) daha fazla tampon süre bırakır.
 sprint listesi) bu kararla güncellendi ve artık ayrıntılı görev/sahiplik takibi
 için tek referans dosyadır. `docs/ROADMAP.md` kısa bir genel bakışa indirgendi.
 — Akif
+
+---
+
+## 17 Ağustos 2026 — MockVerifier stub eklendi
+**Karar:** `contracts/test/MockVerifier.sol` eklendi — `IPQVerifier`'ı implemente
+eden, `verify()` çağrısında girdiden bağımsız her zaman `true` dönen bir stub.
+Yanında `contracts/test/MockVerifier.t.sol` (1 birim test + 256 run'lık fuzz
+test, ikisi de geçiyor) var.
+
+**Neden:** `GOREV_SINIRLARI.md` Bölüm 6 stub kuralı ve Sprint 0 görev listesi
+gereği — Akif'in gerçek `SPHINCSVerifier.sol`'ü henüz hazır değilken Hakan'ın
+`PQWallet.sol`/`Migration.sol` testlerini `IPQVerifier` bağımlılığı olmadan
+bekletmemesi için. Dosya kendi test klasöründe (🔴 HAKAN sahipliği) ve `Mock`
+ön ekiyle, kuralda tarif edildiği gibi.
+
+**Etki:** `contracts/test/MockVerifier.sol` ve `contracts/test/MockVerifier.t.sol`
+eklendi. Bu stub, Akif'in gerçek verifier'ı Sprint 1/2'de hazır olduğunda
+`PQWallet.sol` entegrasyon testlerinde onunla değiştirilecek (bkz.
+`GOREV_SINIRLARI.md` Sprint 2, "MockVerifier'ı gerçek verifier ile değiştir").
+— Hakan
