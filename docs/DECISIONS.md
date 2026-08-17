@@ -57,3 +57,33 @@ sürümü indirmeli (GitHub erişimi normalse `svm` bunu otomatik yapar).
 **Etki:** Repoyu klonlayan herkes `git submodule update --init --recursive`
 çalıştırmalı (veya `git clone --recursive`). `contracts/lib/` artık git'e dahildir.
 — Akif
+
+---
+
+## 17 Ağustos 2026 — Consigny'nin SPHINCS- referans implementasyonu eklendi
+**Karar:** Nico Consigny'nin (Ethereum Foundation) SPHINCS- referans deposu
+(`https://github.com/nconsigny/SPHINCS-`) `contracts/lib/sphincs-minus` altına git
+submodule olarak eklendi, tam commit hash'ine sabitlendi:
+`eef1f889a46c77d45dca013d321e9648fd3eaa7e` (bu commit orijinal ethresear.ch
+makalesinde referans verilen commit'tir; makale kaynağı:
+<https://ethresear.ch/t/sphincs-minus-efficient-stateless-post-quantum-signature-verification-on-the-evm/25165>).
+Hedeflenen dosya `src/SLH-DSA-SHA2-128-24verifier.sol`. Ekleme adımı: `forge install
+sphincs-minus=nconsigny/SPHINCS-@eef1f889a46c77d45dca013d321e9648fd3eaa7e`.
+Eklemeden sonra `forge clean && forge build` ile proje hâlâ (`solc 0.8.20` altında)
+temiz derlendiği doğrulandı — "Compiler run successful!".
+
+**Neden:** 142K gas rakamının ve SPHINCS- doğrulama davranışının kaynağı bu koddur;
+kriptografi kodu uydurulmayacağı için (bkz. CLAUDE.md kural 6) doğrulayıcımızı
+yazarken bu implementasyonu birebir referans alacağız/karşılaştıracağız. Repoya
+gömülü kopya yerine submodule tercih edildi ki orijinal kaynak, provenance ve
+lisans bilgisi bozulmadan kalsın; commit hash'i sabitlendiği için kaynağın
+sonradan değişmesi bizim ölçümlerimizi etkilemez.
+
+**Etki:** `contracts/lib/sphincs-minus` git submodule olarak repoya girdi (kendi
+içinde `account-abstraction`, `openzeppelin-contracts`, `forge-std` nested
+submodule'leri var — bunlar henüz `init` edilmedi, gerektiğinde
+`git submodule update --init --recursive` ile çekilir). `contracts/foundry.lock`
+bu ekleme sırasında oluşan hatalı `lib/SPHINCS-` (yanlış path) girdisi elle
+temizlendi; doğru girdi `lib/sphincs-minus`'tur. Henüz hiçbir dosyamız bu
+submodule'den import yapmıyor — sadece referans kaynak olarak eklendi.
+— Akif
