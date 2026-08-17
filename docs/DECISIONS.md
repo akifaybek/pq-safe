@@ -87,3 +87,25 @@ bu ekleme sırasında oluşan hatalı `lib/SPHINCS-` (yanlış path) girdisi ell
 temizlendi; doğru girdi `lib/sphincs-minus`'tur. Henüz hiçbir dosyamız bu
 submodule'den import yapmıyor — sadece referans kaynak olarak eklendi.
 — Akif
+
+---
+
+## 17 Ağustos 2026 — foundry.toml sahipliği ve Sepolia deploy zamanlaması
+**Karar:** `contracts/foundry.toml` sahipliği 🟢 ORTAK olarak belirlendi (Hakan
+kendi ihtiyacı olan satırları — RPC endpoint, script ayarları vb. — ekleyebilir,
+ama `solc`/`optimizer` ayarlarını tek taraflı değiştiremez, bu ikisi zaten
+"Solidity sürüm aralığı" kaydıyla dondurulmuş). Ayrıca Sepolia deploy'un Sprint 3'e
+(7-13 Eylül) alınması kararlaştırıldı — `docs/ROADMAP.md`'nin ilk taslağında
+Sprint 4'teydi (14-20 Eylül), bir hafta öne çekildi.
+
+**Neden:** `foundry.toml`'u Akif oluşturdu ve `docs/DECISIONS.md`'deki
+"Solidity sürüm aralığı" kararına göre `solc 0.8.20` sabitledi — bu dosyayı
+tamamen Hakan'a devretmek, o kararın tek taraflı bozulma riskini taşırdı; ortak
+işaretlemek her iki tarafın da bu dosyaya bağımlı olduğunu netleştirir. Sepolia
+deploy'un erken alınması, gerçek ağda çıkabilecek sürprizlere (gas tahmini sapması,
+RPC gecikmesi, testnet ETH bulma) daha fazla tampon süre bırakır.
+
+**Etki:** `docs/GOREV_SINIRLARI.md` (Bölüm 2 dosya sahipliği tablosu, Bölüm 9
+sprint listesi) bu kararla güncellendi ve artık ayrıntılı görev/sahiplik takibi
+için tek referans dosyadır. `docs/ROADMAP.md` kısa bir genel bakışa indirgendi.
+— Akif
