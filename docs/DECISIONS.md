@@ -21,8 +21,17 @@ Kayıt formatı:
 ---
 
 ## 17 Ağustos 2026 — Solidity sürüm aralığı
-Tüm kontratlarda pragma solidity ^0.8.20 kullanılacak (contracts/ altındaki
-her .sol dosyası, hem Akif'in verifier'ı hem Hakan'ın PQWallet/Migration
-kontratları dahil). Foundry optimizer açık. Bu karar tek taraflı değiştirilemez —
-değişiklik gerekirse ikisi de onaylayıp bu dosyaya yeni bir kayıt ekler.
+**Karar:** Tüm kontratlarda `pragma solidity ^0.8.20` kullanılacak, Foundry
+optimizer açık. Bu karar tek taraflı değiştirilemez — değişiklik gerekirse ikisi de
+onaylayıp bu dosyaya yeni bir kayıt ekler.
+
+**Neden:** Akif'in verifier kontratı ile Hakan'ın PQWallet/Migration kontratları
+aynı repoda derlenip birlikte test edilecek. Farklı Solidity sürümleri kullanılırsa
+(örn. biri 0.8.19 diğeri 0.8.24) derleme uyumsuzluğu veya davranış farkı riski
+oluşur. `^0.8.20`, Foundry'nin güncel varsayılanlarıyla uyumlu, yeterince modern
+(custom error, immutable gibi özellikleri destekliyor) ve hem verifier'ın hem cüzdan
+kontratlarının ihtiyacı için yeterli kararlı bir sürüm.
+
+**Etki:** `contracts/` altındaki her `.sol` dosyası bu aralığı kullanacak. Hakan
+`foundry.toml`'unu kurarken aynı sürümü seçmeli.
 — Akif
