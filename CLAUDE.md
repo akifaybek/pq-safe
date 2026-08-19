@@ -32,7 +32,7 @@ Ethereum üzerinde kuantum-güvenli akıllı kontrat cüzdanı (SPHINCS- imzalı
 - Doğrulama: her işlemde direkt on-chain (itiraz penceresi/bond YOK)
 - SPHINCS- STATELESS'tır: leaf sayacı YOK, sadece nonce (replay koruması)
 - Migration: ECDSA ecrecover + eski adresi kalıcı işaretleme
-- JS kütüphanesi: @noble/post-quantum (slh_dsa)
+- İmzalayıcı: `contracts/lib/sphincs-minus/signer-wasm` (Rust/WASM, C13-only, BIP-39/44 anahtar türetmeli, `wasm-bindgen`). `@noble/post-quantum` KULLANILMIYOR — sadece FIPS 205 standart setlerini destekliyor, C13'ü üretemiyor (bkz. `docs/evidence/crypto-tests/sprint0-noble-post-quantum-risk-test.md`).
 - Ağ: Sepolia testnet
 
 ## Arayüz sözleşmesi (dondurulmuş)

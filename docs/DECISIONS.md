@@ -326,3 +326,23 @@ sarma maliyeti. Kanıt: `docs/evidence/gas-reports/sprint1-sphincsverifier-wrapp
 Hakan'ın Sprint 2'de `MockVerifier`'ı bu gerçek verifier ile değiştirebileceği
 nokta budur (bkz. `GOREV_SINIRLARI.md` Sprint 2).
 — Akif
+
+---
+
+## 19 Ağustos 2026 — CLAUDE.md'deki JS kütüphanesi satırı düzeltildi
+**Karar:** `CLAUDE.md`'deki "JS kütüphanesi: @noble/post-quantum (slh_dsa)"
+satırı C13'e geçişten beri güncel değildi — kaldırıldı, yerine
+`contracts/lib/sphincs-minus/signer-wasm` (Rust/WASM, C13-only, BIP-39/44
+anahtar türetmeli) yazıldı.
+
+**Neden:** C13 kararı verilirken (bkz. yukarıdaki 19 Ağustos kaydı)
+`@noble/post-quantum`'ın C13'ü üretemediği zaten tespit edilmişti
+(`docs/evidence/crypto-tests/sprint0-noble-post-quantum-risk-test.md`), ama
+`CLAUDE.md`'nin "Teknik kararlar" bölümündeki eski satır o sırada
+güncellenmemişti — tutarsızlık fark edildi ve düzeltildi.
+
+**Etki:** `CLAUDE.md` dışında kod değişikliği yok. `docs/GOREV_SINIRLARI.md`
+Sprint 0'daki "@noble/post-quantum ile keygen/sign/verify" ve "performans
+testi" maddeleri de artık geçersiz — bir sonraki adımda WASM signer
+entegrasyonuna göre güncellenecek.
+— Akif
