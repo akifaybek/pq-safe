@@ -210,6 +210,14 @@ daha ucuza sağlamayı hedefleyen bir araştırma varyantı.
 
 ---
 
+## 19 Ağustos 2026 — C13 şema değişikliği onaylandı ✅
+**Karar:** Hakan yukarıdaki C13 şema değişikliğini onayladı. Karar artık tam
+anlamıyla dondurulmuş — `CLAUDE.md`'deki "Hakan onayı bekleniyor" notu
+kaldırıldı.
+— Hakan
+
+---
+
 ## 19 Ağustos 2026 — forge build doğrulaması (Hakan'ın makinesi)
 **Karar/Bulgu:** Foundry projesinin kökü `contracts/` klasörüdür (`foundry.toml`
 orada). `forge build`/`forge test` komutları repo kökünden (`pq-safe/`) değil,

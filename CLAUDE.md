@@ -28,7 +28,7 @@ Ethereum üzerinde kuantum-güvenli akıllı kontrat cüzdanı (SPHINCS- imzalı
 6. Kriptografi kodunu uydurma. Anlaşılmayan kısım varsa açıkla, "çalışıyor gibi görünsün" diye yazma.
 
 ## Teknik kararlar (değiştirilmeyecek)
-- İmza şeması: SPHINCS- / **C13** (Consigny'nin WOTS+C/FORS+C ailesi, h=22 d=2 a=19 k=7 w=8, resmi FIPS 205 seti değil — ePrint 2025/2203 araştırma varyantı) — ~105K gas (bizim ortamımızda 106,672 gas ölçüldü, doğrulandı: `docs/evidence/gas-reports/sprint0-c13-verifier-gas.md`). Eski hedef SLH-DSA-SHA2-128-24'ten 19 Ağustos 2026'da değiştirildi, bkz. `docs/DECISIONS.md` — Hakan onayı bekleniyor.
+- İmza şeması: SPHINCS- / **C13** (Consigny'nin WOTS+C/FORS+C ailesi, h=22 d=2 a=19 k=7 w=8, resmi FIPS 205 seti değil — ePrint 2025/2203 araştırma varyantı) — ~105K gas (bizim ortamımızda 106,672 gas ölçüldü, doğrulandı: `docs/evidence/gas-reports/sprint0-c13-verifier-gas.md`). Eski hedef SLH-DSA-SHA2-128-24'ten 19 Ağustos 2026'da değiştirildi, Hakan onayladı (bkz. `docs/DECISIONS.md`) — artık dondurulmuş.
 - Doğrulama: her işlemde direkt on-chain (itiraz penceresi/bond YOK)
 - SPHINCS- STATELESS'tır: leaf sayacı YOK, sadece nonce (replay koruması)
 - Migration: ECDSA ecrecover + eski adresi kalıcı işaretleme
