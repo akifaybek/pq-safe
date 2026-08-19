@@ -155,6 +155,9 @@ eklendi. Bu stub, Akif'in gerçek verifier'ı Sprint 1/2'de hazır olduğunda
 `PQWallet.sol` entegrasyon testlerinde onunla değiştirilecek (bkz.
 `GOREV_SINIRLARI.md` Sprint 2, "MockVerifier'ı gerçek verifier ile değiştir").
 — Hakan
+
+---
+
 ## 19 Ağustos 2026 — forge build doğrulaması (Hakan'ın makinesi)
 **Karar/Bulgu:** Foundry projesinin kökü `contracts/` klasörüdür (`foundry.toml`
 orada). `forge build`/`forge test` komutları repo kökünden (`pq-safe/`) değil,
@@ -174,4 +177,33 @@ MockVerifier testleri 2/2 geçti (`testFuzz_AlwaysReturnsTrue`, `test_AlwaysRetu
 **Etki:** Sprint 0 görev listesindeki "forge build kendi makinende çalışıyor mu
 doğrula" görevi tamamlandı. İleride kafa karışıklığı olmasın diye bu dizin notu
 `README.md`'ye de (Hakan'ın sahipliği) eklenmeli.
+— Hakan
+
+---
+
+## 19 Ağustos 2026 — ERC-4337 (Account Abstraction) incelemesi — karar değil, değerlendirme notu
+**Bulgu:** ERC-4337, UserOperation nesnelerini bir Bundler'ın topladığı,
+tekil bir EntryPoint kontratının doğrulayıp (`validateUserOp`) yürüttüğü,
+opsiyonel bir Paymaster'ın gazı sponsorlayabildiği bir standart. PQWallet
+bu standardı kullanmıyor — EntryPoint/Bundler/mempool katmanı yok, işlem
+doğrudan `execute()` üzerinden yürütülüyor. Yine de desen düzeyinde
+örtüşme var: (1) nonce ile replay koruması — bizim `PQWallet.nonce`
+alanımızla aynı rol, GOREV_SINIRLARI.md Bölüm 5'teki "leaf sayacı değil
+nonce" kararıyla tutarlı; (2) imza doğrulamanın hesap mantığından
+ayrılması — ERC-4337'de `validateUserOp`, bizde `IPQVerifier.verify()`;
+(3) `execute(to, value, data)` imzası neredeyse birebir aynı şekilde
+tekrar ediyor. ERC-4337'ye geçmemenin artısı: EntryPoint/Bundler
+bağımlılığı olmadan scope küçük kalıyor, SPHINCS- gibi büyük
+imza/anahtar boyutlu bir şemayı EntryPoint'in validation-phase storage
+kısıtlamalarına (ERC-7562) uydurma riski yok. Eksisi: standart bundler/
+paymaster ekosistemiyle (gassız UX, sponsorlu işlem) uyumluluk yok,
+kullanıcı gazı kendi ödemek zorunda.
+
+**Kaynak:** https://eips.ethereum.org/EIPS/eip-4337 ,
+https://www.alchemy.com/overviews/what-is-account-abstraction
+
+**Sonuç:** Mevcut mimari (kendi `execute()`/`verify()` akışımız)
+korunuyor, ERC-4337'ye geçiş gündemde değil — bu bir karar değil, sadece
+kayıt altına alınan bir değerlendirme. İleride paymaster/gassız UX
+ihtiyacı doğarsa bu not başlangıç noktası olarak kullanılabilir.
 — Hakan
