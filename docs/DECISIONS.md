@@ -241,6 +241,32 @@ doğrula" görevi tamamlandı. İleride kafa karışıklığı olmasın diye bu 
 
 ---
 
+## 19 Ağustos 2026 — ERC-4337 (Account Abstraction) incelemesi — karar değil, değerlendirme notu
+**Bulgu:** ERC-4337, UserOperation nesnelerini bir Bundler'ın topladığı,
+tekil bir EntryPoint kontratının doğrulayıp (`validateUserOp`) yürüttüğü,
+opsiyonel bir Paymaster'ın gazı sponsorlayabildiği bir standart. PQWallet
+bu standardı kullanmıyor — EntryPoint/Bundler/mempool katmanı yok, işlem
+doğrudan `execute()` üzerinden yürütülüyor. Yine de desen düzeyinde
+örtüşme var: (1) nonce ile replay koruması — bizim `PQWallet.nonce`
+alanımızla aynı rol, GOREV_SINIRLARI.md Bölüm 5'teki "leaf sayacı değil
+nonce" kararıyla tutarlı; (2) imza doğrulamanın hesap mantığından
+ayrılması — ERC-4337'de `validateUserOp`, bizde `IPQVerifier.verify()`;
+(3) `execute(to, value, data)` imzası neredeyse birebir aynı şekilde
+tekrar ediyor. ERC-4337'ye geçmemenin artısı: EntryPoint/Bundler
+bağımlılığı olmadan scope küçük kalıyor, SPHINCS- gibi büyük
+imza/anahtar boyutlu bir şemayı EntryPoint'in validation-phase storage
+kısıtlamalarına (ERC-7562) uydurma riski yok. Eksisi: standart bundler/
+paymaster ekosistemiyle (gassız UX, sponsorlu işlem) uyumluluk yok,
+kullanıcı gazı kendi ödemek zorunda.
+
+**Kaynak:** https://eips.ethereum.org/EIPS/eip-4337 ,
+https://www.alchemy.com/overviews/what-is-account-abstraction
+
+**Sonuç:** Mevcut mimari (kendi `execute()`/`verify()` akışımız)
+korunuyor, ERC-4337'ye geçiş gündemde değil — bu bir karar değil, sadece
+kayıt altına alınan bir değerlendirme. İleride paymaster/gassız UX
+ihtiyacı doğarsa bu not başlangıç noktası olarak kullanılabilir.
+— Hakan
 ## 19 Ağustos 2026 — solc/via_ir güncellemesi (0.8.20 → 0.8.35, via_ir açıldı)
 **Karar:** `contracts/foundry.toml`'daki pinlenmiş `solc` sürümü `0.8.20`'den
 `0.8.35`'e yükseltildi, `via_ir = true` eklendi. Bizim kendi kontratlarımızın
@@ -290,3 +316,17 @@ sarma maliyeti. Kanıt: `docs/evidence/gas-reports/sprint1-sphincsverifier-wrapp
 Hakan'ın Sprint 2'de `MockVerifier`'ı bu gerçek verifier ile değiştirebileceği
 nokta budur (bkz. `GOREV_SINIRLARI.md` Sprint 2).
 — Akif
+
+---
+
+## 19 Ağustos 2026 — C13'e geçiş onaylandı (Hakan)
+**Karar:** Yukarıdaki "İmza şeması SLH-DSA-SHA2-128-24'ten C13'e değiştirildi"
+kaydı Hakan tarafından onaylanmıştır, artık dondurulmuş kabul edilir.
+**Neden:** Gerekçe (kütüphane uyumsuzluğu, gas/imza boyutu avantajı) yeterli
+bulundu. IPQVerifier arayüzü şemadan bağımsız olduğu için PQWallet.sol/
+Migration.sol tarafında hiçbir değişiklik gerekmiyor.
+**Doğrulama:** Hakan'ın makinesinde de yeni solc 0.8.35 + via_ir ile
+`forge clean && forge build` temiz geçti, 10/10 test (MockVerifier +
+SPHINCSVerifier) geçti.
+**Etki:** Yok — Hakan'ın dosyaları etkilenmiyor.
+— Hakan
