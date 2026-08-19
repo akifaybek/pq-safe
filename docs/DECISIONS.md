@@ -155,3 +155,55 @@ eklendi. Bu stub, Akif'in gerçek verifier'ı Sprint 1/2'de hazır olduğunda
 `PQWallet.sol` entegrasyon testlerinde onunla değiştirilecek (bkz.
 `GOREV_SINIRLARI.md` Sprint 2, "MockVerifier'ı gerçek verifier ile değiştir").
 — Hakan
+
+---
+
+## 19 Ağustos 2026 — İmza şeması SLH-DSA-SHA2-128-24'ten C13'e değiştirildi ⚠️ HAKAN ONAYI BEKLİYOR
+**Karar:** Dondurulmuş imza şeması kararı değiştirildi: **SLH-DSA-SHA2-128-24**
+yerine **C13** (Consigny'nin WOTS+C/FORS+C ailesi, h=22 d=2 a=19 k=7 w=8)
+kullanılacak. `CLAUDE.md` ve `docs/INTERFACE.md`'deki ilgili satırlar bu karara
+göre güncellendi.
+
+**Bu karar CLAUDE.md kural 1 gereği ortak bir dosyada — Hakan'ın açık onayı
+olmadan tam anlamıyla "dondurulmuş" sayılmaz.** Akif bu kaydı, Hakan'a haber
+vermek ve onayını almak amacıyla şimdi düşüyor; Hakan itiraz ederse bu kayıt
+geçersiz kılınıp eski karara dönülecek (silinmeyecek, üstüne yeni kayıt
+eklenecek — bkz. dosya başındaki kural).
+
+**Neden:** Sprint 0 risk testinde (`docs/evidence/crypto-tests/sprint0-noble-post-quantum-risk-test.md`)
+şu bulundu: `@noble/post-quantum` kütüphanesi sadece standart FIPS 205
+parametre setlerini (128f/128s/192f/192s/256f/256s) destekliyor, bizim eski
+hedefimiz SLH-DSA-SHA2-128-24'ün özel parametreleriyle (h=22 d=1 a=24 k=6 w=4)
+eşleşmiyor ve kütüphane özel varyant üretmenin bir yolunu dışa vermiyor.
+Referans repodaki tek hazır tarayıcı/JS imzalayıcı (`signer-wasm/`, Rust→WASM,
+BIP-39/44 anahtar türetmeli) **C13** için yazılmış, SLH-DSA-SHA2-128-24 için
+değil. Yani eski hedefte kalırsak kendi imzalayıcımızı sıfırdan yazmamız
+gerekecekti — hem yüksek efor hem "kriptografi kodunu uydurma" riski (kural 6)
+6 haftalık takvimde kabul edilemez.
+
+C13'e geçmenin ek faydaları: gas **%25 daha ucuz** (106,672 vs 143,057 —
+bkz. `docs/evidence/gas-reports/sprint0-c13-verifier-gas.md`), imza **daha
+küçük** (3,688B vs 3,856B, calldata maliyeti daha düşük).
+
+**Dezavantaj/dikkat:** C13, FIPS 205'in kendisi değil, ePrint 2025/2203'teki
+bir araştırma parametre ailesi (counter-grinding'li WOTS+C/FORS+C) —
+SLH-DSA-SHA2-128-24 "vanilla SPHINCS+" NIST SP 800-230 taslağına daha
+yakındı. Jüri sunumunda "NIST'in kendisi mi bu?" sorusuna dürüst cevap:
+hayır, FIPS 205 ailesinden ilham alan, aynı güvenlik seviyesini (128-bit)
+daha ucuza sağlamayı hedefleyen bir araştırma varyantı.
+
+**Etki:**
+- `CLAUDE.md` "Teknik kararlar" bölümü güncellendi
+- `docs/INTERFACE.md` Bölüm 0 ve açık uçlar bölümü güncellendi
+- Yeni kanıt: `docs/evidence/gas-reports/sprint0-c13-verifier-gas.md`
+- Eski kanıt dosyaları (`sprint0-reference-verifier-gas.md`,
+  `sprint0-noble-post-quantum-risk-test.md`) **silinmedi** — o zamanki
+  ölçümün doğru kaydı olarak kalıyor, artık geçerli hedefi yansıtmıyor
+- `contracts/lib/sphincs-minus` submodule'ünde değişiklik YOK — C13 zaten
+  aynı sabitlenmiş commit'in (`eef1f889a46c77d45dca013d321e9648fd3eaa7e`)
+  içinde, `src/SPHINCs-C13Asm.sol`
+- Hakan'ın `PQWallet.sol`/`Migration.sol` kodu etkilenmiyor —
+  `IPQVerifier` arayüzü şemadan bağımsız (`bytes signature, bytes publicKey`),
+  sadece somut `SPHINCSVerifier.sol` implementasyonu ve frontend imzalayıcı
+  değişecek
+— Akif

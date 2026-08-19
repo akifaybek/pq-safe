@@ -275,7 +275,7 @@ git push
 |---|---|---|
 | Repo + klasör iskeleti + `CLAUDE.md` + `.gitignore` | İlk commit | ✅ Bitti |
 | Foundry kurulumu, `IPQVerifier.sol`, `sphincs-minus` submodule | Commit'ler | ✅ Bitti |
-| `forge test --gas-report` ile ~142K gas rakamının doğrulanması | `evidence/gas-reports/` | ✅ Bitti (143K–146K ölçüldü) |
+| `forge test --gas-report` ile referans verifier gas rakamının doğrulanması | `evidence/gas-reports/` | ✅ Bitti — şema C13'e değişti (bkz. DECISIONS.md), C13 106,672 gas ölçüldü |
 | `@noble/post-quantum` ile keygen/sign/verify çalıştır | Konsol çıktısı → `evidence/crypto-tests/` | ⬜ |
 | **Seed testi:** kütüphane dışarıdan seed alıyor mu? | Sonuç yazılı olarak `DECISIONS.md`'ye | ⬜ |
 | **Performans testi:** tarayıcıda keygen + imzalama süresi | Ölçüm → `evidence/crypto-tests/` | ⬜ |
