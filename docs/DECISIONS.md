@@ -112,6 +112,32 @@ için tek referans dosyadır. `docs/ROADMAP.md` kısa bir genel bakışa indirge
 
 ---
 
+## 17 Ağustos 2026 — Referans SPHINCS- verifier gas rakamı doğrulandı
+**Karar:** "Solidity sürüm aralığı" kaydındaki `~142K gas — henüz doğrulanmadı"
+notu artık geçersiz. Kendi Foundry ortamımızda, `sphincs-minus` submodule'ünün
+FFI gerektirmeyen JSON-KAT testiyle (`test/SLH-DSA-SHA2-128-24-JsonKAT.t.sol`,
+gerçek/deterministik bir imza vektörü) ölçüm yapıldı: **143,057 – 146,192 gas**
+(min–max, 2 çağrı). Kaynağın iddia ettiği ~142K rakamı bu aralıkla uyumlu
+(~%1-3 sapma) — **doğrulandı** kabul ediyoruz.
+
+**Neden:** CLAUDE.md kural 6 ("kriptografi kodunu uydurma") ve kural 3 ("test
+olmadan bitti deme") gereği, rapor/sunumda kullanacağımız gas rakamının kaynağın
+iddiasına körü körüne güvenmek yerine kendi ortamımızda tekrarlanabilir şekilde
+ölçülmesi gerekiyordu. FFI gerektiren (gerçek zamanlı imza üreten, C binary
+derlemesi ve `ffi = true` isteyen) test yerine repoya zaten gömülü, deterministik
+KAT vektörünü kullanan test tercih edildi — daha güvenli (rastgele shell komutu
+çalıştırmıyor) ve daha hızlı tekrarlanabilir.
+
+**Etki:** Kanıt `docs/evidence/gas-reports/sprint0-reference-verifier-gas.md`
+altında (komut, tam çıktı, ortam bilgisi, kaynağın "denetlenmemiş araştırma
+prototipi" uyarısı dahil). Bu, Sprint 0'ın son açık kalemiydi (bkz.
+`docs/GOREV_SINIRLARI.md` Bölüm 9, Akif Sprint 0 tablosu) — işaretlendi.
+Sıradaki adım: bu referansı sararak `contracts/src/verifier/SPHINCSVerifier.sol`
+yazmak (Sprint 1).
+— Akif
+
+---
+
 ## 17 Ağustos 2026 — MockVerifier stub eklendi
 **Karar:** `contracts/test/MockVerifier.sol` eklendi — `IPQVerifier`'ı implemente
 eden, `verify()` çağrısında girdiden bağımsız her zaman `true` dönen bir stub.
