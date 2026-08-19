@@ -129,3 +129,23 @@ eklendi. Bu stub, Akif'in gerçek verifier'ı Sprint 1/2'de hazır olduğunda
 `PQWallet.sol` entegrasyon testlerinde onunla değiştirilecek (bkz.
 `GOREV_SINIRLARI.md` Sprint 2, "MockVerifier'ı gerçek verifier ile değiştir").
 — Hakan
+## 19 Ağustos 2026 — forge build doğrulaması (Hakan'ın makinesi)
+**Karar/Bulgu:** Foundry projesinin kökü `contracts/` klasörüdür (`foundry.toml`
+orada). `forge build`/`forge test` komutları repo kökünden (`pq-safe/`) değil,
+**`contracts/` klasörünün içinden** çalıştırılmalı — aksi halde Foundry proje
+sınırını bulamıyor ve `contracts/lib/sphincs-minus` submodule'ünün nested
+bağımlılıklarını (openzeppelin-contracts, account-abstraction, halmos-cheatcodes)
+da derlemeye çalışıp hatalı "not found" hatalarıyla patlıyor.
+
+**Neden:** Hakan repo kökünden `forge build` çalıştırınca yukarıdaki hataları aldı;
+Akif `contracts/` içinden çalıştırınca temiz geçtiğini doğruladı. Sorun remapping
+veya kod değil, çalıştırma dizinidir.
+
+**Doğrulama:** Hakan'ın makinesinde `contracts/` içinden `forge clean && forge build`
+→ "Compiler run successful!" (22 dosya, solc 0.8.20). `forge test` →
+MockVerifier testleri 2/2 geçti (`testFuzz_AlwaysReturnsTrue`, `test_AlwaysReturnsTrue`).
+
+**Etki:** Sprint 0 görev listesindeki "forge build kendi makinende çalışıyor mu
+doğrula" görevi tamamlandı. İleride kafa karışıklığı olmasın diye bu dizin notu
+`README.md`'ye de (Hakan'ın sahipliği) eklenmeli.
+— Hakan
