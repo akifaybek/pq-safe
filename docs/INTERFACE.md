@@ -12,14 +12,16 @@ eklenir ve iki taraf da onaylar.
 yayımlanan araştırmanın kasıtlı adıdır:
 <https://ethresear.ch/t/sphincs-minus-efficient-stateless-post-quantum-signature-verification-on-the-evm/25165>
 
-Parametre seti **SLH-DSA-SHA2-128-24** (Consigny'nin SPHINCS- makalesindeki varyant
-ismi, resmi FIPS 205 seti değil): h=22, d=1, a=24, k=6, w=4; "vanilla SPHINCS+"
-konstrüksiyonu üzerine kurulu, NIST'in taslak SP 800-230 belgesine hizalı
-küçük-bütçe parametre seti.
+Parametre seti **C13** (Consigny'nin WOTS+C/FORS+C ailesi, counter-grinding'li):
+h=22, d=2, a=19, k=7, w=8; resmi FIPS 205 seti değil, ePrint 2025/2203'teki bir
+araştırma varyantı. (Önceki hedef SLH-DSA-SHA2-128-24'ten 19 Ağustos 2026'da
+değiştirildi — sebep: `@noble/post-quantum` ve referans repodaki hazır WASM
+imzalayıcı sadece C13'ü destekliyor, eski hedef için tarayıcıda çalışan hiçbir
+hazır imzalayıcı yoktu. Ayrıntı: `docs/DECISIONS.md`.)
 
-Doğrulama maliyeti **~142K gas**. Kaynağın kendi ölçümü — bizim Foundry ortamımızda
-henüz doğrulanmadı. Sprint 0'da doğrulanana kadar kesinleşmiş sayılmayacak; ölçüm
-çıktısı `docs/evidence/gas-reports/` altına konur.
+Doğrulama maliyeti **~105K gas** (kaynağın iddiası), bizim ortamımızda
+**106,672 gas** ölçüldü ve doğrulandı — bkz.
+`docs/evidence/gas-reports/sprint0-c13-verifier-gas.md`. İmza boyutu 3,688 bayt.
 
 ---
 
@@ -121,6 +123,6 @@ Bu dosyada henüz dondurulmamış, ilk kontrat yazılırken karara bağlanacak v
 `docs/DECISIONS.md`'ye işlenecek noktalar:
 
 - `signature` ve `publicKey` için beklenen tam bayt uzunlukları
-  (SLH-DSA-SHA2-128-24 varyantının parametrelerinden gelecek).
+  (C13 varyantının parametrelerinden gelecek — imza 3,688 bayt sabit).
 - Cüzdan tarafında `verify` başarısız olduğunda dönecek revert sebebinin adı.
 - `nonce`'un artırılma anı (doğrulamadan önce mi, çağrıdan sonra mı) ve reentrancy etkisi.
