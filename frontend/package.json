@@ -2,8 +2,5 @@
   "name": "pq-safe-frontend",
   "version": "0.0.1",
   "private": true,
-  "type": "module",
-  "dependencies": {
-    "@noble/post-quantum": "^0.5.2"
-  }
+  "type": "module"
 }
