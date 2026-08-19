@@ -278,8 +278,8 @@ git push
 | `forge test --gas-report` ile referans verifier gas rakamının doğrulanması | `evidence/gas-reports/` | ✅ Bitti — şema C13'e değişti (bkz. DECISIONS.md), C13 106,672 gas ölçüldü |
 | ~~`@noble/post-quantum` ile keygen/sign/verify çalıştır~~ | — | ❌ İptal — C13'ü desteklemiyor, bkz. `DECISIONS.md` (19 Ağustos, JS kütüphanesi düzeltmesi) |
 | ~~**Seed testi:** kütüphane dışarıdan seed alıyor mu?~~ | `evidence/crypto-tests/sprint0-noble-post-quantum-risk-test.md` (128f ile, referans amaçlı kaldı) | ❌ İptal — hedef `signer-wasm`'a taşındı, BIP-39/44 türetme zaten deterministik |
-| `signer-wasm` (Rust/WASM C13 signer) ile keygen/sign/verify çalıştır | Konsol çıktısı → `evidence/crypto-tests/` | ⬜ (Sprint 1'e taşındı) |
-| **Performans testi:** tarayıcıda keygen + imzalama süresi (WASM) | Ölçüm → `evidence/crypto-tests/` | ⬜ (Sprint 1'e taşındı) |
+| `signer-wasm` (Rust/WASM C13 signer) ile keygen/sign/verify çalıştır | `evidence/crypto-tests/sprint1-wasm-signer-test.md` | ✅ Bitti (Sprint 1'de) |
+| **Performans testi:** node.js'te keygen + imzalama süresi (WASM) | `evidence/crypto-tests/sprint1-wasm-signer-test.md` | ✅ Bitti (Sprint 1'de, Node.js ortamında — tarayıcı ölçümü ayrı bir görev) |
 | `nconsigny/SPHINCS-` verifier kodunu incele | Anlaşılanların özeti → `ARCHITECTURE.md` taslağı | ⬜ |
 
 **Hakan**
