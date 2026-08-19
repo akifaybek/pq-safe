@@ -308,3 +308,17 @@ sarma maliyeti. Kanıt: `docs/evidence/gas-reports/sprint1-sphincsverifier-wrapp
 Hakan'ın Sprint 2'de `MockVerifier`'ı bu gerçek verifier ile değiştirebileceği
 nokta budur (bkz. `GOREV_SINIRLARI.md` Sprint 2).
 — Akif
+
+---
+
+## 19 Ağustos 2026 — C13'e geçiş onaylandı (Hakan)
+**Karar:** Yukarıdaki "İmza şeması SLH-DSA-SHA2-128-24'ten C13'e değiştirildi"
+kaydı Hakan tarafından onaylanmıştır, artık dondurulmuş kabul edilir.
+**Neden:** Gerekçe (kütüphane uyumsuzluğu, gas/imza boyutu avantajı) yeterli
+bulundu. IPQVerifier arayüzü şemadan bağımsız olduğu için PQWallet.sol/
+Migration.sol tarafında hiçbir değişiklik gerekmiyor.
+**Doğrulama:** Hakan'ın makinesinde de yeni solc 0.8.35 + via_ir ile
+`forge clean && forge build` temiz geçti, 10/10 test (MockVerifier +
+SPHINCSVerifier) geçti.
+**Etki:** Yok — Hakan'ın dosyaları etkilenmiyor.
+— Hakan
