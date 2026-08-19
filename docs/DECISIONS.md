@@ -259,3 +259,52 @@ korunuyor, ERC-4337'ye geçiş gündemde değil — bu bir karar değil, sadece
 kayıt altına alınan bir değerlendirme. İleride paymaster/gassız UX
 ihtiyacı doğarsa bu not başlangıç noktası olarak kullanılabilir.
 — Hakan
+## 19 Ağustos 2026 — solc/via_ir güncellemesi (0.8.20 → 0.8.35, via_ir açıldı)
+**Karar:** `contracts/foundry.toml`'daki pinlenmiş `solc` sürümü `0.8.20`'den
+`0.8.35`'e yükseltildi, `via_ir = true` eklendi. Bizim kendi kontratlarımızın
+pragma'sı (`^0.8.20`) **değişmedi** — `^0.8.20` zaten `>=0.8.20 <0.9.0`
+anlamına geldiği için 0.8.35 ile tam uyumlu, davranış değişmiyor.
+
+**Neden:** `contracts/src/verifier/SPHINCSVerifier.sol` yazılırken referans
+kontrat `SPHINCs-C13Asm.sol`'un `pragma ^0.8.28` istediği ve pinlenmiş
+`solc 0.8.20`'nin bunu karşılamadığı ortaya çıktı ("No solc version exists
+that matches ^0.8.28" hatası). Ayrıca referans kontratın yoğun inline
+assembly'si `via_ir` olmadan "stack too deep" hatası veriyordu (sphincs-minus'un
+kendi `foundry.toml`'unda zaten `via_ir=true` vardı, biz eksikmişiz).
+
+**Etki:** `contracts/foundry.toml` güncellendi. Bu, "foundry.toml sahipliği
+ortak" kararının (17 Ağustos) kapsamına giriyor — solc/optimizer'ı tek taraflı
+değiştirmeme kuralı, ama bu değişiklik bizim `^0.8.20` pragma'mızı bozmuyor,
+sadece derleyici sürümünü yukarı çekiyor (geriye dönük uyumlu). Hakan'ın kendi
+makinesinde de `git pull` sonrası `forge clean && forge build` çalıştırması
+gerekecek (yeni solc sürümü otomatik inecek).
+— Akif
+
+---
+
+## 19 Ağustos 2026 — SPHINCSVerifier.sol yazıldı, 8/8 test geçti
+**Karar:** `contracts/src/verifier/SPHINCSVerifier.sol` — `IPQVerifier`'ı
+implemente eden, C13 referans kontratını (`SphincsC13Asm`) saran kontrat —
+yazıldı. `publicKey` (64 bayt) → `pkSeed`(32)‖`pkRoot`(32) olarak decode
+ediliyor; referansın revert edebildiği durumlar (yanlış imza uzunluğu,
+non-canonical public key) `try/catch` ile yakalanıp `false`'a çevriliyor
+(`IPQVerifier`'ın "asla revert etmez" garantisi böylece korunuyor).
+
+`contracts/test/SPHINCSVerifier.t.sol`: 8 test (geçerli imza, yanlış mesaj,
+kurcalanmış imza, yanlış imza/publicKey uzunluğu, boş imza, 256 run'lık
+"asla revert etmez" fuzz testi) — **hepsi geçti**. Fixture
+(`contracts/test/fixtures/c13-kat.json`) Rust CLI imzalayıcıyla üretildi,
+FFI kullanılmadan `vm.readFile` ile okunuyor.
+
+**Neden:** Sprint 1 görevi (`docs/GOREV_SINIRLARI.md` Bölüm 9). CLAUDE.md
+kural 3 ("test olmadan bitti deme") ve kural 6 ("kriptografi kodunu
+uydurma") gereği, sarmalayıcının davranışı gerçek bir imzayla ve arayüz
+sözleşmesinin kritik garantisini (revert etmeme) hedefleyen testlerle
+doğrulandı.
+
+**Etki:** Sarmalayıcının gerçek gas maliyeti ölçüldü: **111,074 gas**
+(geçerli imza yolu) — çıplak referansın (106,672) ~%4 üzerinde, try/catch
+sarma maliyeti. Kanıt: `docs/evidence/gas-reports/sprint1-sphincsverifier-wrapper-gas.md`.
+Hakan'ın Sprint 2'de `MockVerifier`'ı bu gerçek verifier ile değiştirebileceği
+nokta budur (bkz. `GOREV_SINIRLARI.md` Sprint 2).
+— Akif

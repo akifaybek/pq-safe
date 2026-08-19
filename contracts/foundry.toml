@@ -8,15 +8,26 @@ libs = ["lib"]
 # docs/DECISIONS.md — 17 Ağustos 2026, Solidity sürüm aralığı:
 # pragma ^0.8.20 ve optimizer açık. solc sürümü sabitlendi ki Akif ve Hakan
 # birebir aynı bytecode'u derlesin (gas ölçümlerinin karşılaştırılabilir olması için).
-solc = "0.8.20"
+# 19 Ağustos 2026: 0.8.20 -> 0.8.35 yükseltildi (bkz. DECISIONS.md "solc pin
+# yükseltmesi") — contracts/lib/sphincs-minus/src/SPHINCs-C13Asm.sol (C13
+# referans verifier) pragma ^0.8.28 istiyor. Bizim kendi pragma'mız (^0.8.20)
+# 0.8.35 ile de tam uyumlu, davranış değişmiyor.
+solc = "0.8.35"
 evm_version = "shanghai"
 optimizer = true
 optimizer_runs = 200
+# C13 referans verifier'ın (SPHINCs-C13Asm.sol) yoğun inline assembly kodu
+# via_ir olmadan "stack too deep" hatası veriyor (sphincs-minus'un kendi
+# foundry.toml'unda da via_ir=true var).
+via_ir = true
 
 # Her forge test --gas-report çağrısı tüm kontratları raporlasın.
 gas_reports = ["*"]
 
 remappings = ["forge-std/=lib/forge-std/src/"]
+
+# SPHINCSVerifier.t.sol'ün (Akif) C13 KAT fixture'ını vm.readFile ile okuyabilmesi için.
+fs_permissions = [{ access = "read", path = "./test/fixtures/c13-kat.json" }]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
