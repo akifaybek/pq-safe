@@ -298,11 +298,11 @@ git push
 **Arayüz zaten donduruldu** (Bölüm 3-4, `IPQVerifier.sol` ve `INTERFACE.md` commit'li).
 
 **Akif**
-| Görev | Kanıt |
-|---|---|
-| `SPHINCSVerifier.sol` iskeleti — `IPQVerifier` implementasyonu | Derleniyor |
-| SPHINCS- doğrulama mantığını entegre et | KAT (bilinen test vektörü) ile geçen test |
-| JS tarafında imzalama + anahtar üretimi/yedekleme | Çalışan script + ekran görüntüsü |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| `SPHINCSVerifier.sol` iskeleti — `IPQVerifier` implementasyonu | Derleniyor | ✅ Bitti (erken başlandı, 19 Ağustos) |
+| SPHINCS- doğrulama mantığını entegre et | KAT (bilinen test vektörü) ile geçen test | ✅ Bitti — 8/8 test geçti, fuzz dahil |
+| JS tarafında imzalama + anahtar üretimi/yedekleme | Çalışan script + ekran görüntüsü | ⬜ |
 
 **Hakan**
 | Görev | Kanıt |
