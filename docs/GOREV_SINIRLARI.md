@@ -303,7 +303,7 @@ git push
 |---|---|---|
 | `SPHINCSVerifier.sol` iskeleti — `IPQVerifier` implementasyonu | Derleniyor | ✅ Bitti (erken başlandı, 19 Ağustos) |
 | SPHINCS- doğrulama mantığını entegre et | KAT (bilinen test vektörü) ile geçen test | ✅ Bitti — 8/8 test geçti, fuzz dahil |
-| JS tarafında imzalama + anahtar üretimi/yedekleme | Çalışan script + ekran görüntüsü | ⬜ |
+| JS tarafında imzalama + anahtar üretimi/yedekleme | Çalışan script + ekran görüntüsü | ✅ Bitti (23 Ağustos) — `docs/evidence/crypto-tests/sprint1-frontend-keygen-sign-ui.md` |
 
 **Hakan**
 | Görev | Kanıt |
