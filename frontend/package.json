@@ -2,5 +2,12 @@
   "name": "pq-safe-frontend",
   "version": "0.0.1",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "devDependencies": {
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "bip39": "^3.1.0",
+    "buffer": "^6.0.3"
+  }
 }

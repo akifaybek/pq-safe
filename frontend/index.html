@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>PQ-SAFE — C13 Signer Kanıt UI</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; color: #1a1a1a; }
+    h1 { font-size: 20px; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    button { padding: 8px 14px; cursor: pointer; }
+    label { display: block; margin-top: 10px; font-size: 13px; color: #555; }
+    textarea, input { width: 100%; box-sizing: border-box; font-family: monospace; font-size: 12px; padding: 6px; }
+    .field { word-break: break-all; background: #f6f6f6; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-top: 4px; }
+    .ok { color: #0a7d2c; font-weight: bold; }
+    .warn { color: #9a5b00; font-size: 12px; }
+    .err { color: #b00020; }
+  </style>
+</head>
+<body>
+  <h1>PQ-SAFE — C13 WASM Signer Kanıt UI</h1>
+  <p class="warn">Bu sayfa Sprint 1 kanıtı içindir (frontend/src/crypto/signer.js WASM sarmalayıcısını gösterir), üretim cüzdanı değildir. Mnemonic ekranda gösterilir, hiçbir yere kaydedilmez.</p>
+
+  <section>
+    <h2>1. Anahtar Üret</h2>
+    <button id="btn-keygen">Yeni anahtar çifti üret</button>
+    <div id="keygen-out"></div>
+  </section>
+
+  <section>
+    <h2>2. İmzala</h2>
+    <label for="digest">Digest (32 bayt, hex, 0x ile)</label>
+    <input id="digest" value="0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef" />
+    <button id="btn-sign" style="margin-top:10px;">İmzala</button>
+    <div id="sign-out"></div>
+  </section>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
