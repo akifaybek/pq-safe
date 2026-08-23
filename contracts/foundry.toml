@@ -26,8 +26,11 @@ gas_reports = ["*"]
 
 remappings = ["forge-std/=lib/forge-std/src/"]
 
-# SPHINCSVerifier.t.sol'ün (Akif) C13 KAT fixture'ını vm.readFile ile okuyabilmesi için.
-fs_permissions = [{ access = "read", path = "./test/fixtures/c13-kat.json" }]
+# SPHINCSVerifier.t.sol'ün (Akif) C13 KAT fixture'larını vm.readFile ile okuyabilmesi için.
+fs_permissions = [
+  { access = "read", path = "./test/fixtures/c13-kat.json" },
+  { access = "read", path = "./test/fixtures/c13-kat-wasm-browser.json" },
+]
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"

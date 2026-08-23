@@ -69,8 +69,11 @@ sign süresi: 7562 ms
   risk olarak tasarım dokümanında not düşülmüştü, gerçekleşmedi.
 - keygen ~360 ms, sign ~7.5 saniye (Node.js, Apple Silicon geliştirme
   makinesi) — performans testi verisi budur.
-- Kapsam dışı: bu testte üretilen imzanın gerçek `SPHINCSVerifier.sol`'e
-  (on-chain) gönderilip doğrulanması yok — ayrı bir görev.
+- ~~Kapsam dışı: bu testte üretilen imzanın gerçek `SPHINCSVerifier.sol`'e
+  (on-chain) gönderilip doğrulanması yok — ayrı bir görev.~~ **Kapandı
+  (23 Ağustos, Sprint 2):** bkz. `docs/evidence/crypto-tests/sprint2-onchain-roundtrip.md`
+  — gerçek tarayıcı WASM build'inden üretilen bir imza, gerçek
+  `SPHINCSVerifier.sol`'e gönderildi ve doğrulandı.
 
 ## Sonuç
 

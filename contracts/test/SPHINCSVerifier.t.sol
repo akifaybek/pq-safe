@@ -83,3 +83,33 @@ contract SPHINCSVerifierTest is Test {
         verifier.verify(digest, signature, publicKeyFuzz);
     }
 }
+
+/// @notice Uçtan uca round-trip kanıtı: yukarıdaki `SPHINCSVerifierTest` fixture'ı
+///         (`c13-kat.json`) native Rust CLI'dan üretildi. Bu kontrat aynı doğrulamayı,
+///         gerçekten tarayıcıda çalışan WASM build'inden (`frontend/src/crypto/wasm-pkg-web`,
+///         `wasm-pack --target web`) — headless Chromium'da `frontend/src/crypto/signer.js`
+///         üzerinden — üretilen bir imzayla tekrarlıyor. Kanıt:
+///         `docs/evidence/crypto-tests/sprint2-onchain-roundtrip.md`.
+contract SPHINCSVerifierWasmBrowserRoundTripTest is Test {
+    SPHINCSVerifier verifier;
+    string constant FIXTURE = "test/fixtures/c13-kat-wasm-browser.json";
+
+    function setUp() public {
+        verifier = new SPHINCSVerifier();
+    }
+
+    function test_BrowserWasmSignatureVerifiesOnChain() public view {
+        string memory json = vm.readFile(FIXTURE);
+        bytes32 pkSeed = vm.parseJsonBytes32(json, ".public_key.pkSeed");
+        bytes32 pkRoot = vm.parseJsonBytes32(json, ".public_key.pkRoot");
+        bytes32 message = vm.parseJsonBytes32(json, ".inputs.message");
+        bytes memory sig = vm.parseJsonBytes(json, ".signature");
+        bytes memory publicKey = abi.encodePacked(pkSeed, pkRoot);
+
+        assertEq(sig.length, 3688, "C13 sig must be 3688 bytes");
+        assertTrue(
+            verifier.verify(message, sig, publicKey),
+            "browser-WASM-produced C13 signature must verify against real SPHINCSVerifier.sol"
+        );
+    }
+}
