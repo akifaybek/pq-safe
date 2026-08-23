@@ -320,11 +320,11 @@ git push
 > 🔑 **Bu sprintin en kritik işi digest uyum testi. Bu geçmeden sprint bitmez.**
 
 **Akif**
-| Görev | Kanıt |
-|---|---|
-| Verifier'ı tamamla, gerçek imzayı doğruluyor | Geçen test (gerçek imza) |
-| JS digest fonksiyonu (Bölüm 4 formatı) | Konsol çıktısı |
-| **Digest uyum testi** (Hakan'la birlikte) | İki taraftan aynı 32 byte — yan yana çıktı |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| Verifier'ı tamamla, gerçek imzayı doğruluyor | Geçen test (gerçek imza) | ✅ Bitti (Sprint 1'de zaten yapıldı — `SPHINCSVerifier.t.sol`'de `test_ValidSignatureVerifies`) |
+| JS digest fonksiyonu (Bölüm 4 formatı) | Konsol çıktısı | ✅ Bitti (23 Ağustos) — `docs/evidence/crypto-tests/sprint2-js-digest-function.md`, bağımsız olarak Foundry `cast` ile doğrulandı |
+| **Digest uyum testi** (Hakan'la birlikte) | İki taraftan aynı 32 byte — yan yana çıktı | ⬜ Hakan'ın `PQWallet.sol._computeDigest()`'i bekliyor |
 
 **Hakan**
 | Görev | Kanıt |
