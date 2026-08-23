@@ -82,7 +82,7 @@ pq-safe/
     │   ├── screenshots/               🔵 AKİF ekler
     │   ├── tx-hashes.md               🔴 HAKAN ekler (append-only)
     │   └── crypto-tests/              🔵 AKİF ekler
-    ├── ARCHITECTURE.md                🔵 AKİF (henüz yazılmadı — Sprint 0 çıktısı)
+    ├── ARCHITECTURE.md                🔵 AKİF (Sprint 0 çıktısı — yazıldı)
     ├── ROADMAP.md                     🟢 ORTAK (kısa genel bakış, ayrıntı burada)
     ├── DECISIONS.md                   🟢 ORTAK (append-only, her kayıt imzalı: "— Akif" / "— Hakan")
     └── INTERFACE.md                   🟢 ORTAK — Bölüm 3-4'ün kopyası, referans
@@ -280,7 +280,7 @@ git push
 | ~~**Seed testi:** kütüphane dışarıdan seed alıyor mu?~~ | `evidence/crypto-tests/sprint0-noble-post-quantum-risk-test.md` (128f ile, referans amaçlı kaldı) | ❌ İptal — hedef `signer-wasm`'a taşındı, BIP-39/44 türetme zaten deterministik |
 | `signer-wasm` (Rust/WASM C13 signer) ile keygen/sign/verify çalıştır | `evidence/crypto-tests/sprint1-wasm-signer-test.md` | ✅ Bitti (Sprint 1'de) |
 | **Performans testi:** node.js'te keygen + imzalama süresi (WASM) | `evidence/crypto-tests/sprint1-wasm-signer-test.md` | ✅ Bitti (Sprint 1'de, Node.js ortamında — tarayıcı ölçümü ayrı bir görev) |
-| `nconsigny/SPHINCS-` verifier kodunu incele | Anlaşılanların özeti → `ARCHITECTURE.md` taslağı | ⬜ |
+| `nconsigny/SPHINCS-` verifier kodunu incele | Anlaşılanların özeti → `ARCHITECTURE.md` taslağı | ✅ Bitti (23 Ağustos) |
 
 **Hakan**
 | Görev | Kanıt | Durum |

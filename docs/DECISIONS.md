@@ -346,3 +346,25 @@ Sprint 0'daki "@noble/post-quantum ile keygen/sign/verify" ve "performans
 testi" maddeleri de artık geçersiz — bir sonraki adımda WASM signer
 entegrasyonuna göre güncellenecek.
 — Akif
+
+---
+
+## 23 Ağustos 2026 — ARCHITECTURE.md yazıldı, Sprint 0 kapandı
+**Karar:** `docs/ARCHITECTURE.md` yazıldı — C13 imza yolunun uçtan uca akışı
+(frontend WASM signer → PQWallet → IPQVerifier → SPHINCSVerifier sarmalayıcı
+→ referans SphincsC13Asm kontratı), C13'ün WOTS+C/FORS+C mekaniği, ve
+`sphincs-minus` reposundaki agent-destekli güvenlik incelemesinin
+(`SECURITY-REVIEW-C13-SLHDSA.md`) özeti içeriyor.
+
+**Neden:** Sprint 0 görevi (`GOREV_SINIRLARI.md` Bölüm 9). CLAUDE.md kural 6
+("kriptografi kodunu uydurma") gereği, özet doğrudan `SPHINCs-C13Asm.sol`
+kodu okunarak ve incelemedeki bulgular doğrulanarak yazıldı.
+
+**Etki:** Güvenlik incelemesindeki en önemli iki bulgu (C13-X-f2: mesaj
+randomizer'ı `R` kamuya açık/grindable, few-time güvenlik kanıtı bu daha
+güçlü modelde ispatlanmamış; C13-X-f3: target-sum WOTS+C'nin çoklu-kullanım
+direnci ispatlanmamış) belgeye not düşüldü — ikisi de pratik bir kırılma
+değil (en iyi bilinen saldırı ~2^133), ama projenin "resmi FIPS 205 seti
+değil, araştırma varyantı" uyarısını teyit ediyor. Sprint 0'ın Akif
+tarafındaki tüm maddeleri artık ✅.
+— Akif
