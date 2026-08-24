@@ -306,12 +306,12 @@ git push
 | JS tarafında imzalama + anahtar üretimi/yedekleme | Çalışan script + ekran görüntüsü | ✅ Bitti (23 Ağustos) — `docs/evidence/crypto-tests/sprint1-frontend-keygen-sign-ui.md` |
 
 **Hakan**
-| Görev | Kanıt |
-|---|---|
-| `Migration.sol`: `proveOwnership()` — ECDSA `ecrecover` | Geçen test |
-| Migration sonrası eski adresi kalıcı işaretleme | Geçen test |
-| Aynı adresle ikinci deneme → revert | Geçen test |
-| Yanlış imza → revert | Geçen test |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| `Migration.sol`: `proveOwnership()` — ECDSA `ecrecover` | Geçen test | ✅ Bitti (19 Ağustos) — bkz. DECISIONS.md, "Migration.sol yazıldı, 9/9 test geçti" |
+| Migration sonrası eski adresi kalıcı işaretleme | Geçen test | ✅ Bitti (19 Ağustos) — bkz. DECISIONS.md, "Migration.sol yazıldı, 9/9 test geçti" |
+| Aynı adresle ikinci deneme → revert | Geçen test | ✅ Bitti (19 Ağustos) — bkz. DECISIONS.md, "Migration.sol yazıldı, 9/9 test geçti" |
+| Yanlış imza → revert | Geçen test | ✅ Bitti (19 Ağustos) — bkz. DECISIONS.md, "Migration.sol yazıldı, 9/9 test geçti" |
 
 ---
 
