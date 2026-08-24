@@ -392,3 +392,27 @@ dahil), hepsi geçti: `forge test --match-path test/Migration.t.sol` →
 
 **Etki:** Sprint 1'deki Migration.sol görevi tamamlandı.
 — Hakan
+
+---
+
+## 24 Ağustos 2026 — PQWallet.sol yazıldı, digest uyum testi geçti
+
+**Karar/Bulgu:** `contracts/src/PQWallet.sol` yazıldı — `ownerPublicKey`,
+`verifier` (IPQVerifier), `nonce` state'i; `_computeDigest(to, value, data)`
+dondurulmuş formülü (GOREV_SINIRLARI.md Bölüm 4) birebir uyguluyor;
+`execute()` checks-effects-interactions sırasıyla (nonce dış çağrıdan ÖNCE
+artırılıyor) verifier'ı çağırıp transferi yapıyor.
+
+**Doğrulama:** `contracts/test/PQWallet.t.sol` — 6 test, hepsi geçti:
+`forge test --match-path test/PQWallet.t.sol` → 6 passed, 0 failed. İki
+test (`test_DigestMatchesJsVector_Test1/2`) Akif'in `docs/evidence/crypto-tests/sprint2-js-digest-function.md`
+belgesindeki JS/`cast` vektörleriyle birebir aynı digest'i üretiyor —
+Sprint 2'nin kritik "digest uyum testi" görevi bu şekilde tamamlandı.
+Ayrıca `forge test --gas-report` çıktısı `docs/evidence/gas-reports/sprint2.txt`'e kaydedildi.
+
+**Neden:** Sprint 2 görevi (GOREV_SINIRLARI.md Bölüm 9).
+
+**Etki:** Sprint 2'deki digest uyum testi tamamlandı. Kalan tek Sprint 2
+maddesi: MockVerifier'ın gerçek SPHINCSVerifier ile entegrasyon testi —
+Akif'in gerçek digest üzerinden bir imza üretmesini bekliyor.
+— Hakan
