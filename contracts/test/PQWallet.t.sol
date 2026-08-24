@@ -113,6 +113,7 @@ contract PQWalletTest is Test {
     function testFuzz_Execute_IncrementsNonce(address recipient, uint96 sendValue, bytes calldata data) public {
         vm.assume(recipient.code.length == 0);
         vm.assume(recipient != address(wallet));
+        vm.assume(uint160(recipient) > 9);
         vm.deal(address(wallet), sendValue);
 
         uint256 nonceBefore = wallet.nonce();
