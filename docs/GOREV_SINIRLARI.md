@@ -324,16 +324,16 @@ git push
 |---|---|---|
 | Verifier'ı tamamla, gerçek imzayı doğruluyor | Geçen test (gerçek imza) | ✅ Bitti (Sprint 1'de zaten yapıldı — `SPHINCSVerifier.t.sol`'de `test_ValidSignatureVerifies`) |
 | JS digest fonksiyonu (Bölüm 4 formatı) | Konsol çıktısı | ✅ Bitti (23 Ağustos) — `docs/evidence/crypto-tests/sprint2-js-digest-function.md`, bağımsız olarak Foundry `cast` ile doğrulandı |
-| **Digest uyum testi** (Hakan'la birlikte) | İki taraftan aynı 32 byte — yan yana çıktı | ⬜ Hakan'ın `PQWallet.sol._computeDigest()`'i bekliyor |
+| **Digest uyum testi** (Hakan'la birlikte) | İki taraftan aynı 32 byte — yan yana çıktı | ✅ Bitti (24 Ağustos) — Hakan'ın `PQWallet.sol._computeDigest()`'i ile digest birebir eşleşti (bkz. `contracts/test/PQWallet.t.sol`, `test_DigestMatchesJsVector_*` testleri, `docs/evidence/crypto-tests/sprint2-js-digest-function.md` vektörleriyle karşılaştırıldı) |
 
 **Hakan**
-| Görev | Kanıt |
-|---|---|
-| `PQWallet.sol`: state, nonce, `_computeDigest()` | Geçen test |
-| `PQWallet.sol`: `execute()` — verifier çağrısı + transfer | Geçen test |
-| Nonce replay koruması | Geçen test |
-| `MockVerifier`'ı gerçek verifier ile değiştir | Geçen entegrasyon testi |
-| Gas raporu | `evidence/gas-reports/sprint2.txt` |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| `PQWallet.sol`: state, nonce, `_computeDigest()` | Geçen test | ✅ Bitti (24 Ağustos) — bkz. DECISIONS.md, commit f4cdff7 |
+| `PQWallet.sol`: `execute()` — verifier çağrısı + transfer | Geçen test | ✅ Bitti (24 Ağustos) — aynı commit |
+| Nonce replay koruması | Geçen test | ✅ Bitti (24 Ağustos) — `test_DigestChangesAfterExecute_OldSignatureNoLongerMatches` ile kanıtlandı |
+| `MockVerifier`'ı gerçek verifier ile değiştir | Geçen entegrasyon testi | ⬜ |
+| Gas raporu | `evidence/gas-reports/sprint2.txt` | ⬜ |
 
 ---
 
