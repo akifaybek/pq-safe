@@ -333,7 +333,7 @@ git push
 | `PQWallet.sol`: `execute()` — verifier çağrısı + transfer | Geçen test | ✅ Bitti (24 Ağustos) — aynı commit |
 | Nonce replay koruması | Geçen test | ✅ Bitti (24 Ağustos) — `test_DigestChangesAfterExecute_OldSignatureNoLongerMatches` ile kanıtlandı |
 | `MockVerifier`'ı gerçek verifier ile değiştir | Geçen entegrasyon testi | ⬜ |
-| Gas raporu | `evidence/gas-reports/sprint2.txt` | ⬜ |
+| Gas raporu | `evidence/gas-reports/sprint2.txt` | ✅ Bitti (24 Ağustos) — bkz. `docs/evidence/gas-reports/sprint2.txt`, commit 1ee1b37 |
 
 ---
 
