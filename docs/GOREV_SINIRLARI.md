@@ -285,10 +285,10 @@ git push
 **Hakan**
 | Görev | Kanıt | Durum |
 |---|---|---|
-| Repoyu `git clone --recursive` ile al, Foundry'yi kur (Homebrew) | — | ⬜ |
-| `forge build` kendi makinende çalışıyor mu doğrula | Terminal çıktısı | ⬜ |
-| `MockVerifier.sol` yaz (her zaman true döner) | Geçen test | ⬜ |
-| ERC-4337 / akıllı kontrat cüzdan desenlerini incele | Notlar → `DECISIONS.md` | ⬜ |
+| Repoyu `git clone --recursive` ile al, Foundry'yi kur (Homebrew) | — | ✅ Bitti |
+| `forge build` kendi makinende çalışıyor mu doğrula | Terminal çıktısı | ✅ Bitti (bkz. DECISIONS.md, "19 Ağustos 2026 — forge build doğrulaması") |
+| `MockVerifier.sol` yaz (her zaman true döner) | Geçen test | ✅ Bitti (bkz. DECISIONS.md, "17 Ağustos 2026 — MockVerifier stub eklendi") |
+| ERC-4337 / akıllı kontrat cüzdan desenlerini incele | Notlar → `DECISIONS.md` | ✅ Bitti (bkz. DECISIONS.md, "19 Ağustos 2026 — ERC-4337 incelemesi") |
 
 **Sprint 0 çıktısı:** İki taraf da kendi ortamında bir şey çalıştırabiliyor. Riskler ölçülmüş.
 
