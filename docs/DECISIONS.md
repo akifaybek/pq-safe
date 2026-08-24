@@ -368,3 +368,27 @@ değil (en iyi bilinen saldırı ~2^133), ama projenin "resmi FIPS 205 seti
 değil, araştırma varyantı" uyarısını teyit ediyor. Sprint 0'ın Akif
 tarafındaki tüm maddeleri artık ✅.
 — Akif
+
+---
+
+## 19 Ağustos 2026 — Migration.sol yazıldı, 9/9 test geçti
+**Karar/Bulgu:** `contracts/src/Migration.sol` — `proveOwnership(oldAddress,
+newAddress, signature)` — yazıldı. Eski ECDSA cüzdanın sahipliği EIP-191
+(`personal_sign`) formatında imzayla kanıtlanıyor, ecrecover elle
+sarmalandı (uzunluk kontrolü, low-s malleability koruması, v ∈ {27,28}),
+ayrı domain separator (`PQSAFE_MIGRATION_V1`) kullanıldı. Başarılı
+migration sonrası `migrated[oldAddress]` kalıcı olarak true'ya çevriliyor
+— ikinci deneme, yanlış imza, sıfır newAddress, kısa imza, high-S, geçersiz
+v hepsi revert ediyor.
+
+**Neden:** Sprint 1 görevi (GOREV_SINIRLARI.md Bölüm 9). CLAUDE.md kural 6
+gereği hazır bir ECDSA kütüphanesi yerine (tek kaynağı Akif'in submodule'ü
+içindeydi) elle, aynı güvenlik kontrolleriyle yazıldı — gereksiz çapraz
+bağımlılık kurulmadı.
+
+**Doğrulama:** `contracts/test/Migration.t.sol` — 9 test (256 run'lık fuzz
+dahil), hepsi geçti: `forge test --match-path test/Migration.t.sol` →
+9 passed, 0 failed.
+
+**Etki:** Sprint 1'deki Migration.sol görevi tamamlandı.
+— Hakan
