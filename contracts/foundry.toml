@@ -30,6 +30,7 @@ remappings = ["forge-std/=lib/forge-std/src/"]
 fs_permissions = [
   { access = "read", path = "./test/fixtures/c13-kat.json" },
   { access = "read", path = "./test/fixtures/c13-kat-wasm-browser.json" },
+  { access = "read", path = "./test/fixtures/c13-pqwallet-integration.json" },
 ]
 
 [rpc_endpoints]
