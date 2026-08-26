@@ -3,6 +3,7 @@ out/
 cache/
 .env
 .env.*
+!frontend/.env.example
 broadcast/
 dist/
 .DS_Store
