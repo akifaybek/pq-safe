@@ -416,3 +416,37 @@ Ayrıca `forge test --gas-report` çıktısı `docs/evidence/gas-reports/sprint2
 maddesi: MockVerifier'ın gerçek SPHINCSVerifier ile entegrasyon testi —
 Akif'in gerçek digest üzerinden bir imza üretmesini bekliyor.
 — Hakan
+
+---
+
+## 2026-08-24 — Fuzz testte precompile adresleri (0x01–0x09) hariç tutuldu
+
+**Karar/Bulgu:** `contracts/test/PQWallet.t.sol`'daki
+`testFuzz_Execute_IncrementsNonce`'a `vm.assume(uint160(recipient) > 9)`
+eklendi. Test önceden `recipient = 0x08` (Ethereum'un `ecPairing`
+precompile'ı) seçtiğinde başarısız oluyordu: precompile, `execute()`'un
+gönderdiği rastgele calldata'yı geçersiz bulup kendi içinde revert ediyor,
+`execute()` bunu `require(success, ...)` ile yukarı taşıyordu.
+
+**Neden:** Bu `PQWallet.execute()`'de bir güvenlik açığı DEĞİL. Cüzdan
+tasarım gereği herhangi bir hedefe call atabiliyor (Gnosis Safe tarzı
+genel-amaçlı cüzdanlarda standart davranış) — hedef adres kısıtlaması
+kasıtlı olarak yok. `nonce++` ve dış `call`, `execute()` içinde aynı
+transaction'da; `require(success, ...)` başarısız olduğunda EVM'in atomik
+revert semantiği yüzünden `nonce++` dahil TÜM state değişikliği geri
+alınıyor — yani precompile'a saçma calldata ile gönderim denemesi gerçek
+kullanımda da aynı şekilde (zararsızca) revert eder, fon kaybı veya
+nonce/imza tutarsızlığı oluşmaz. Fuzz testin `recipient` aralığını
+precompile'ları (`0x01`–`0x09`) dışlayacak şekilde daraltması, bu adreslerin
+normal kontrat çağrı semantiğine sahip olmaması nedeniyle Foundry'de yaygın
+ve meşru bir pratiktir — testin "her adrese call başarılı olmalı" varsayımı
+zaten precompile'lar için geçerli değil.
+
+**Doğrulama:** `execute()`'un kendisinde hiçbir değişiklik yapılmadı, sadece
+test dosyasına `vm.assume` eklendi. Test 256 run ile tekrar geçti (bkz.
+`docs/evidence/gas-reports/sprint2.txt`).
+
+**Etki:** Sprint 2 gas raporu maddesi kapandı. Gelecekte bir güvenlik
+incelemesinde bu satır yeniden sorgulanırsa (neden precompile'lar
+hariç tutuldu) bu kayıt gerekçeyi gösteriyor.
+— Hakan (Akif'in sorusu üzerine, 26 Ağustos 2026'da bu kayda dökülmüştür)
