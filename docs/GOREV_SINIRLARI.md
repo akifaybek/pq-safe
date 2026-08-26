@@ -332,7 +332,7 @@ git push
 | `PQWallet.sol`: state, nonce, `_computeDigest()` | Geçen test | ✅ Bitti (24 Ağustos) — bkz. DECISIONS.md, commit f4cdff7 |
 | `PQWallet.sol`: `execute()` — verifier çağrısı + transfer | Geçen test | ✅ Bitti (24 Ağustos) — aynı commit |
 | Nonce replay koruması | Geçen test | ✅ Bitti (24 Ağustos) — `test_DigestChangesAfterExecute_OldSignatureNoLongerMatches` ile kanıtlandı |
-| `MockVerifier`'ı gerçek verifier ile değiştir | Geçen entegrasyon testi | ⬜ |
+| `MockVerifier`'ı gerçek verifier ile değiştir | Geçen entegrasyon testi | ✅ Bitti (26 Ağustos) — Akif tarafından tamamlandı (digest, cüzdanın gerçek adresine bağlı olduğundan imzalamak Akif'in private key'ini gerektiriyordu): `contracts/test/SPHINCSVerifier.t.sol`'de `SPHINCSVerifierPQWalletIntegrationTest`, gerçek WASM imzasıyla `PQWallet.execute()` → gerçek `SPHINCSVerifier.sol` zincirini kanıtlıyor. Bkz. `docs/evidence/crypto-tests/sprint2-pqwallet-real-verifier-integration.md` |
 | Gas raporu | `evidence/gas-reports/sprint2.txt` | ✅ Bitti (24 Ağustos) — bkz. `docs/evidence/gas-reports/sprint2.txt`, commit 1ee1b37 |
 
 ---
