@@ -3,7 +3,7 @@
 // state okuma, Hakan'ın deploy adresleri geldikten sonraki ayrı bir adım.
 import { JsonRpcProvider } from 'ethers';
 
-const SEPOLIA_CHAIN_ID = 11155111n;
+export const SEPOLIA_CHAIN_ID = 11155111n;
 
 // Ağı doğrulanmış provider ilk başarılı kontrolden sonra burada tutulur.
 // Sadece başarı durumunda dolduruluyor: geçici bir RPC hatası bağlantıyı
