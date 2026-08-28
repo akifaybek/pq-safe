@@ -3,6 +3,24 @@
 Bu belge, bir sonraki Claude Code oturumunun kaldığı yerden devam edebilmesi
 için yazıldı. Sırasıyla ne yapıldı, şu an nerede duruyoruz, sırada ne var.
 
+> **GÜNCELLEME — 28 Ağustos 2026: bu notun 4. bölümü artık geçerli değil.**
+>
+> Aşağıdaki metin 26 Ağustos akşamının durumunu anlatıyor ve o günden beri
+> aşıldı. Değişenler:
+>
+> - Plan dosyası commit edildi (`47a842a`) — aşağıda "henüz commit edilmedi" yazıyor, doğru değil.
+> - **Task 3 tamamlandı** (`c94edd2`) — aşağıda "BAŞLANMADI" yazıyor, doğru değil.
+> - RPC URL blocker'ı kalktı: Infura/Alchemy anahtarı gerekmedi, anahtarsız
+>   public uç nokta (`ethereum-sepolia-rpc.publicnode.com`) kullanıldı.
+> - Final whole-branch review yapıldı, bulguları uygulandı.
+> - Kanıt: `docs/evidence/crypto-tests/sprint3-sepolia-readonly-connection.md`
+>
+> **Hâlâ geçerli olan:** 3. bölüm — Hakan'ın deploy çıktıları
+> (`docs/tx-hashes.md`: kontrat adresleri, Etherscan linkleri, tx hash'ler)
+> hâlâ bekleniyor. Kontrat okuma ve tx gönderme adımları buna bağlı.
+>
+> 5. bölümdeki genel hatırlatmalar da geçerliliğini koruyor.
+
 ## 1. Sprint 2 tamamen kapandı
 
 - `MockVerifier` → gerçek `SPHINCSVerifier` entegrasyon testi yazıldı:
