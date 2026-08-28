@@ -1,7 +1,13 @@
-import { generateNewMnemonic, keygen, signDigest } from './crypto/signer.js';
+import { generateNewMnemonic, keygen, signDigest, C13_SIG_BYTES } from './crypto/signer.js';
 import { checkSepoliaConnection } from './network/sepolia.js';
 import { formatEther } from 'ethers';
 import { buildAndSign } from './tx/buildTransaction.js';
+
+// Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
+// hatalı olduğunu söylemek için) ve innerHTML ile basılıyor. Sayfa aynı
+// zamanda mnemonic'i DOM'a yazdığı için kaçış şart.
+const esc = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let currentMnemonic = null;
 let currentKeys = null;
@@ -32,7 +38,7 @@ document.getElementById('btn-keygen').addEventListener('click', async () => {
       <p class="ok">keygen tamamlandı (${ms} ms)</p>
     `;
   } catch (e) {
-    keygenOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+    keygenOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
   }
 });
 
@@ -47,7 +53,7 @@ document.getElementById('btn-sign').addEventListener('click', async () => {
     const t0 = performance.now();
     const { signature, sigBytes } = await signDigest(currentMnemonic, digest);
     const ms = (performance.now() - t0).toFixed(1);
-    const lengthOk = sigBytes === 3688;
+    const lengthOk = sigBytes === C13_SIG_BYTES;
     signOut.innerHTML = `
       <label>İmza (${sigBytes} bayt)</label>
       <div class="field">${signature}</div>
@@ -55,7 +61,7 @@ document.getElementById('btn-sign').addEventListener('click', async () => {
       <p class="ok">sign tamamlandı (${ms} ms)</p>
     `;
   } catch (e) {
-    signOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+    signOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
   }
 });
 
@@ -76,7 +82,7 @@ btnCheckConnection.addEventListener('click', async () => {
       <p class="ok">Sepolia'ya bağlantı doğrulandı</p>
     `;
   } catch (e) {
-    connectionOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+    connectionOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
   } finally {
     btnCheckConnection.disabled = false;
   }
@@ -89,13 +95,18 @@ btnBuildSign.addEventListener('click', async () => {
     txOut.innerHTML = '<p class="err">Önce anahtar üret.</p>';
     return;
   }
-  // İmzalama ~7.5 sn sürüyor; buton açık kalırsa kullanıcı rahatlıkla
-  // tekrar tıklar ve eşzamanlı WASM çağrısı başlatır.
+  const btnKeygen = document.getElementById('btn-keygen');
+  // İmzalama ~7.5 sn sürüyor; butonlar açık kalırsa kullanıcı rahatlıkla
+  // tekrar tıklar (eşzamanlı WASM çağrısı) ya da keygen'i yeniden çalıştırıp
+  // (bölüm 1'de mnemonic B'yi gösterirken bölüm 4 hâlâ mnemonic A ile
+  // imzalanmış sonucu render eder — ekranda ikisini ayırt edecek hiçbir şey
+  // yoktur) bu yüzden ikisi de kilitlenir.
   btnBuildSign.disabled = true;
+  btnKeygen.disabled = true;
   txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~7-8 sn)</p>';
   try {
     const weiValue = document.getElementById('tx-value').value.trim();
-    const { domainSeparator, digest, signature, sigBytes, signMs } = await buildAndSign({
+    const { domainSeparator, digest, fields, signature, sigBytes, signMs } = await buildAndSign({
       walletAddress: document.getElementById('tx-wallet').value.trim(),
       to: document.getElementById('tx-to').value.trim(),
       value: weiValue,
@@ -103,22 +114,23 @@ btnBuildSign.addEventListener('click', async () => {
       data: document.getElementById('tx-data').value.trim(),
       mnemonic: currentMnemonic,
     });
-    const lengthOk = sigBytes === 3688;
+    const lengthOk = sigBytes === C13_SIG_BYTES;
     txOut.innerHTML = `
       <label>DOMAIN_SEPARATOR (chainId + cüzdan adresine bağlı)</label>
       <div class="field">${domainSeparator}</div>
       <label>digest</label>
       <div class="field">${digest}</div>
       <label>value geri okuma</label>
-      <div class="field">${weiValue} wei = ${formatEther(weiValue)} ETH</div>
+      <div class="field">${fields.value} wei = ${formatEther(fields.value)} ETH</div>
       <label>İmza (${sigBytes} bayt)</label>
       <div class="field">${signature}</div>
       <p class="${lengthOk ? 'ok' : 'err'}">${lengthOk ? '✓ imza uzunluğu 3688 bayt (C13 beklenen)' : '✗ beklenmeyen uzunluk'}</p>
       <p class="ok">imzalama tamamlandı (${signMs.toFixed(1)} ms)</p>
     `;
   } catch (e) {
-    txOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+    txOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
   } finally {
     btnBuildSign.disabled = false;
+    btnKeygen.disabled = false;
   }
 });

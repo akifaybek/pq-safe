@@ -12,6 +12,9 @@ if (typeof globalThis.Buffer === 'undefined') {
   globalThis.Buffer = Buffer;
 }
 
+// C13 imza uzunluğu (bayt). Şemanın özelliği — bkz. CLAUDE.md, h=22 d=2 a=19 k=7 w=8.
+export const C13_SIG_BYTES = 3688;
+
 let initialized = false;
 
 export async function ensureWasmInit() {

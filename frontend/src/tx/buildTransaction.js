@@ -34,6 +34,8 @@ function requireUint(fieldName, value) {
 
   let parsed;
   try {
+    // BigInt hex/oktal gösterimi de kabul eder ("0x10" → 16n); block explorer'dan
+    // kopyalanan nonce/value doğrudan çalışsın diye bilerek engellenmedi.
     parsed = BigInt(raw);
   } catch {
     throw new Error(`${fieldName} alanı geçerli bir tamsayı değil: ${value}`);
@@ -51,6 +53,9 @@ function requireUint(fieldName, value) {
 
 // isHexString('0xabc') true döner ama uzunluk tek — Solidity bytes'a
 // çevrilemez, o yüzden ayrıca çift uzunluk kontrolü var.
+// Bu katman yalnızca hex string kabul eder. digest.js'in computeDigest'i
+// Uint8Array de kabul ediyor ama form girdisi her zaman metin — tek bir
+// veri yolu tutmak keccak256(data) dalının dallanmamasını sağlıyor.
 function requireHexData(fieldName, value) {
   const raw = String(value ?? '').trim();
   if (raw === '') return '0x';
@@ -79,7 +84,19 @@ export function buildDigest({ walletAddress, nonce, to, value, data }) {
     data: callData,
   });
 
-  return { domainSeparator, digest };
+  // Normalize edilmiş alanlar da dönüyor: sonraki adımda execute() calldata'sı
+  // bu değerlerden kurulacak. Ham girdiden yeniden normalize edilseydi ikinci
+  // bir normalizasyon yolu doğar ve digest'e giren byte'lardan sessizce
+  // sapabilirdi — sonucu yerelde yeşil sayfa, zincirde çıplak revert olurdu.
+  const fields = {
+    walletAddress: wallet,
+    nonce: nonceValue,
+    to: recipient,
+    value: weiValue,
+    data: callData,
+  };
+
+  return { domainSeparator, digest, fields };
 }
 
 // signMs YALNIZCA signDigest() süresini ölçer. Digest hesaplama ayrıca
@@ -89,11 +106,11 @@ export async function buildAndSign({ walletAddress, nonce, to, value, data, mnem
   if (!mnemonic) {
     throw new Error('mnemonic yok — önce 1. bölümde anahtar üretin');
   }
-  const { domainSeparator, digest } = buildDigest({ walletAddress, nonce, to, value, data });
+  const { domainSeparator, digest, fields } = buildDigest({ walletAddress, nonce, to, value, data });
 
   const t0 = performance.now();
   const { signature, sigBytes } = await signDigest(mnemonic, digest);
   const signMs = performance.now() - t0;
 
-  return { domainSeparator, digest, signature, sigBytes, signMs };
+  return { domainSeparator, digest, fields, signature, sigBytes, signMs };
 }

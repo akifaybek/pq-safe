@@ -75,7 +75,14 @@ checkThrows('nonce 2^256', () => buildDigest({ walletAddress: WALLET, nonce: (2n
 
 console.log('\n--- Test 8: uint256 sınır değeri kabul edilmeli ---');
 const tMax = buildDigest({ walletAddress: WALLET, nonce: ((1n << 256n) - 1n).toString(), to: TO, value: 0, data: '0x' });
-check('uint256 max nonce kabul edildi', typeof tMax.digest, 'string');
+check('uint256 max nonce kabul edildi', tMax.digest.length, 66);
+
+console.log('\n--- Test 9: normalize edilmiş alanlar döndürülmeli ---');
+const tf = buildDigest({ walletAddress: WALLET, nonce: '5', to: TO.toLowerCase(), value: '42', data: '' });
+check('fields.to checksum uygulanmış', tf.fields.to, '0xABcdEFABcdEFabcdEfAbCdefabcdeFABcDEFabCD');
+check('fields.nonce bigint', typeof tf.fields.nonce, 'bigint');
+check('fields.value bigint', typeof tf.fields.value, 'bigint');
+check('fields.data boş girdi 0x oldu', tf.fields.data, '0x');
 
 console.log(failures === 0 ? '\nTÜM TESTLER GEÇTİ' : `\n${failures} TEST BAŞARISIZ`);
 process.exit(failures === 0 ? 0 : 1);
