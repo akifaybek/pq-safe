@@ -41,6 +41,23 @@
     <div id="connection-out"></div>
   </section>
 
+  <section>
+    <h2>4. İşlem Oluştur ve İmzala</h2>
+    <p class="warn">Alanlar <code>docs/evidence/crypto-tests/sprint2-js-digest-function.md</code>'deki Foundry <code>cast</code> test vektörüyle ön-doldurulmuştur — çıkan digest oradaki değerle karşılaştırılabilir.</p>
+    <label for="tx-wallet">PQWallet adresi</label>
+    <input id="tx-wallet" value="0x1234567890123456789012345678901234567890" />
+    <label for="tx-to">to (alıcı adresi)</label>
+    <input id="tx-to" value="0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" />
+    <label for="tx-value">value (wei)</label>
+    <input id="tx-value" value="1000000000000000000" />
+    <label for="tx-nonce">nonce</label>
+    <input id="tx-nonce" value="0" />
+    <label for="tx-data">data (hex, boşsa 0x)</label>
+    <input id="tx-data" value="0x" />
+    <button id="btn-build-sign" style="margin-top:10px;">Digest hesapla ve imzala</button>
+    <div id="tx-out"></div>
+  </section>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

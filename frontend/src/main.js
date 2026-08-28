@@ -1,5 +1,7 @@
 import { generateNewMnemonic, keygen, signDigest } from './crypto/signer.js';
 import { checkSepoliaConnection } from './network/sepolia.js';
+import { formatEther } from 'ethers';
+import { buildAndSign } from './tx/buildTransaction.js';
 
 let currentMnemonic = null;
 let currentKeys = null;
@@ -7,6 +9,7 @@ let currentKeys = null;
 const keygenOut = document.getElementById('keygen-out');
 const signOut = document.getElementById('sign-out');
 const connectionOut = document.getElementById('connection-out');
+const txOut = document.getElementById('tx-out');
 
 document.getElementById('btn-keygen').addEventListener('click', async () => {
   keygenOut.innerHTML = '<p>Üretiliyor…</p>';
@@ -76,5 +79,46 @@ btnCheckConnection.addEventListener('click', async () => {
     connectionOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
   } finally {
     btnCheckConnection.disabled = false;
+  }
+});
+
+const btnBuildSign = document.getElementById('btn-build-sign');
+
+btnBuildSign.addEventListener('click', async () => {
+  if (!currentMnemonic) {
+    txOut.innerHTML = '<p class="err">Önce anahtar üret.</p>';
+    return;
+  }
+  // İmzalama ~7.5 sn sürüyor; buton açık kalırsa kullanıcı rahatlıkla
+  // tekrar tıklar ve eşzamanlı WASM çağrısı başlatır.
+  btnBuildSign.disabled = true;
+  txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~7-8 sn)</p>';
+  try {
+    const weiValue = document.getElementById('tx-value').value.trim();
+    const { domainSeparator, digest, signature, sigBytes, signMs } = await buildAndSign({
+      walletAddress: document.getElementById('tx-wallet').value.trim(),
+      to: document.getElementById('tx-to').value.trim(),
+      value: weiValue,
+      nonce: document.getElementById('tx-nonce').value.trim(),
+      data: document.getElementById('tx-data').value.trim(),
+      mnemonic: currentMnemonic,
+    });
+    const lengthOk = sigBytes === 3688;
+    txOut.innerHTML = `
+      <label>DOMAIN_SEPARATOR (chainId + cüzdan adresine bağlı)</label>
+      <div class="field">${domainSeparator}</div>
+      <label>digest</label>
+      <div class="field">${digest}</div>
+      <label>value geri okuma</label>
+      <div class="field">${weiValue} wei = ${formatEther(weiValue)} ETH</div>
+      <label>İmza (${sigBytes} bayt)</label>
+      <div class="field">${signature}</div>
+      <p class="${lengthOk ? 'ok' : 'err'}">${lengthOk ? '✓ imza uzunluğu 3688 bayt (C13 beklenen)' : '✗ beklenmeyen uzunluk'}</p>
+      <p class="ok">imzalama tamamlandı (${signMs.toFixed(1)} ms)</p>
+    `;
+  } catch (e) {
+    txOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+  } finally {
+    btnBuildSign.disabled = false;
   }
 });

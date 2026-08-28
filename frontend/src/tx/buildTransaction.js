@@ -8,6 +8,7 @@
 import { getAddress, isHexString } from 'ethers';
 import { computeDigest, computeDomainSeparator } from '../crypto/digest.js';
 import { SEPOLIA_CHAIN_ID } from '../network/sepolia.js';
+import { signDigest } from '../crypto/signer.js';
 
 const UINT256_MAX = (1n << 256n) - 1n;
 
@@ -79,4 +80,20 @@ export function buildDigest({ walletAddress, nonce, to, value, data }) {
   });
 
   return { domainSeparator, digest };
+}
+
+// signMs YALNIZCA signDigest() süresini ölçer. Digest hesaplama ayrıca
+// ölçülmüyor: milisaniye altı olduğu için kanıt değeri yok ve tek bir
+// birleşik süre "bu rakam neyi ölçüyor" belirsizliği yaratırdı.
+export async function buildAndSign({ walletAddress, nonce, to, value, data, mnemonic }) {
+  if (!mnemonic) {
+    throw new Error('mnemonic yok — önce 1. bölümde anahtar üretin');
+  }
+  const { domainSeparator, digest } = buildDigest({ walletAddress, nonce, to, value, data });
+
+  const t0 = performance.now();
+  const { signature, sigBytes } = await signDigest(mnemonic, digest);
+  const signMs = performance.now() - t0;
+
+  return { domainSeparator, digest, signature, sigBytes, signMs };
 }
