@@ -5,8 +5,17 @@ import { JsonRpcProvider } from 'ethers';
 
 const SEPOLIA_CHAIN_ID = 11155111n;
 
-export function getProvider() {
-  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC_URL;
+// Ağı doğrulanmış provider ilk başarılı kontrolden sonra burada tutulur.
+// Sadece başarı durumunda dolduruluyor: geçici bir RPC hatası bağlantıyı
+// kalıcı olarak zehirlemesin, kullanıcı tekrar deneyebilsin.
+let validated = null;
+
+// Ağı DOĞRULANMAMIŞ provider. Bilerek dışa açılmıyor: doğrudan kullanılırsa
+// chainId kontrolü atlanır, yanlış ağda üretilen imzalar da yerelde hiçbir
+// belirti vermeden on-chain reddedilir. Kontrat okuma ve tx gönderme dahil
+// her tüketici getSepoliaProvider() kullanmalı.
+function createUncheckedProvider() {
+  const rpcUrl = import.meta.env.VITE_SEPOLIA_RPC_URL?.trim();
   if (!rpcUrl) {
     throw new Error(
       'VITE_SEPOLIA_RPC_URL tanımlı değil — frontend/.env dosyasına ekleyin (bkz. .env.example)',
@@ -15,8 +24,15 @@ export function getProvider() {
   return new JsonRpcProvider(rpcUrl);
 }
 
-export async function checkSepoliaConnection() {
-  const provider = getProvider();
+// Ağı doğrulanmış Sepolia provider'ı — frontend'in tek provider kaynağı.
+export async function getSepoliaProvider() {
+  if (validated) return validated.provider;
+
+  const provider = createUncheckedProvider();
+  // DİKKAT: getNetwork() burada bilerek RPC'ye soruyor. Provider'a
+  // `staticNetwork: true` eklenirse ethers ağı sormadan yapılandırılmış
+  // değeri döndürür ve aşağıdaki kontrol hiçbir zaman başarısız olamayan
+  // bir totolojiye dönüşür. Performans gerekçesiyle değiştirmeyin.
   const network = await provider.getNetwork();
   if (network.chainId !== SEPOLIA_CHAIN_ID) {
     throw new Error(
@@ -24,6 +40,15 @@ export async function checkSepoliaConnection() {
         "digest formatı chainId'e bağlı, yanlış ağda üretilen imzalar geçersiz olur.",
     );
   }
+
+  validated = { provider, chainId: network.chainId };
+  return provider;
+}
+
+export async function checkSepoliaConnection() {
+  const provider = await getSepoliaProvider();
   const blockNumber = await provider.getBlockNumber();
-  return { chainId: network.chainId, blockNumber };
+  // chainId olarak sabit değil, RPC'nin gerçekten döndürdüğü değer dönüyor —
+  // UI'da gösterilen sayı bağlantının kanıtı olsun diye.
+  return { chainId: validated.chainId, blockNumber };
 }

@@ -6,6 +6,7 @@ let currentKeys = null;
 
 const keygenOut = document.getElementById('keygen-out');
 const signOut = document.getElementById('sign-out');
+const connectionOut = document.getElementById('connection-out');
 
 document.getElementById('btn-keygen').addEventListener('click', async () => {
   keygenOut.innerHTML = '<p>Üretiliyor…</p>';
@@ -55,9 +56,12 @@ document.getElementById('btn-sign').addEventListener('click', async () => {
   }
 });
 
-const connectionOut = document.getElementById('connection-out');
+const btnCheckConnection = document.getElementById('btn-check-connection');
 
-document.getElementById('btn-check-connection').addEventListener('click', async () => {
+btnCheckConnection.addEventListener('click', async () => {
+  // Uçuştaki istek varken buton kapalı: üst üste tıklama eşzamanlı provider
+  // kurulumu ve RPC isteği açıyordu.
+  btnCheckConnection.disabled = true;
   connectionOut.innerHTML = '<p>Bağlanılıyor…</p>';
   try {
     const { chainId, blockNumber } = await checkSepoliaConnection();
@@ -70,5 +74,7 @@ document.getElementById('btn-check-connection').addEventListener('click', async 
     `;
   } catch (e) {
     connectionOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+  } finally {
+    btnCheckConnection.disabled = false;
   }
 });
