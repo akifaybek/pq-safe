@@ -219,6 +219,17 @@ git add frontend/src/network/sepolia.js frontend/src/tx/buildTransaction.js fron
 git commit -m "feat(frontend): işlem alanlarından digest kuran buildDigest + cast vektörlerine karşı test"
 ```
 
+> **Uygulama notu (28 Ağustos, review sonrası eklendi):** Yukarıdaki
+> `requireUint` kodu eksikti ve repodaki hâli ondan farklıdır. Review iki
+> açık buldu: (1) `BigInt('') === 0n` olduğu için boş/eksik `nonce` veya
+> `value` sessizce `0`'a çöküyordu — nonce bu projenin tek replay koruması
+> olduğundan "girmedim" ile "0 girdim" ayırt edilemez hale geliyordu;
+> (2) uint256 üst sınırı kontrol edilmediği için taşan değerde hata
+> `abiCoder.encode`'dan çıplak ethers mesajı olarak geliyordu. İkisi de
+> düzeltildi (boş girdi açıkça reddediliyor, `UINT256_MAX` kontrolü eklendi)
+> ve Test 6/7/8 ile kapsandı. **Bu plandaki kod parçası artık geçmişe ait bir
+> anlık görüntüdür; doğruluk kaynağı repodaki dosyadır.**
+
 ---
 
 ### Task 2: `buildAndSign()` + 4. bölüm UI
