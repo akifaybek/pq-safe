@@ -7,3 +7,4 @@ cache/
 broadcast/
 dist/
 .DS_Store
+.playwright-mcp/
