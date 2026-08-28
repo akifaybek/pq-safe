@@ -1,4 +1,5 @@
 import { generateNewMnemonic, keygen, signDigest } from './crypto/signer.js';
+import { checkSepoliaConnection } from './network/sepolia.js';
 
 let currentMnemonic = null;
 let currentKeys = null;
@@ -51,5 +52,23 @@ document.getElementById('btn-sign').addEventListener('click', async () => {
     `;
   } catch (e) {
     signOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
+  }
+});
+
+const connectionOut = document.getElementById('connection-out');
+
+document.getElementById('btn-check-connection').addEventListener('click', async () => {
+  connectionOut.innerHTML = '<p>Bağlanılıyor…</p>';
+  try {
+    const { chainId, blockNumber } = await checkSepoliaConnection();
+    connectionOut.innerHTML = `
+      <label>Chain ID</label>
+      <div class="field">${chainId}</div>
+      <label>Son blok numarası</label>
+      <div class="field">${blockNumber}</div>
+      <p class="ok">Sepolia'ya bağlantı doğrulandı</p>
+    `;
+  } catch (e) {
+    connectionOut.innerHTML = `<p class="err">Hata: ${e.message}</p>`;
   }
 });
