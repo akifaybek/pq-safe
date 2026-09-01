@@ -66,6 +66,47 @@ contract SPHINCSVerifierTest is Test {
         assertFalse(ok, "non-canonical public key must return false, not revert");
     }
 
+    /// @notice C13'te N=16 (signer-wasm/src/params.rs). Hash çıktıları 16 bayt ama
+    ///         32 baytlık kelimelerde taşınıyor; hash.rs'teki mask_n() üst 128 biti
+    ///         tutup alt 128 biti sıfırlıyor. Yani pkSeed/pkRoot'un ALT 16 baytı her
+    ///         zaman sıfırdır — bu bir kopyalama/kesilme hatası DEĞİL, şemanın kendisi.
+    ///         Bu test o değişmezi çalıştırılabilir hale getiriyor.
+    function test_PublicKeyHalvesAreNMasked() public view {
+        assertEq(uint128(uint256(pkSeed)), 0, "pkSeed alt 16 bayti N=16 maskesi geregi sifir olmali");
+        assertEq(uint128(uint256(pkRoot)), 0, "pkRoot alt 16 bayti N=16 maskesi geregi sifir olmali");
+        assertTrue(bytes16(pkSeed) != bytes16(0), "pkSeed ust 16 bayti anlamli veri tasimali");
+        assertTrue(bytes16(pkRoot) != bytes16(0), "pkRoot ust 16 bayti anlamli veri tasimali");
+    }
+
+    /// @notice Sondaki sıfırları "fazlalık" sanıp atmak anahtarı bozar: 16+16 = 32
+    ///         baytlık bir publicKey, SPHINCSVerifier'ın uzunluk kontrolüne takılır.
+    ///         Bkz. docs/evidence/crypto-tests/sprint3-owner-key-rotation.md.
+    function test_ZeroStrippedPublicKeyReturnsFalseNotRevert() public view {
+        bytes memory stripped = abi.encodePacked(bytes16(pkSeed), bytes16(pkRoot));
+        assertEq(stripped.length, 32, "sifirlari atilmis publicKey 32 bayt olur");
+        assertFalse(
+            verifier.verify(message, sig, stripped),
+            "sifirlari atilmis publicKey false donmeli, revert etmemeli"
+        );
+    }
+
+    /// @notice Anlamlı 16 baytı sağa hizalamak da bozar — uzunluk 64 kalır ama
+    ///         referans kontrat non-canonical diye reddeder. Yukarıdaki
+    ///         test_NonCanonicalPublicKeyReturnsFalseNotRevert sentetik bir değer
+    ///         (1, 2) kullanıyor; bu test aynı şeyi GERÇEK anahtarın baytlarıyla
+    ///         yaparak gerçekçi yanlış-düzeltme senaryosunu kapsıyor.
+    function test_RightAlignedPublicKeyReturnsFalseNotRevert() public view {
+        bytes memory rightAligned = abi.encodePacked(
+            bytes32(uint256(uint128(bytes16(pkSeed)))),
+            bytes32(uint256(uint128(bytes16(pkRoot))))
+        );
+        assertEq(rightAligned.length, 64, "saga hizali publicKey yine 64 bayt");
+        assertFalse(
+            verifier.verify(message, sig, rightAligned),
+            "saga hizali publicKey false donmeli, revert etmemeli"
+        );
+    }
+
     function test_WrongPublicKeyLengthReturnsFalseNotRevert() public view {
         bytes memory badPk = new bytes(63);
         bool ok = verifier.verify(message, sig, badPk);
