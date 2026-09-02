@@ -340,12 +340,12 @@ git push
 ## Sprint 3 (7–13 Eylül) — Sepolia ve gerçek ölçüm
 
 **Hakan**
-| Görev | Kanıt |
-|---|---|
-| Deploy scriptleri | Commit |
-| `Migration.sol` + `PQWallet.sol` + verifier Sepolia'ya deploy | Adresler → `tx-hashes.md` |
-| Etherscan verify (kod görünür olsun) | Etherscan linkleri |
-| Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| Deploy scriptleri | Commit | ✅ Bitti — `contracts/script/Deploy.s.sol`, commit ea2a3e6 |
+| `Migration.sol` + `PQWallet.sol` + verifier Sepolia'ya deploy | Adresler → `tx-hashes.md` | ✅ Bitti (1 Eylül) — bkz. `docs/tx-hashes.md` |
+| Etherscan verify (kod görünür olsun) | Etherscan linkleri | ✅ Bitti (1 Eylül) — 4/4 kontrat doğrulandı, bkz. `docs/tx-hashes.md` |
+| Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti | ⬜ Akif'in imzalarını bekliyor |
 
 **Akif**
 | Görev | Kanıt |

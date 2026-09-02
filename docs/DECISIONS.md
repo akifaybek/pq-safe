@@ -450,3 +450,24 @@ test dosyasına `vm.assume` eklendi. Test 256 run ile tekrar geçti (bkz.
 incelemesinde bu satır yeniden sorgulanırsa (neden precompile'lar
 hariç tutuldu) bu kayıt gerekçeyi gösteriyor.
 — Hakan (Akif'in sorusu üzerine, 26 Ağustos 2026'da bu kayda dökülmüştür)
+
+---
+
+## 1 Eylül 2026 — Sepolia deploy tamamlandı, 4/4 kontrat doğrulandı
+
+**Karar/Bulgu:** `SPHINCSVerifier`, `Migration`, `PQWallet` (ve
+`SPHINCSVerifier`'ın constructor'ında otomatik deploy edilen
+`SphincsC13Asm` referans kontratı) Sepolia'ya deploy edildi ve
+Etherscan'de doğrulandı. `OWNER_PUBLIC_KEY`, Akif'in 2. rotasyon
+anahtarı (bkz. `sprint3-owner-key-rotation.md`).
+
+**Doğrulama:** `forge script script/Deploy.s.sol --broadcast --verify`
+ile deploy edildi, 4/4 kontrat "Pass - Verified" durumunda. Adresler,
+tx hash'leri ve Etherscan linkleri `docs/tx-hashes.md`'de.
+
+**Neden:** Sprint 3 görevi (GOREV_SINIRLARI.md Bölüm 9).
+
+**Etki:** Sprint 3'ün deploy/verify maddeleri tamamlandı. Kalan tek
+madde: gerçek migration + transfer (Akif'in ECDSA ve C13 imzalarını
+bekliyor).
+— Hakan
