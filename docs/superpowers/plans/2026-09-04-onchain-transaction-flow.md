@@ -32,7 +32,7 @@
 |---|---|
 | `frontend/src/config/contracts.js` | **Yeni.** Deploy adresleri, chainId, Etherscan taban URL'i. Saf veri, bağımlılığı yok. |
 | `frontend/src/network/sepolia.js` | **Değişir.** `assertSepoliaNetwork(provider)` dışa açılır; `getSepoliaProvider()` onu kullanır. |
-| `frontend/src/contracts/pqwallet.js` | **Yeni.** Zincir okuma (`readNonce`, `readBalance`, `readDigest`) + saf yardımcılar (`encodeExecute`, `tamperSignature`). |
+| `frontend/src/contracts/pqwallet.js` | **Yeni.** Zincir okuma (`readNonce`, `readBalance`, `readDigest`) + saf yardımcılar (`encodeExecute`, `tamperSignature`, `buildNegativeProofCalldata`). |
 | `frontend/src/tx/sendTransaction.js` | **Yeni.** MetaMask (`connectWallet`), ön-uçuş (`preflight`), gönderme (`sendExecute`). |
 | `frontend/index.html` | **Değişir.** 4. bölüm: `tx-wallet`/`tx-nonce` girdileri kalkar, salt-okunur göstergeler ve yeni butonlar eklenir. |
 | `frontend/src/main.js` | **Değişir.** 4. bölümün listener'ları; state temizleme; yeni akışlar. |
@@ -250,12 +250,13 @@ provider da doğrulanıyor, chainId kontrolü atlatılamıyor."
 - Consumes: `PQWALLET_FRAGMENTS` (Task 1)
 - Produces:
   - `encodeExecute({ to, value, data, signature }): string` — `execute()` calldata'sı (0x-önekli hex)
-  - `tamperSignature(signature: string): string` — bir baytı bozulmuş **kopya**
+  - `tamperSignature(signature: string): string` — bir baytı bozulmuş **kopya**, uzunluk korunur
+  - `buildNegativeProofCalldata(signed): string` — `signed = { fields: { to, value, data }, signature }` alır, bozuk imzalı calldata döndürür, **`signed`'ı asla yazmaz**
 
 - [ ] **Step 1: Başarısız testleri yaz**
 
 `frontend/src/contracts/pqwallet-test.mjs` dosyasının SONUNA ekle (import satırına
-`encodeExecute, tamperSignature` da ekle):
+`encodeExecute, tamperSignature, buildNegativeProofCalldata` da ekle):
 
 ```js
 console.log('\n=== saf yardımcılar ===');
@@ -291,16 +292,63 @@ assert.ok(
 assert.equal(mine, CAST_EXPECTED, 'encodeExecute, cast calldata çıktısıyla aynı olmalı');
 ok('encodeExecute == cast calldata (bağımsız oracle)');
 
-// 3) tamperSignature SAF olmalı — girdiyi mutasyona uğratmamalı.
-// İhlali: kullanıcı "bozuk imzayla dene"ye basar, sonra "gönder"e basar ve
-// bozuk imzayı zincire yollar; gerçek akış anlaşılmaz şekilde başarısız olur.
+// C13 imzası gerçekte 3688 bayt. Uzunluk kontrolünün anlamlı olması için
+// test girdisi de gerçek uzunlukta.
+const REAL_LEN_SIG = '0x' + 'ab'.repeat(3688);
+
+// 3) SAKLANAN STATE KONTROLÜ — asıl olan bu.
+//
+// Demo günü patlayacak hata şu: negatif kanıt handler'ı
+// `state.signature = tamperSignature(state.signature)` gibi bir ATAMA yaparsa,
+// tamperSignature kusursuz saf olsa bile saklanan imza bozulur ve sonraki
+// "Gönder" bozuk imzayı zincire yollar. Bu assertion'ın DİŞİ var, çünkü
+// `state` bir nesne (mutable) — aşağıdaki boş assertion'ın aksine.
+// Anlık görüntü TÜM `signed` nesnesini kapsıyor, sadece signature'ı değil.
+// Sebep: fonksiyon calldata kurmak için `signed.fields`'a da erişiyor. Orada
+// yapılacak yerinde bir normalizasyon `fields`'ı bozar, gerçek gönderim yolunu
+// zehirler ve bu İMZA KONTROLÜNDEN KAÇAR (digest fields'tan türüyor).
+//
+// BigInt-güvenli replacer şart: `fields.value` bir BigInt ve düz
+// JSON.stringify BigInt'te "Do not know how to serialize a BigInt" ile patlar.
+const snap = (o) => JSON.stringify(o, (_, v) => (typeof v === 'bigint' ? `${v}n` : v));
+
+const state = {
+  fields: { to: SAMPLE.to, value: SAMPLE.value, data: SAMPLE.data },
+  signature: REAL_LEN_SIG,
+};
+const before = snap(state);
+const negativeCalldata = buildNegativeProofCalldata(state);
+assert.equal(snap(state), before, 'negatif kanıt akışı SAKLANAN state i (signature VE fields) değiştirmemeli');
+ok('buildNegativeProofCalldata saklanan state i bozmuyor (signature + fields)');
+assert.notEqual(negativeCalldata, encodeExecute({ ...state.fields, signature: REAL_LEN_SIG }),
+  'negatif kanıt calldata sı gerçek calldata dan farklı olmalı');
+ok('negatif kanıt calldata si gercek calldata dan farkli');
+
+// 4) Bozmanın anlamlı olduğu: farklı, AYNI UZUNLUKTA, tam olarak bir bayt.
+//
+// Uzunluk kritik: imza kısalırsa verifier onu "geçersiz imza" diye değil
+// "bozuk girdi" diye reddedebilir. Negatif kanıtın jüriye ispatladığı şey
+// "doğru biçimli ama geçersiz imza reddediliyor" olmalı — biçimsiz girdinin
+// reddi çok daha zayıf bir iddiadır.
+const tampered = tamperSignature(REAL_LEN_SIG);
+assert.notEqual(tampered, REAL_LEN_SIG, 'tamperSignature farklı bir değer döndürmeli');
+assert.equal(tampered.length, REAL_LEN_SIG.length, 'tamperSignature uzunluğu korumalı');
+assert.equal((tampered.length - 2) / 2, 3688, 'bozulmuş imza da 3688 bayt olmalı');
+const a = REAL_LEN_SIG.slice(2), b = tampered.slice(2);
+let diffBytes = 0;
+for (let i = 0; i < a.length; i += 2) if (a.slice(i, i + 2) !== b.slice(i, i + 2)) diffBytes++;
+assert.equal(diffBytes, 1, 'tam olarak BİR bayt farklı olmalı');
+ok('bozma anlamlı: 3688 bayt korunuyor, tam 1 bayt değişiyor');
+
+// 5) Planın istediği orijinal assertion — KORUNUYOR, niyeti belgeliyor.
+// UYARI: bu assertion tek başına ZAYIF. `signature` bir string ve JS
+// string'leri immutable, yani bu kontrol tamperSignature kasten kirli
+// yazılsaydı bile geçerdi — dilin garantisini sınıyor, implementasyonunkini
+// değil. Gerçek güvence yukarıdaki (3) numaralı state kontrolünde.
 const original = '0x' + 'ab'.repeat(64);
-const tampered = tamperSignature(original);
+tamperSignature(original);
 assert.equal(original, '0x' + 'ab'.repeat(64), 'tamperSignature girdiyi DEĞİŞTİRMEMELİ');
-ok('tamperSignature saf — saklanan imza değişmedi');
-assert.notEqual(tampered, original, 'tamperSignature farklı bir değer döndürmeli');
-assert.equal(tampered.length, original.length, 'tamperSignature uzunluğu korumalı');
-ok('tamperSignature uzunluğu koruyarak bozuyor');
+ok('tamperSignature girdi string ini değiştirmiyor (zayıf kontrol — bkz. yorum)');
 ```
 
 - [ ] **Step 2: Testi çalıştır, başarısız olduğunu gör**
@@ -333,10 +381,27 @@ export function tamperSignature(signature) {
   const body = signature.slice(2);
   if (body.length < 2) throw new Error('imza çok kısa, bozulamaz');
   // Ortadaki baytı çevir — baş/son baytlar bazı kodlamalarda özel anlam taşır.
+  // Uzunluk KORUNUR: imza kısalırsa verifier onu "geçersiz imza" diye değil
+  // "bozuk girdi" diye reddedebilir ve negatif kanıtın iddiası zayıflar.
   const i = Math.floor(body.length / 4) * 2;
   const byte = body.slice(i, i + 2);
   const flipped = (parseInt(byte, 16) ^ 0xff).toString(16).padStart(2, '0');
   return '0x' + body.slice(0, i) + flipped + body.slice(i + 2);
+}
+
+// Negatif kanıt akışının TAMAMI — bozma + calldata kurma tek yerde.
+//
+// Neden ayrı fonksiyon, neden `signed` nesnesini alıyor: negatif kanıt
+// mantığı handler'a gömülü kalsaydı, orada yazılacak bir
+// `signed.signature = tamperSignature(signed.signature)` ataması saklanan
+// gerçek imzayı bozardı ve sonraki "Gönder" bozuk imzayı zincire yollardı.
+// Buraya çekilince o hata otomatik testle yakalanabiliyor: `signed` bir
+// NESNE, yani mutable — "state değişmedi" assertion'ının dişi var.
+//
+// Bu fonksiyon `signed`'ı OKUR, asla yazmaz.
+export function buildNegativeProofCalldata(signed) {
+  const { to, value, data } = signed.fields;
+  return encodeExecute({ to, value, data, signature: tamperSignature(signed.signature) });
 }
 ```
 
@@ -352,10 +417,44 @@ EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
   0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
 cd ../frontend && CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
 ```
-Expected: PASS — 8 assertion, içinde
-`✓ encodeExecute == cast calldata (bağımsız oracle)` satırı
+Expected: PASS — içinde `✓ encodeExecute == cast calldata (bağımsız oracle)`
+satırı. (Toplam assertion sayısını çıktıdan oku; plana sabit sayı yazma —
+önceki turda brief "8" dedi, gerçek "7"ydi.)
 
-- [ ] **Step 5: Commit önerisini kullanıcıya ver**
+- [ ] **Step 5: State assertion'ının boş olmadığını İKİ kasten bozmayla kanıtla**
+
+Yeni yazılmış bir assertion'ın gerçekten bir şey doğruladığının tek kanıtı, onu
+bir kez **başarısız görmektir**. Bu görevde iki ayrı şey iddia ediliyor
+(`signature` bozulmadı, `fields` bozulmadı), dolayısıyla iki bozma gerekiyor.
+
+**Bozma A — imza tarafı.** `buildNegativeProofCalldata`'nın İÇİNE, gerçek bir
+handler'ın yapabileceği atamayı yaz:
+
+```js
+signed.signature = tamperSignature(signed.signature);   // KASTEN HATALI
+```
+
+Testi çalıştır. Beklenen: **kırmızı**, ve patlayan assertion
+`negatif kanıt akışı SAKLANAN state i (signature VE fields) değiştirmemeli`
+olmalı — başka bir assertion patlıyorsa hedef ispatlanmamıştır. Geri al.
+
+**Bozma B — `fields` tarafı ve replacer'ın kendisi.** Fonksiyonun içine:
+
+```js
+signed.fields.value = signed.fields.value + 1n;   // KASTEN HATALI
+```
+
+Testi çalıştır. Beklenen: yine **kırmızı**, yine aynı assertion.
+
+Bozma B neden şart: `snap()`'teki BigInt replacer **test edilmemiş bir kod
+parçası**. Hatalıysa (ör. BigInt için `undefined` döndürüyorsa) `fields.value`
+farkları anlık görüntüden tamamen düşer ve assertion sessizce yine boşalır —
+kaçınmaya çalıştığımız hatanın bir kat derini. Bozma B replacer'ı da sınıyor.
+
+Her iki bozmanın kırmızı çıktısını (patlayan assertion adı ve mesajıyla) ve
+düzeltilmiş halin yeşil çıktısını rapora koy. Bozmaları geri almayı unutma.
+
+- [ ] **Step 6: Commit önerisini kullanıcıya ver**
 
 ```bash
 git add frontend/src/contracts/pqwallet.js frontend/src/contracts/pqwallet-test.mjs
@@ -921,11 +1020,11 @@ başarısız olursa 2M fallback. Kullanılan gas sonuçta gösteriliyor."
 - Modify: `frontend/src/main.js`
 
 **Interfaces:**
-- Consumes: `tamperSignature`, `encodeExecute` (Task 2), `preflight` (Task 5)
+- Consumes: `buildNegativeProofCalldata` (Task 2), `preflight` (Task 5)
 
 - [ ] **Step 1: Listener'ı ekle**
 
-`main.js` import satırına `tamperSignature` ekle, sonuna şunu koy:
+`main.js`'in `./contracts/pqwallet.js` import satırına `buildNegativeProofCalldata` ekle, sonuna şunu koy:
 
 ```js
 // NEGATİF KANIT — "transfer geçti" tek başına imzanın DOĞRULANDIĞINI
@@ -940,10 +1039,12 @@ btnNegativeProof.addEventListener('click', async () => {
   btnNegativeProof.disabled = true;
   sendOut.innerHTML = '<p>Bozuk imzayla ön-uçuş yapılıyor…</p>';
   try {
-    // tamperSignature SAF — saklanan imza değişmiyor. Değişseydi, bu butona
-    // basıp sonra "Gönder"e basan kullanıcı bozuk imzayı zincire yollardı.
-    const badSignature = tamperSignature(signed.signature);
-    const badCalldata = encodeExecute({ ...signed.fields, signature: badSignature });
+    // DİKKAT: bozma ve calldata kurma buraya AÇILMAZ. buildNegativeProofCalldata
+    // `signed`'ı yalnızca okur; burada `signed.signature = tamperSignature(...)`
+    // gibi bir atama yapılırsa saklanan gerçek imza bozulur ve ardından
+    // "Gönder"e basan kullanıcı bozuk imzayı zincire yollar. O fonksiyonun
+    // state'i bozmadığı otomatik testle sabitlenmiş durumda.
+    const badCalldata = buildNegativeProofCalldata(signed);
     await preflight({ signer: connected.signer, calldata: badCalldata });
     sendOut.innerHTML =
       '<p class="err">BEKLENMEYEN: bozuk imza reddedilmedi. Bu bir güvenlik bulgusudur, araştırın.</p>';
