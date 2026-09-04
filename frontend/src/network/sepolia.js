@@ -24,15 +24,13 @@ function createUncheckedProvider() {
   return new JsonRpcProvider(rpcUrl);
 }
 
-// Ağı doğrulanmış Sepolia provider'ı — frontend'in tek provider kaynağı.
-export async function getSepoliaProvider() {
-  if (validated) return validated.provider;
-
-  const provider = createUncheckedProvider();
-  // DİKKAT: getNetwork() burada bilerek RPC'ye soruyor. Provider'a
-  // `staticNetwork: true` eklenirse ethers ağı sormadan yapılandırılmış
-  // değeri döndürür ve aşağıdaki kontrol hiçbir zaman başarısız olamayan
-  // bir totolojiye dönüşür. Performans gerekçesiyle değiştirmeyin.
+// Bir provider'ın gerçekten Sepolia'ya baktığını doğrular. Dışa açık, çünkü
+// test koşucusu (Node) kendi provider'ını enjekte ediyor — ama enjeksiyon
+// chainId kontrolünü ATLAYAMAMALI. Doğrulanmamış provider sızarsa yanlış
+// ağda üretilen imzalar yerelde hiçbir belirti vermeden on-chain reddedilir.
+// Doğrulanan Network nesnesini DÖNDÜRÜR — çağıranın chainId için ikinci bir
+// getNetwork() (yani ikinci bir RPC gidiş-dönüşü) yapmasına gerek kalmasın.
+export async function assertSepoliaNetwork(provider) {
   const network = await provider.getNetwork();
   if (network.chainId !== SEPOLIA_CHAIN_ID) {
     throw new Error(
@@ -40,6 +38,19 @@ export async function getSepoliaProvider() {
         "digest formatı chainId'e bağlı, yanlış ağda üretilen imzalar geçersiz olur.",
     );
   }
+  return network;
+}
+
+// Ağı doğrulanmış Sepolia provider'ı — frontend'in tek provider kaynağı.
+export async function getSepoliaProvider() {
+  if (validated) return validated.provider;
+
+  const provider = createUncheckedProvider();
+  // DİKKAT: assertSepoliaNetwork içindeki getNetwork() bilerek RPC'ye soruyor.
+  // Provider'a `staticNetwork: true` eklenirse ethers ağı sormadan
+  // yapılandırılmış değeri döndürür ve kontrol hiçbir zaman başarısız
+  // olamayan bir totolojiye dönüşür. Performans gerekçesiyle değiştirmeyin.
+  const network = await assertSepoliaNetwork(provider);
 
   validated = { provider, chainId: network.chainId };
   return provider;
