@@ -65,6 +65,9 @@ sayfa yüklenir / [Yenile]  → readNonce() + readBalance() → ekranda göster
                              3. eth_call ön-uçuşu
                              4. gönder → hash + Etherscan linki → receipt → durum
 [Bozuk imzayla dene]       → tamperSignature(kopya) → eth_call → revert mesajını göster
+
+herhangi bir girdi değişti   → { digest, signature, fields } TEMİZLENİR,
+  (to / value / data)          gönder devre dışı, "yeniden imzala" uyarısı
 ```
 
 ## Kritik kural — calldata `fields`'tan kurulur
@@ -77,6 +80,30 @@ Bu kuralın ihlalinin hata modu özellikle sinsidir: digest kayar, verifier
 `false` döner ve ekranda **"PQWallet: invalid signature"** yazar — imza aslında
 sağlamken. Yani hata mesajı seni yanlış yere bakmaya gönderir. Aşağıdaki
 digest karşılaştırması tam olarak bu iki durumu ayırt etmek için var.
+
+## İmzadan sonra form düzenleme — üç kalkanın da göremediği durum
+
+**Senaryo:** kullanıcı imzalar, sonra `tx-to` alanını değiştirir, "Zincire
+gönder"e basar. Calldata `fields`'tan kurulduğu için tx **eski adrese** gider —
+kriptografik olarak doğru, ama ekranda **yeni adres** yazıyor.
+
+Aşağıdaki üç kalkanın hiçbiri bunu yakalamaz:
+
+- Nonce doğru
+- Digest karşılaştırması uyuşur (ikisi de eski `fields`'tan türüyor)
+- Ön-uçuş geçer
+
+Her şey yeşil, kullanıcı yanlış bilgiye bakıyor. Sahnede bir değeri düzeltip
+yeniden imzalamayı unutmak tam olarak olacak şeydir.
+
+**Çözüm:** herhangi bir girdi alanı (`tx-to`, `tx-value`, `tx-data`)
+değiştiğinde saklanan `{ digest, signature, fields }` state'i **temizlenir** ve
+ekranda "değerler değişti, yeniden imzala" yazar. Gönder butonu imza yeniden
+üretilene kadar devre dışı kalır.
+
+Alanları imzadan sonra kilitlemek de bir seçenekti; state temizleme tercih
+edildi çünkü kullanıcıyı sürprizle karşılaştırmıyor — düzeltme yapmak serbest,
+sadece yeniden imza gerekiyor.
 
 ## Koruma sırası ve gerekçesi
 
@@ -149,22 +176,45 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 
 ## Gas
 
-Beklenen maliyet ~200K:
+### Elimizdeki ölçümler tutarlı bir tahmin vermiyor
 
-| Kalem | Gas |
-|---|---|
-| Calldata (3688 baytlık imza, ~16 gas/bayt) | ~59.000 |
-| C13 doğrulama (ölçülmüş) | ~107.000 |
-| Taban + transfer | ~30.000 |
+| Ölçüm | Gas | Kaynak |
+|---|---|---|
+| Saf `verify()`, `--gas-report` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
+| Saf `verify()`, test içi `gasleft()` | 110.194 | aynı belge — dış çağrı zarfını da sayıyor |
+| Verifier testi, test seviyesinde | 235.165 / 383.119 | `SPHINCSVerifier.t.sol` |
+| `PQWallet.execute()` gerçek verifier üzerinden | **1.130.002** | `sprint2-pqwallet-real-verifier-integration.md` |
+
+Kaba tahmin ~200K çıkıyor (106.672 doğrulama + ~59.000 calldata + taban), ama
+**`execute()`'un izole edilmiş gerçek on-chain maliyeti elimizde yok.** 1.13M
+rakamı büyük olasılıkla Foundry'nin fixture okuma/JSON parse maliyetiyle şişmiş
+ve gerçek maliyet bunun çok altında olmalı — ama "büyük olasılıkla" ile demo
+gününe gidilmez.
+
+### Fallback: 2.000.000
+
+Tahmin başarısız olursa manuel gas limit **2.000.000**.
+
+Önceki taslaktaki 500.000, doğrulanmamış bir tahminin katıydı — belirsizliği
+çözmüyor, sadece öteliyordu. Fallback'in tek amacı "out of gas ile ölen demo
+tx'i" ihtimalini sıfırlamak:
+
+- Kullanılmayan gas **iade edilir**; yüksek tutmanın tek maliyeti peşin bloke
+  edilen bakiyedir: 2.000.000 × ~1,1 gwei ≈ **0,0022 ETH**
+- Sepolia blok gas limiti ~36M, yani 2M sorun değil
+- Düşük tutmanın maliyeti ölü bir demo tx'i
+
+Tek koşul: MetaMask hesabında bu limiti karşılayacak bakiyenin durması.
+
+### Bugün ölçülecek
+
+Gerçek tx atıldığı anda kullanılan gas ölçülecek, yukarıdaki tahmin tablosu o
+gerçek sayıyla değiştirilecek ve kanıt notuna yazılacak. Tahminle yaşamayı
+sürdürmeyeceğiz.
 
 **Risk:** public RPC uç noktası bu calldata boyutunda `eth_estimateGas`'ta
-zorlanabilir; MetaMask'in tahmini tutmayabilir.
-
-**Karşılık:** tahmin başarısız olursa manuel gas limit fallback'i —
-**500.000** (beklenenin ~2.5 katı). Kullanılmayan gas iade edildiği için
-yüksek tutmanın maliyeti yok;
-düşük tutmanın maliyeti "out of gas" ile ölen bir demo tx'idir. Tek koşul,
-MetaMask hesabında o limiti karşılayacak bakiyenin durması.
+zorlanabilir; MetaMask'in tahmini tutmayabilir. Fallback tam olarak bunun için
+var.
 
 ## Hata durumları
 
@@ -173,6 +223,7 @@ MetaMask hesabında o limiti karşılayacak bakiyenin durması.
 | MetaMask yok | Net mesaj, kurulum yönlendirmesi |
 | Yanlış ağ | chainId söylenerek reddet — digest chainId'e bağlı |
 | İmza yokken gönder | Engelle |
+| **İmzadan sonra girdi değişti** | State temizlenir, "değerler değişti, yeniden imzala", gönder devre dışı |
 | Nonce değişmiş | Engelle, yeniden imza iste |
 | Digest uyuşmazlığı | Her iki digest'i göster, `fields` sapmasına işaret et |
 | Ön-uçuş revert etti | Kontrattan dönen mesajı göster |
@@ -200,10 +251,17 @@ DOM'a yazıyor.
 
 ## Kanıt
 
-- Gerçek transfer tx'i geçtiğinde hash `docs/tx-hashes.md`'ye eklenir — o
-  dosyadaki *"Kapsam dışı: gerçek migration + transfer denemesi"* satırı tam
-  orada kapanır. (Dosya Hakan'ın; append-only kuralına uyularak eklenecek ya
-  da ondan istenecek.)
+- **Transfer tx hash'i Hakan'a gönderilir, `docs/tx-hashes.md`'ye o ekler.**
+  Karar gerekçesi: `GOREV_SINIRLARI.md:83` bu dosyayı 🔴 HAKAN'a veriyor
+  (append-only) ve `CLAUDE.md` kural 1 karşı tarafın dosyasına dokunmayı
+  yasaklıyor. `:93`'teki append-only kuralı teknik çakışmayı zaten
+  engelliyordu, yani engel teknik değil rol kararıydı — burada karara
+  bağlanıyor. "Ya A ya B" olarak bırakılan adım, planda kimsenin üstlenmediği
+  adım olur ve kanıt zinciri orada kopar.
+  Bu ekleme, o dosyadaki *"Kapsam dışı: gerçek migration + transfer denemesi"*
+  satırını kapatır.
+- Akif'in kendi kanıt notu (`docs/evidence/crypto-tests/`) Hakan'ı beklemez —
+  hash, ölçülen gas ve ekran görüntüleri oraya doğrudan yazılır.
 - **Ekran kaydı çalıştığı anda alınır, sonraya bırakılmaz.** Cüzdanda 0.002 ETH
   var ve her prova onu eritiyor.
 - Kanıt notu: `docs/evidence/crypto-tests/` altına.
@@ -215,8 +273,11 @@ DOM'a yazıyor.
   (0.0466 ETH var; bir tx ~0.00022 ETH).
 - **Gerçek tx bugün bir kez atılmalı** — gas tahmini/RPC riski demo gününe
   bırakılmaz.
-- Provalarda küçük `value` kullan (ör. 0.0001 ETH); cüzdanda 0.002 ETH var ve
-  Hakan'ın 0.001'lik transferi de oradan çıkacak.
+- **`to` adresi kendi MetaMask hesabın olsun.** Böylece transfer edilen ETH
+  sana geri gelir ve `PQWallet.receive()` (`PQWallet.sol:27`, mevcut) üzerinden
+  cüzdana geri yollanabilir. Provalar bakiye yakmayı bırakır, geriye yalnızca
+  gas maliyeti kalır — "0.002 ETH eriyor" endişesi tamamen ortadan kalkar.
+  Prova döngüsü: gönder → ETH sende → cüzdana geri yolla → tekrarla.
 
 ## Bilinen sınırlar
 
