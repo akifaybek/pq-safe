@@ -162,6 +162,51 @@ Bu, provada fark edilmeyip demoda çıkacak hata sınıfının ta kendisidir. Te
 açık bir assertion olarak girecek: **bozma çağrısından sonra saklanan imza
 değişmemiş olmalı.**
 
+## Owner mnemonic'i nereden geliyor
+
+Bu bölüm plan yazılırken fark edilen bir boşluğu kapatıyor: tasarımın ilk hali
+imzanın hangi anahtarla atılacağını hiç ele almamıştı.
+
+**Sorun:** kanıt UI'ının 1. bölümü ("Anahtar Üret") **rastgele yeni** bir
+mnemonic üretir. Zincirdeki `PQWallet`'ın `ownerPublicKey`'i ise 2. rotasyon
+anahtarıdır (`sprint3-owner-key-rotation.md`). Rastgele anahtarla üretilen imza
+`verify()`'dan `false` döner — uçtan uca akış, mevcut owner mnemonic'i
+olmadan çalışmaz.
+
+**Çözüm:** 1. bölüme "mevcut mnemonic'i içe aktar" alanı eklenir.
+
+### Bağlayıcı kısıt: içe aktarılan mnemonic ekrana yazılmaz
+
+Sayfa, ürettiği rastgele mnemonic'i DOM'a yazıyor (aşağıda "Bilinen sınırlar").
+Aynı oturumda ekran kaydı alınacak. Bu ikisi gerçek owner mnemonic'iyle yan
+yana gelirse kayıt, anahtarı jüriye/rapora taşır.
+
+**Bedel artık rotasyon değil.** 1 Eylül'deki iki ifşa bedelsizdi çünkü kontrat
+deploy edilmemişti. `PQWallet.ownerPublicKey` yalnızca constructor'da yazılıyor
+(`contracts/src/PQWallet.sol:23`) ve onu değiştirecek fonksiyon yok — ABI'nın
+tamamı `constructor`, `receive`, `_computeDigest`, `execute`, `nonce`,
+`ownerPublicKey`, `verifier`. Üçüncü sızıntının çaresi **`PQWallet`'ı yeniden
+deploy etmek**: yeni adres, Hakan'ın yeniden deploy + Etherscan verify'ı,
+`docs/tx-hashes.md`'nin baştan yazılması,
+`sprint3-live-signature-verification.md`'deki canlı doğrulama kanıtının
+geçersizleşmesi.
+
+İçe aktarılan owner mnemonic'i hiçbir koşulda:
+
+1. **DOM'a yazılmaz** — 1. bölümün rastgele mnemonic'inden farklı olarak
+   gösterilmez; yalnızca ondan türeyen açık anahtar gösterilir
+2. Girdi alanı **`type="password"`** olur ve içe aktarma sonrası temizlenir
+3. **Hata mesajlarına ham girdi olarak sarılmaz.** Bu kod tabanının "hangi alan
+   hatalı, değeriyle söyle" deseni (`buildTransaction.js`) burada **tersine
+   çalışır**: mnemonic'i ekrana basar. Bu alanda hata mesajı sabittir ve
+   yakalanan istisnanın `message`'ı da basılmaz — bip39/WASM hatası girdiyi
+   içerebilir
+4. **`console`'a düşmez**
+
+Ekran kaydından önce zorunlu kontrol: sayfa, DOM, console ve Network sekmesinde
+mnemonic'in hiçbir parçası bulunmamalı. Hata yolu da denenmeli — sızıntı en çok
+orada olur.
+
 ## Bakiye göstergesi
 
 `PQWallet` bakiyesi ekranda gösterilir. İki işlevi var:
