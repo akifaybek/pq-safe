@@ -87,6 +87,8 @@ export const CONTRACTS = {
 // test koşucusu (Node) kendi provider'ını enjekte ediyor — ama enjeksiyon
 // chainId kontrolünü ATLAYAMAMALI. Doğrulanmamış provider sızarsa yanlış
 // ağda üretilen imzalar yerelde hiçbir belirti vermeden on-chain reddedilir.
+// Doğrulanan Network nesnesini DÖNDÜRÜR — çağıranın chainId için ikinci bir
+// getNetwork() (yani ikinci bir RPC gidiş-dönüşü) yapmasına gerek kalmasın.
 export async function assertSepoliaNetwork(provider) {
   const network = await provider.getNetwork();
   if (network.chainId !== SEPOLIA_CHAIN_ID) {
@@ -95,6 +97,7 @@ export async function assertSepoliaNetwork(provider) {
         "digest formatı chainId'e bağlı, yanlış ağda üretilen imzalar geçersiz olur.",
     );
   }
+  return network;
 }
 ```
 
@@ -109,12 +112,14 @@ export async function getSepoliaProvider() {
   // Provider'a `staticNetwork: true` eklenirse ethers ağı sormadan
   // yapılandırılmış değeri döndürür ve kontrol hiçbir zaman başarısız
   // olamayan bir totolojiye dönüşür. Performans gerekçesiyle değiştirmeyin.
-  await assertSepoliaNetwork(provider);
+  const network = await assertSepoliaNetwork(provider);
 
-  validated = { provider, chainId: (await provider.getNetwork()).chainId };
+  validated = { provider, chainId: network.chainId };
   return provider;
 }
 ```
+
+`checkSepoliaConnection()` değişmiyor — `validated.chainId`'i okumaya devam ediyor.
 
 - [ ] **Step 3: Başarısız testi yaz**
 
@@ -272,16 +277,19 @@ const mine = encodeExecute(SAMPLE);
 assert.equal(mine, fromFullAbi, 'encodeExecute, commit li tam ABI ile aynı calldata üretmeli');
 ok('encodeExecute == tam ABI (PQWallet.json) çıktısı');
 
-// 2) Bağımsız oracle: Foundry cast
-// cast calldata "execute(address,uint256,bytes,bytes)" \
-//   0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef
+// 2) BAĞIMSIZ oracle: Foundry cast. Yukarıdaki karşılaştırma gerçek bir
+// bağımsız doğrulama DEĞİL — iki taraf da ethers kullanıyor. cast, ethers'tan
+// tamamen bağımsız bir ABI kodlayıcısı.
+//
+// Zorunludur, atlanamaz: koşullu atlanan bir kontrol, hiç yapılmamış bir
+// kontroldür ve testi sessizce yeşile boyar.
 const CAST_EXPECTED = process.env.CAST_EXPECTED;
-if (CAST_EXPECTED) {
-  assert.equal(mine, CAST_EXPECTED, 'encodeExecute, cast calldata çıktısıyla aynı olmalı');
-  ok('encodeExecute == cast calldata (bağımsız oracle)');
-} else {
-  console.log('… cast karşılaştırması atlandı (CAST_EXPECTED verilmedi)');
-}
+assert.ok(
+  CAST_EXPECTED,
+  'CAST_EXPECTED verilmedi — bu testi Step 4 te belirtilen komutla calistirin',
+);
+assert.equal(mine, CAST_EXPECTED, 'encodeExecute, cast calldata çıktısıyla aynı olmalı');
+ok('encodeExecute == cast calldata (bağımsız oracle)');
 
 // 3) tamperSignature SAF olmalı — girdiyi mutasyona uğratmamalı.
 // İhlali: kullanıcı "bozuk imzayla dene"ye basar, sonra "gönder"e basar ve
@@ -332,12 +340,10 @@ export function tamperSignature(signature) {
 }
 ```
 
-- [ ] **Step 4: Testi çalıştır, geçtiğini gör**
+- [ ] **Step 4: Testi bağımsız oracle ile çalıştır, geçtiğini gör**
 
-Run: `cd frontend && node src/contracts/pqwallet-test.mjs`
-Expected: PASS — 3 + 4 = 7 assertion
-
-- [ ] **Step 5: Bağımsız oracle ile doğrula**
+`cast`, ethers'tan bağımsız bir ABI kodlayıcısı — testin tek gerçek dış
+doğrulaması bu. Bu yüzden `CAST_EXPECTED` olmadan test bilerek başarısız olur.
 
 Run:
 ```bash
@@ -346,9 +352,10 @@ EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
   0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
 cd ../frontend && CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
 ```
-Expected: `✓ encodeExecute == cast calldata (bağımsız oracle)` satırı görünür, 8 assertion geçer
+Expected: PASS — 8 assertion, içinde
+`✓ encodeExecute == cast calldata (bağımsız oracle)` satırı
 
-- [ ] **Step 6: Commit önerisini kullanıcıya ver**
+- [ ] **Step 5: Commit önerisini kullanıcıya ver**
 
 ```bash
 git add frontend/src/contracts/pqwallet.js frontend/src/contracts/pqwallet-test.mjs
@@ -535,9 +542,38 @@ başarısız olur. Uçtan uca akış, mevcut owner mnemonic'i olmadan çalışma
 
 **Neden gösterilmiyor:** Task 7'de ekran kaydı alınacak ve sayfa mevcut halinde
 mnemonic'i DOM'a yazıyor (`main.js:29`). Owner mnemonic'i ekrana basılırsa
-jüriye gidecek videoya düşer. Bu oturumda aynı sınıf hata (gizli değeri
-görüntülenen bir yere vermek) zaten iki kez yaşandı ve iki anahtar rotasyonuna
-mal oldu.
+jüriye/rapora gidecek videoya düşer. Bu proje aynı sınıf hatayı 1 Eylül'de iki
+kez yaptı (bkz. `sprint3-owner-key-rotation.md`).
+
+> ### ⛔ SIZINTININ BEDELİ ARTIK ROTASYON DEĞİL
+>
+> 1 Eylül'deki iki ifşa bedelsizdi, çünkü kontrat henüz deploy edilmemişti.
+> **Artık değil.** `PQWallet.ownerPublicKey` yalnızca constructor'da yazılıyor
+> (`contracts/src/PQWallet.sol:23`) ve onu değiştirecek hiçbir fonksiyon yok —
+> ABI'nın tamamı: `constructor`, `receive`, `_computeDigest`, `execute`,
+> `nonce`, `ownerPublicKey`, `verifier`.
+>
+> Üçüncü sızıntının çaresi anahtar rotasyonu değil, **`PQWallet`'ı yeniden
+> deploy etmek**: yeni adres, Hakan'ın yeniden deploy + Etherscan verify'ı,
+> `docs/tx-hashes.md`'nin baştan yazılması ve
+> `sprint3-live-signature-verification.md`'deki canlı doğrulama kanıtının
+> geçersizleşmesi. Yarışmaya dört hafta kala ödenecek bedel değil.
+>
+> **Bağlayıcı kısıt — içe aktarılan owner mnemonic'i hiçbir koşulda:**
+>
+> 1. **DOM'a yazılmaz.** 1. bölümün ürettiği rastgele mnemonic'ten farklı
+>    olarak gösterilmez. Yalnızca ondan türeyen AÇIK anahtar gösterilir.
+> 2. **Girdi alanı `type="password"`** olur ve içe aktarma sonrası temizlenir.
+> 3. **Hata mesajlarına ham girdi olarak sarılmaz.** Bu kod tabanının
+>    "hangi alan hatalı, değeriyle söyle" deseni (`buildTransaction.js`
+>    `requireAddress`/`requireUint`) burada **tersine çalışır** — mnemonic'i
+>    ekrana basar. Bu alanda hata mesajı SABİTTİR, ham girdi içermez;
+>    yakalanan istisnanın `message`'ı da basılmaz (WASM/bip39 hatası girdiyi
+>    içerebilir).
+> 4. **`console.log`/`console.error`'a düşmez.**
+>
+> Ekran kaydından önce tek maddelik kontrol: sayfada, hata kutularında ve
+> tarayıcı console'unda mnemonic'in hiçbir parçası görünmüyor.
 
 **Files:**
 - Modify: `frontend/index.html` (1. bölüm)
@@ -589,23 +625,43 @@ document.getElementById('btn-import-mnemonic').addEventListener('click', async (
       <div class="field">${esc(keys.ecdsaAddress)}</div>
       <p class="warn">Bu publicKey zincirdeki <code>ownerPublicKey</code> ile aynı olmalı — değilse imzalar reddedilir.</p>
     `;
-  } catch (e) {
+  } catch {
     currentMnemonic = null;
     currentKeys = null;
-    keygenOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
+    input.value = '';
+    // SABİT mesaj. `e.message` BASILMAZ: bip39/WASM hatası girdiyi içerebilir
+    // ve bu alandaki girdi owner mnemonic'idir. Bu kod tabanının "hatayı
+    // değeriyle söyle" deseni burada bilerek uygulanmıyor.
+    keygenOut.innerHTML =
+      '<p class="err">Mnemonic içe aktarılamadı — 12 kelimelik geçerli bir BIP-39 ifadesi girin. ' +
+      '(Ayrıntı güvenlik gereği gösterilmiyor.)</p>';
   }
 });
 ```
 
-- [ ] **Step 3: Tarayıcıda doğrula — mnemonic ekranda görünmemeli**
+- [ ] **Step 3: Sızıntı denetimi — dört kontrol, hepsi geçmeli**
 
 Run: `cd frontend && npx vite`
-- `.env.pqwallet-owner-key`'deki mnemonic'i alana yapıştır → "İçe aktar"
-- Expected: alan noktalarla görünüyor, içe aktarma sonrası **boşalıyor**, çıktıda
-  yalnızca publicKey ve ECDSA adresi var, mnemonic **hiçbir yerde yok**
-- Gösterilen publicKey, `jq -r .publicKeyConcat .env.pqwallet-owner-key` çıktısıyla
-  **birebir aynı** olmalı — değilse yanlış mnemonic girilmiştir
-- Sayfada `Ctrl+F` ile mnemonic'in ilk kelimesini ara → **bulunmamalı**
+
+**Önce hata yolunu dene (sızıntı en çok orada olur):** alana `gecersiz mnemonic
+denemesi bu bir test` yaz → "İçe aktar".
+- Expected: sabit hata mesajı çıkıyor, girdiğin kelimeler **hata kutusunda
+  görünmüyor**, alan boşalmış
+
+**Sonra gerçek mnemonic'i içe aktar:** `.env.pqwallet-owner-key`'deki mnemonic'i
+yapıştır → "İçe aktar".
+- Alan noktalarla görünüyor, içe aktarma sonrası **boşalıyor**
+- Çıktıda yalnızca publicKey ve ECDSA adresi var
+- Gösterilen publicKey, `jq -r .publicKeyConcat .env.pqwallet-owner-key`
+  çıktısıyla **birebir aynı** — değilse yanlış mnemonic girilmiştir
+
+**Dört sızıntı kontrolü:**
+1. Sayfada `Ctrl+F` → mnemonic'in ilk kelimesi **bulunmamalı**
+2. DevTools → Elements → `Ctrl+F` ile DOM içinde ara → **bulunmamalı**
+3. DevTools → Console → temiz, mnemonic parçası **yok**
+4. DevTools → Network → giden istekte mnemonic **yok**
+
+Herhangi biri başarısızsa **DUR**, ekran kaydına geçme, sızıntıyı kapat.
 
 - [ ] **Step 4: Commit önerisini kullanıcıya ver**
 
