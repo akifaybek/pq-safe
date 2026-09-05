@@ -2,6 +2,8 @@ import { generateNewMnemonic, keygen, signDigest, C13_SIG_BYTES } from './crypto
 import { checkSepoliaConnection } from './network/sepolia.js';
 import { formatEther } from 'ethers';
 import { buildAndSign } from './tx/buildTransaction.js';
+import { CONTRACTS } from './config/contracts.js';
+import { readNonce, readBalance } from './contracts/pqwallet.js';
 
 // Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
 // hatalı olduğunu söylemek için) ve innerHTML ile basılıyor. Sayfa aynı
@@ -11,6 +13,64 @@ const esc = (s) =>
 
 let currentMnemonic = null;
 let currentKeys = null;
+
+// İmzalama sonucu burada saklanır. execute() calldata'sı BUNUN fields'ından
+// kurulur, DOM'dan değil.
+let signed = null;
+// Son okunan on-chain nonce. Gönderim öncesi karşılaştırma için.
+let chainNonce = null;
+
+const walletDisplay = document.getElementById('tx-wallet-display');
+const nonceDisplay = document.getElementById('tx-nonce-display');
+const balanceDisplay = document.getElementById('tx-balance-display');
+const sendOut = document.getElementById('send-out');
+const btnSend = document.getElementById('btn-send');
+const btnNegativeProof = document.getElementById('btn-negative-proof');
+const btnRefreshChain = document.getElementById('btn-refresh-chain');
+
+// İmzaya giren üç alan. Tek listede tutuluyor çünkü iki ayrı yerde geziliyor:
+// imza düşürme dinleyicileri ve imzalama penceresindeki kilit.
+const TX_INPUT_IDS = ['tx-to', 'tx-value', 'tx-data'];
+
+walletDisplay.textContent = CONTRACTS.pqWallet;
+
+// İmzadan sonra girdileri değiştirmek, üç kalkanın da GÖREMEDİĞİ bir hata
+// modu: calldata fields'tan kurulduğu için tx eski değerlere gider, ama
+// ekranda yeni değerler yazar. Nonce doğru, digest karşılaştırması uyuşur
+// (ikisi de eski fields'tan), ön-uçuş geçer — her şey yeşil, kullanıcı
+// yanlış bilgiye bakıyor. Bu yüzden herhangi bir değişiklik imzayı düşürür.
+function invalidateSignature() {
+  if (!signed) return;
+  signed = null;
+  btnSend.disabled = true;
+  btnNegativeProof.disabled = true;
+  sendOut.innerHTML = '<p class="warn">Değerler değişti — imza geçersiz kılındı, yeniden imzalayın.</p>';
+}
+
+for (const id of TX_INPUT_IDS) {
+  document.getElementById(id).addEventListener('input', invalidateSignature);
+}
+
+async function refreshChainState() {
+  btnRefreshChain.disabled = true;
+  nonceDisplay.textContent = 'okunuyor…';
+  balanceDisplay.textContent = 'okunuyor…';
+  try {
+    const [n, b] = await Promise.all([readNonce(), readBalance()]);
+    chainNonce = n;
+    nonceDisplay.textContent = String(n);
+    balanceDisplay.textContent = `${b} wei = ${formatEther(b)} ETH`;
+  } catch (e) {
+    nonceDisplay.textContent = '—';
+    balanceDisplay.textContent = '—';
+    sendOut.innerHTML = `<p class="err">Zincir okunamadı: ${esc(e.message)}</p>`;
+  } finally {
+    btnRefreshChain.disabled = false;
+  }
+}
+
+btnRefreshChain.addEventListener('click', refreshChainState);
+refreshChainState();
 
 const keygenOut = document.getElementById('keygen-out');
 const signOut = document.getElementById('sign-out');
@@ -103,17 +163,35 @@ btnBuildSign.addEventListener('click', async () => {
   // yoktur) bu yüzden ikisi de kilitlenir.
   btnBuildSign.disabled = true;
   btnKeygen.disabled = true;
+  // Girdiler de kilitlenir. Kilitlenmezse: kullanıcı ~7.5 sn'lik imzalama
+  // penceresinde `to`'yu değiştirir, invalidateSignature() çalışır ama o an
+  // `signed` hâlâ null olduğu için hiçbir şey yapmaz; imzalama bitince ESKİ
+  // alanlarla `signed` kurulur. Ekranda yeni `to`, calldata'da eski `to` —
+  // yani invalidateSignature'ın önlemek için var olduğu hata modu, tam da
+  // onun kör olduğu pencereden geri girer.
+  //
+  // Bu kilit "gereksiz UI kısıtı" DEĞİLDİR, kaldırmayın: kapattığı delik
+  // sessizdir — nonce doğru, canlı digest karşılaştırması uyuşur (ikisi de
+  // aynı eski fields'tan gelir), eth_call ön-uçuşu geçer. Üç kalkanın da
+  // yeşil yandığı, tx'in ekranda yazandan BAŞKA bir adrese gittiği durumdur.
+  const txInputs = TX_INPUT_IDS.map((id) => document.getElementById(id));
+  for (const el of txInputs) el.disabled = true;
   txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~7-8 sn)</p>';
   try {
-    const weiValue = document.getElementById('tx-value').value.trim();
+    if (chainNonce === null) {
+      throw new Error('nonce henüz okunmadı — "Zincirden yenile"ye basın');
+    }
     const { domainSeparator, digest, fields, signature, sigBytes, signMs } = await buildAndSign({
-      walletAddress: document.getElementById('tx-wallet').value.trim(),
+      walletAddress: CONTRACTS.pqWallet,
       to: document.getElementById('tx-to').value.trim(),
-      value: weiValue,
-      nonce: document.getElementById('tx-nonce').value.trim(),
+      value: document.getElementById('tx-value').value.trim(),
+      nonce: chainNonce,
       data: document.getElementById('tx-data').value.trim(),
       mnemonic: currentMnemonic,
     });
+    signed = { digest, signature, fields, nonce: chainNonce };
+    btnSend.disabled = false;
+    btnNegativeProof.disabled = false;
     const lengthOk = sigBytes === C13_SIG_BYTES;
     txOut.innerHTML = `
       <label>DOMAIN_SEPARATOR (chainId + cüzdan adresine bağlı)</label>
@@ -128,9 +206,13 @@ btnBuildSign.addEventListener('click', async () => {
       <p class="ok">imzalama tamamlandı (${signMs.toFixed(1)} ms)</p>
     `;
   } catch (e) {
+    signed = null;
+    btnSend.disabled = true;
+    btnNegativeProof.disabled = true;
     txOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
   } finally {
     btnBuildSign.disabled = false;
     btnKeygen.disabled = false;
+    for (const el of txInputs) el.disabled = false;
   }
 });

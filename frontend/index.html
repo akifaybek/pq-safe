@@ -42,20 +42,33 @@
   </section>
 
   <section>
-    <h2>4. İşlem Oluştur ve İmzala</h2>
-    <p class="warn">Alanlar <code>docs/evidence/crypto-tests/sprint2-js-digest-function.md</code>'deki Foundry <code>cast</code> test vektörüyle ön-doldurulmuştur — çıkan digest oradaki değerle karşılaştırılabilir.</p>
-    <label for="tx-wallet">PQWallet adresi</label>
-    <input id="tx-wallet" value="0x1234567890123456789012345678901234567890" />
+    <h2>4. İşlem Oluştur, İmzala ve Gönder</h2>
+    <p class="warn">Cüzdan adresi ve nonce artık girdi değil — adres yapılandırmadan, nonce zincirden geliyor.</p>
+
+    <label>PQWallet adresi (yapılandırmadan)</label>
+    <div class="field" id="tx-wallet-display">—</div>
+
+    <label>Zincirdeki nonce</label>
+    <div class="field" id="tx-nonce-display">—</div>
+
+    <label>Cüzdan bakiyesi</label>
+    <div class="field" id="tx-balance-display">—</div>
+
+    <button id="btn-refresh-chain">Zincirden yenile</button>
+
     <label for="tx-to">to (alıcı adresi)</label>
-    <input id="tx-to" value="0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" />
+    <input id="tx-to" value="" />
     <label for="tx-value">value (wei)</label>
-    <input id="tx-value" value="1000000000000000000" />
-    <label for="tx-nonce">nonce</label>
-    <input id="tx-nonce" value="0" />
+    <input id="tx-value" value="100000000000000" />
     <label for="tx-data">data (hex, boşsa 0x)</label>
     <input id="tx-data" value="0x" />
+
     <button id="btn-build-sign" style="margin-top:10px;">Digest hesapla ve imzala</button>
+    <button id="btn-connect-wallet">Cüzdanı bağla</button>
+    <button id="btn-send" disabled>Zincire gönder</button>
+    <button id="btn-negative-proof" disabled>Bozuk imzayla dene (negatif kanıt)</button>
     <div id="tx-out"></div>
+    <div id="send-out"></div>
   </section>
 
   <script type="module" src="/src/main.js"></script>
