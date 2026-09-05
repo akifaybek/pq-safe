@@ -178,6 +178,15 @@ btnBuildSign.addEventListener('click', async () => {
     txOut.innerHTML = '<p class="err">Önce anahtar üret.</p>';
     return;
   }
+  // Bu kontrol aşağıdaki try'ın İÇİNDEYDİ ve oradaki sabit mesaja yutuluyordu.
+  // Buraya alındı çünkü mnemonic'le hiçbir ilgisi yok — kendi net mesajını
+  // basabilir. Demo sırasında en olası hata "Zincirden yenile"ye basmayı
+  // unutmaktır; onu "işlem oluşturulamadı"nın altında kaybetmek pahalıya
+  // patlar. Kilitler henüz alınmadığı için erken return güvenli.
+  if (chainNonce === null) {
+    txOut.innerHTML = '<p class="err">nonce henüz okunmadı — önce "Zincirden yenile"ye basın.</p>';
+    return;
+  }
   // İmzalama ~7.5 sn sürüyor; butonlar açık kalırsa kullanıcı rahatlıkla
   // tekrar tıklar (eşzamanlı WASM çağrısı) ya da keygen'i yeniden çalıştırıp
   // (bölüm 1'de mnemonic B'yi gösterirken bölüm 4 hâlâ mnemonic A ile
@@ -200,9 +209,6 @@ btnBuildSign.addEventListener('click', async () => {
   for (const el of txInputs) el.disabled = true;
   txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~7-8 sn)</p>';
   try {
-    if (chainNonce === null) {
-      throw new Error('nonce henüz okunmadı — "Zincirden yenile"ye basın');
-    }
     const { domainSeparator, digest, fields, signature, sigBytes, signMs } = await buildAndSign({
       walletAddress: CONTRACTS.pqWallet,
       to: document.getElementById('tx-to').value.trim(),
@@ -233,13 +239,14 @@ btnBuildSign.addEventListener('click', async () => {
     btnNegativeProof.disabled = true;
     // SABİT mesaj — gerekçe yukarıdaki btn-sign catch'iyle aynı: buildAndSign
     // currentMnemonic'i signDigest'e, o da WASM'a veriyor.
-    // BEDELİ BİLEREK ÖDENİYOR: bu catch buildTransaction.js'in alan
-    // doğrulama hatalarını da (`to alanı geçerli bir adres değil: …`) ve
-    // "nonce henüz okunmadı" uyarısını da yutuyor. Task 5, ön-uçuş revert
-    // metinleriyle birlikte teşhisi geri getirecek — o iş yapılana kadar
-    // hata ayıklarken tarayıcı debugger'ı kullanın, burayı gevşetmeyin.
+    // BEDELİ BİLEREK ÖDENİYOR: bu catch buildTransaction.js'in alan doğrulama
+    // hatalarını (`to alanı geçerli bir adres değil: …`) da yutuyor. Onlar
+    // buildAndSign'ın İÇİNDEN, yani mnemonic'i tutan çağrıdan geliyor; ucuz
+    // bir taşımayla kurtarılamıyorlar. Task 5, ön-uçuş revert metinleriyle
+    // birlikte teşhisi geri getirecek — o iş yapılana kadar hata ayıklarken
+    // tarayıcı debugger'ı kullanın, burayı gevşetmeyin.
     txOut.innerHTML =
-      '<p class="err">İşlem oluşturulamadı veya imzalanamadı. Alanları kontrol edin ve "Zincirden yenile"ye bastığınızdan emin olun. (Ayrıntı güvenlik gereği gösterilmiyor.)</p>';
+      '<p class="err">İşlem oluşturulamadı veya imzalanamadı — to / value / data alanlarını kontrol edin. (Ayrıntı güvenlik gereği gösterilmiyor.)</p>';
   } finally {
     btnBuildSign.disabled = false;
     // `= false` DEĞİL: owner anahtarı yüklüyse keygen kilidi kalıcıdır ve

@@ -165,10 +165,31 @@ Rust `panic!`'i ayrı bir yol. `esc()` HTML kaçırır, **sızıntıyı değil**
 İkisi de sabit mesaja çevrildi ve `e` bilerek yakalanmıyor (opsiyonel catch
 binding) — basılacak bir değişken ortada yok.
 
-**Bedeli bilerek ödendi:** bölüm 4'ün catch'i artık `buildTransaction.js`'in
-alan doğrulama mesajlarını (`to alanı geçerli bir adres değil: …`) ve "nonce
-henüz okunmadı" uyarısını da yutuyor. Teşhis okunabilirliği **Task 5'te**,
-ön-uçuş revert metinleriyle birlikte ele alınacak.
+**Bedeli bilerek ödendi:** bölüm 4'ün catch'i `buildTransaction.js`'in alan
+doğrulama mesajlarını (`to alanı geçerli bir adres değil: …`) da yutuyor. Onlar
+`buildAndSign`'ın İÇİNDEN, yani mnemonic'i tutan çağrıdan geliyor; ucuz bir
+taşımayla kurtarılamıyorlar. Teşhis okunabilirliği **Task 5'te**, ön-uçuş
+revert metinleriyle birlikte ele alınacak.
+
+**Bedelsiz kurtarılan bir mesaj:** `if (chainNonce === null)` kontrolü
+başlangıçta `try`'ın içindeydi ve aynı sabit mesaja yutuluyordu. Mnemonic'le
+hiçbir ilgisi olmadığı için `try`'ın önüne, kilitler alınmadan önce taşındı ve
+kendi net mesajını basıyor — hiçbir eşleme kurulmadan. Demo sırasında en olası
+hata "Zincirden yenile"ye basmayı unutmaktır; onu genel bir hata metninin
+altında kaybetmek pahalıya patlardı.
+
+RPC ulaşılamaz yapılarak (`VITE_SEPOLIA_RPC_URL` geçersiz bir adrese
+yönlendirildi) `chainNonce` hiç set edilmeden sınandı:
+
+```
+tx-nonce-display : "—"   (zincir okunamadı, chainNonce null kaldı)
+tx-out           : nonce henüz okunmadı — önce "Zincirden yenile"ye basın.
+btn-build-sign   : yeniden etkin (erken return kilit bırakmıyor)
+tx girdileri     : [false, false, false] (askıda kalmadı)
+```
+
+Gerçek RPC ile yanlış-pozitif vermediği de doğrulandı: nonce `0` okunduğunda
+anahtarsız tıklamada çıkan mesaj `Önce anahtar üret.` — nonce guard'ı sessiz.
 
 Kalan üç `e.message` (`refreshChainState`, keygen handler, bağlantı testi)
 `grep` ile denetlendi: hiçbiri owner mnemonic'ine erişmiyor. Keygen handler'ı
@@ -178,14 +199,26 @@ aktarmadan sonra butonu kilitli.
 Ayrıca `main.js`'te mnemonic'i DOM'a basan tek satır (`${currentMnemonic}`)
 `esc()`'lendi — kilit bir gün gevşetilirse arkada ham interpolasyon kalmasın.
 
-## 7. Yan doğrulamalar
+## 7. Tarayıcı parola yöneticisi
+
+Ekran kaydı için ayrı bir risk: `type="password"` bir alan bir `<form>`
+içindeyse Chrome "parolayı kaydet?" balonu çıkarabilir. Balon değeri
+göstermez ama kayıtta açıklanması gereken bir şey olur ve kanarya testi bu
+yüzeyi kapsamıyor.
+
+`index.html`'de **hiç `<form>` etiketi yok**; alan çıplak bir `<section>`
+içinde, `autocomplete="off"`, submit yok ve akış sayfa navigasyonu yapmıyor.
+Chrome'un kaydetme balonu submit/navigasyon sinyaliyle tetiklendiği için
+tetikleyici yüzey mevcut değil.
+
+## 8. Yan doğrulamalar
 
 - `vite build` — geçti
 - `pqwallet-test.mjs` (`cast` oracle ile) — **9/9 assertion geçti**; yeni
   `ownerPublicKey` fragment'i calldata kodlamasını bozmadı
 - Console — kanarya akışı boyunca **0 mesaj** (favicon 404 hariç)
 
-## 8. Akif'e kalan tek adım
+## 9. Akif'e kalan tek adım
 
 Bu denetim yeşil. **Gerçek owner mnemonic'ini elle girmek** kaldı:
 `.env.pqwallet-owner-key`'deki ifadeyi alana yapıştır → "İçe aktar" → çıktıda
