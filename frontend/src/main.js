@@ -3,7 +3,7 @@ import { checkSepoliaConnection } from './network/sepolia.js';
 import { formatEther } from 'ethers';
 import { buildAndSign } from './tx/buildTransaction.js';
 import { CONTRACTS } from './config/contracts.js';
-import { readNonce, readBalance } from './contracts/pqwallet.js';
+import { readNonce, readBalance, readOwnerPublicKey } from './contracts/pqwallet.js';
 
 // Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
 // hatalı olduğunu söylemek için) ve innerHTML ile basılıyor. Sayfa aynı
@@ -13,6 +13,14 @@ const esc = (s) =>
 
 let currentMnemonic = null;
 let currentKeys = null;
+
+// Owner mnemonic'i içe aktarıldığında true olur. Sahnede yanlışlıkla "Yeni
+// anahtar çifti üret"e basmak currentMnemonic'i sessizce rastgele bir
+// anahtarla değiştirir; imza sonra verify()'dan false döner ve ekranda bunu
+// haber veren hiçbir şey olmaz. Bu yüzden içe aktarmadan sonra keygen kalıcı
+// olarak kapanır — kilit açma butonu bilerek YOK, geri dönüş yolu sayfayı
+// yenilemektir.
+let ownerKeyLoaded = false;
 
 // İmzalama sonucu burada saklanır. execute() calldata'sı BUNUN fields'ından
 // kurulur, DOM'dan değil.
@@ -27,6 +35,10 @@ const sendOut = document.getElementById('send-out');
 const btnSend = document.getElementById('btn-send');
 const btnNegativeProof = document.getElementById('btn-negative-proof');
 const btnRefreshChain = document.getElementById('btn-refresh-chain');
+// Modül seviyesinde: hem imzalama penceresinde geçici olarak, hem owner
+// anahtarı içe aktarıldığında kalıcı olarak kilitleniyor. İki sahip var,
+// bu yüzden handler'a yerel olamaz.
+const btnKeygen = document.getElementById('btn-keygen');
 
 // İmzaya giren üç alan. Tek listede tutuluyor çünkü iki ayrı yerde geziliyor:
 // imza düşürme dinleyicileri ve imzalama penceresindeki kilit.
@@ -86,7 +98,7 @@ document.getElementById('btn-keygen').addEventListener('click', async () => {
     const ms = (performance.now() - t0).toFixed(1);
     keygenOut.innerHTML = `
       <label>Mnemonic (12 kelime)</label>
-      <div class="field">${currentMnemonic}</div>
+      <div class="field">${esc(currentMnemonic)}</div>
       <label>pkSeed</label>
       <div class="field">${currentKeys.pkSeed}</div>
       <label>pkRoot</label>
@@ -120,8 +132,19 @@ document.getElementById('btn-sign').addEventListener('click', async () => {
       <p class="${lengthOk ? 'ok' : 'err'}">${lengthOk ? '✓ imza uzunluğu 3688 bayt (C13 beklenen)' : '✗ beklenmeyen uzunluk'}</p>
       <p class="ok">sign tamamlandı (${ms} ms)</p>
     `;
-  } catch (e) {
-    signOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
+  } catch {
+    // SABİT mesaj, `e` bilerek YAKALANMIYOR (opsiyonel catch binding):
+    // yukarıdaki signDigest çağrısı currentMnemonic'i WASM'ın
+    // sign_from_mnemonic'ine 0. argüman olarak veriyor ve owner anahtarı içe
+    // aktarıldıysa o argüman owner mnemonic'idir. Rust tarafı hatayı
+    // `format!("invalid mnemonic: {e}")` ile sarıyor (keygen.rs:32) — bugün
+    // bip39'un hata tipi kelimenin İNDEKSİNİ taşıyor, kelimeyi değil, ama bu
+    // bizim değil üçüncü parti bir Display impl'inin garantisi ve bir panic
+    // ayrı bir yol. esc() HTML kaçırır, sızıntıyı değil.
+    // Teşhis okunabilirliği Task 5'te ön-uçuş revert metinleriyle birlikte
+    // ele alınacak; burada e.message'ı geri getirmeyin.
+    signOut.innerHTML =
+      '<p class="err">İmzalama başarısız. (Ayrıntı güvenlik gereği gösterilmiyor — girdi owner mnemonic\'i olabilir.)</p>';
   }
 });
 
@@ -155,7 +178,6 @@ btnBuildSign.addEventListener('click', async () => {
     txOut.innerHTML = '<p class="err">Önce anahtar üret.</p>';
     return;
   }
-  const btnKeygen = document.getElementById('btn-keygen');
   // İmzalama ~7.5 sn sürüyor; butonlar açık kalırsa kullanıcı rahatlıkla
   // tekrar tıklar (eşzamanlı WASM çağrısı) ya da keygen'i yeniden çalıştırıp
   // (bölüm 1'de mnemonic B'yi gösterirken bölüm 4 hâlâ mnemonic A ile
@@ -205,14 +227,119 @@ btnBuildSign.addEventListener('click', async () => {
       <p class="${lengthOk ? 'ok' : 'err'}">${lengthOk ? '✓ imza uzunluğu 3688 bayt (C13 beklenen)' : '✗ beklenmeyen uzunluk'}</p>
       <p class="ok">imzalama tamamlandı (${signMs.toFixed(1)} ms)</p>
     `;
-  } catch (e) {
+  } catch {
     signed = null;
     btnSend.disabled = true;
     btnNegativeProof.disabled = true;
-    txOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
+    // SABİT mesaj — gerekçe yukarıdaki btn-sign catch'iyle aynı: buildAndSign
+    // currentMnemonic'i signDigest'e, o da WASM'a veriyor.
+    // BEDELİ BİLEREK ÖDENİYOR: bu catch buildTransaction.js'in alan
+    // doğrulama hatalarını da (`to alanı geçerli bir adres değil: …`) ve
+    // "nonce henüz okunmadı" uyarısını da yutuyor. Task 5, ön-uçuş revert
+    // metinleriyle birlikte teşhisi geri getirecek — o iş yapılana kadar
+    // hata ayıklarken tarayıcı debugger'ı kullanın, burayı gevşetmeyin.
+    txOut.innerHTML =
+      '<p class="err">İşlem oluşturulamadı veya imzalanamadı. Alanları kontrol edin ve "Zincirden yenile"ye bastığınızdan emin olun. (Ayrıntı güvenlik gereği gösterilmiyor.)</p>';
   } finally {
     btnBuildSign.disabled = false;
-    btnKeygen.disabled = false;
+    // `= false` DEĞİL: owner anahtarı yüklüyse keygen kilidi kalıcıdır ve
+    // burada koşulsuz açılırsa owner anahtarıyla bir imza atmak kilidi
+    // sessizce kaldırır. Kilidin tek sahibi ownerKeyLoaded'dır.
+    btnKeygen.disabled = ownerKeyLoaded;
     for (const el of txInputs) el.disabled = false;
+  }
+});
+
+// ── Owner mnemonic'ini içe aktarma ──────────────────────────────────────────
+//
+// Buraya girilen değer zincirdeki PQWallet'ın owner anahtarıdır ve
+// PQWallet.ownerPublicKey YALNIZCA constructor'da yazılıyor
+// (contracts/src/PQWallet.sol:11,23) — setter yok. Sızarsa çaresi anahtar
+// rotasyonu değil, kontratın yeniden deploy'udur: yeni adres, yeniden verify,
+// tx-hashes.md'nin baştan yazılması, canlı doğrulama kanıtının geçersizleşmesi.
+//
+// Bu yüzden mnemonic HİÇBİR yere yazdırılmaz: ne DOM'a, ne console'a, ne hata
+// mesajına. Yalnızca ondan türeyen AÇIK anahtar gösterilir. Task 7'de bu
+// sayfanın ekran kaydı alınacak.
+const btnImportMnemonic = document.getElementById('btn-import-mnemonic');
+
+btnImportMnemonic.addEventListener('click', async () => {
+  const input = document.getElementById('import-mnemonic');
+  const phrase = input.value.trim();
+  if (!phrase) {
+    keygenOut.innerHTML = '<p class="err">Mnemonic girin.</p>';
+    return;
+  }
+  btnImportMnemonic.disabled = true;
+  keygenOut.innerHTML = '<p>Anahtar türetiliyor…</p>';
+  try {
+    const keys = await keygen(phrase);
+    // Alan HEMEN temizlenir: ekran kaydında noktaların sayısı bile kelime
+    // sayısını ele verir, ayrıca sayfada açık kalan bir password alanı
+    // tarayıcı eklentilerinin okuyabileceği bir yüzeydir.
+    input.value = '';
+    currentMnemonic = phrase;
+    currentKeys = keys;
+    // İmzalayan anahtar değişti — önceki anahtarla üretilmiş imza artık
+    // geçersiz, düşürülmeli.
+    invalidateSignature();
+
+    // Zincirdeki ownerPublicKey ile makine karşılaştırması. Gözle yapılan
+    // 64 baytlık hex karşılaştırması güvenilir değil ve yanlış mnemonic'in
+    // bedeli, hatanın Task 7'de "PQWallet: invalid signature" olarak
+    // görünmesi — o mesaj insanı fields sapmasına baktırır, oysa sorun
+    // anahtardadır.
+    let verdictHtml;
+    let keyUsable = true;
+    try {
+      const onChain = await readOwnerPublicKey();
+      if (onChain.toLowerCase() === keys.publicKey.toLowerCase()) {
+        verdictHtml =
+          '<p class="ok">✓ Zincirdeki ownerPublicKey ile AYNI — bu anahtarla atılan imzalar PQWallet tarafından kabul edilir.</p>';
+      } else {
+        keyUsable = false;
+        verdictHtml =
+          '<p class="err">✗ Zincirdeki ownerPublicKey ile UYUŞMUYOR — yanlış mnemonic. Anahtar temizlendi, bu anahtarla imzalanan hiçbir işlem kabul edilmezdi.</p>';
+      }
+    } catch {
+      // Zincir okunamadı ≠ mnemonic yanlış. Anahtarı düşürmüyoruz, ama
+      // "doğrulandı" da demiyoruz — ikisini karıştırmak, doğrulanmamış bir
+      // anahtarla Task 7'ye girmek demektir.
+      verdictHtml =
+        '<p class="warn">Zincirdeki ownerPublicKey okunamadı — eşleşme DOĞRULANAMADI. Anahtar yüklendi ama teyit edilmedi; "Zincirden yenile" çalıştıktan sonra yeniden içe aktarın.</p>';
+    }
+
+    if (!keyUsable) {
+      currentMnemonic = null;
+      currentKeys = null;
+      invalidateSignature();
+      keygenOut.innerHTML = verdictHtml;
+      return;
+    }
+
+    ownerKeyLoaded = true;
+    btnKeygen.disabled = true;
+    keygenOut.innerHTML = `
+      <p class="ok">Mnemonic içe aktarıldı (ekranda gösterilmiyor).</p>
+      <label>publicKey (pkSeed‖pkRoot, 64 bayt)</label>
+      <div class="field">${esc(keys.publicKey)}</div>
+      <label>ECDSA adresi (migration için)</label>
+      <div class="field">${esc(keys.ecdsaAddress)}</div>
+      ${verdictHtml}
+      <p class="warn">Owner anahtarı yüklü — "Yeni anahtar çifti üret" kapatıldı. Değiştirmek için sayfayı yenileyin.</p>
+    `;
+  } catch {
+    // SABİT mesaj. `e` bilerek YAKALANMIYOR: bip39/WASM hatası girdiyi
+    // içerebilir ve bu alandaki girdi owner mnemonic'idir. Bu kod tabanının
+    // "hangi alan hatalı, değeriyle söyle" deseni (buildTransaction.js
+    // requireAddress/requireUint) burada TERSİNE çalışır.
+    currentMnemonic = null;
+    currentKeys = null;
+    input.value = '';
+    invalidateSignature();
+    keygenOut.innerHTML =
+      '<p class="err">Mnemonic içe aktarılamadı — 12 kelimelik geçerli bir BIP-39 ifadesi girin. (Ayrıntı güvenlik gereği gösterilmiyor.)</p>';
+  } finally {
+    btnImportMnemonic.disabled = false;
   }
 });

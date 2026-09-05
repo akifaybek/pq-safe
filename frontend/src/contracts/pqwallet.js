@@ -13,6 +13,9 @@ import { getSepoliaProvider, assertSepoliaNetwork } from '../network/sepolia.js'
 // ürettiğini doğruluyor.
 export const PQWALLET_FRAGMENTS = [
   'function nonce() view returns (uint256)',
+  // `bytes public ownerPublicKey` (PQWallet.sol:11) için Solidity'nin ürettiği
+  // otomatik getter. Fragment kaynaktan okundu, uydurulmadı.
+  'function ownerPublicKey() view returns (bytes)',
   'function _computeDigest(address to, uint256 value, bytes data) view returns (bytes32)',
   'function execute(address to, uint256 value, bytes data, bytes signature)',
 ];
@@ -36,6 +39,17 @@ export async function readNonce(provider) {
 export async function readBalance(provider) {
   const p = await resolveProvider(provider);
   return p.getBalance(CONTRACTS.pqWallet);
+}
+
+// Zincirdeki owner açık anahtarı (pkSeed‖pkRoot, 64 bayt hex).
+//
+// Neden var: içe aktarılan mnemonic'in DOĞRU owner mnemonic'i olduğunu
+// makineyle doğrulamak için. Gözle karşılaştırma 64 baytlık iki hex için
+// güvenilir değil ve yanlış mnemonic'in bedeli, hatanın Task 7'de
+// "PQWallet: invalid signature" olarak ortaya çıkması — o mesaj insanı
+// `fields` sapmasına baktırır, oysa sorun anahtardadır.
+export async function readOwnerPublicKey(provider) {
+  return (await walletContract(provider)).ownerPublicKey();
 }
 
 // Kontratın kendi digest hesabı. JS tarafıyla karşılaştırmak için — Sprint

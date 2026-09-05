@@ -23,6 +23,13 @@
   <section>
     <h2>1. Anahtar Üret</h2>
     <button id="btn-keygen">Yeni anahtar çifti üret</button>
+
+    <hr />
+    <label for="import-mnemonic">Mevcut mnemonic'i içe aktar (zincirdeki cüzdanın owner anahtarı)</label>
+    <input id="import-mnemonic" type="password" autocomplete="off" placeholder="12 kelime — ekrana yazdırılmaz" />
+    <button id="btn-import-mnemonic">İçe aktar</button>
+    <p class="warn">Bu alan <code>type="password"</code>. Girilen mnemonic ekranda ve çıktıda GÖSTERİLMEZ — yalnızca türetilen açık anahtar gösterilir ve zincirdeki <code>ownerPublicKey</code> ile otomatik karşılaştırılır. Ekran kaydı sırasında güvenlidir.</p>
+
     <div id="keygen-out"></div>
   </section>
 
