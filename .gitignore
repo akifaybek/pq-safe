@@ -8,3 +8,7 @@ broadcast/
 dist/
 .DS_Store
 .playwright-mcp/
+# Claude Code'un KİŞİSEL izin allowlist'i — makineye özel, paylaşılmaz.
+# Klasörün tamamı bilerek ignore EDİLMİYOR: .claude/settings.json, skill ve
+# agent tanımları ileride repoya girebilir.
+.claude/settings.local.json
