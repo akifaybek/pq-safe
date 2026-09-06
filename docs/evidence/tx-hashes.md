@@ -20,4 +20,11 @@
 
 ## Kapsam dışı / henüz yapılmadı
 
-- Gerçek migration + transfer denemesi (bu belgeye ayrı satır olarak eklenecek)
+
+
+## Gerçek işlemler
+
+| İşlem | Tx Hash | Durum |
+|---|---|---|
+| `Migration.proveOwnership()` | [`0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609`](https://sepolia.etherscan.io/tx/0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609) | ✅ Başarılı (gas: 73753) |
+| `PQWallet.execute()` (transfer) | — | ⏳ Akif'in C13 imzasını bekliyor |

@@ -463,7 +463,7 @@ anahtarı (bkz. `sprint3-owner-key-rotation.md`).
 
 **Doğrulama:** `forge script script/Deploy.s.sol --broadcast --verify`
 ile deploy edildi, 4/4 kontrat "Pass - Verified" durumunda. Adresler,
-tx hash'leri ve Etherscan linkleri `docs/tx-hashes.md`'de.
+tx hash'leri ve Etherscan linkleri `docs/evidence/tx-hashes.md`'de.
 
 **Neden:** Sprint 3 görevi (GOREV_SINIRLARI.md Bölüm 9).
 

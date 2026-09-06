@@ -90,7 +90,7 @@ pq-safe/
 
 **Mutlak kural:** Kendi renginin dışındaki bir dosyayı açıp değiştirmek yasak. İhtiyaç varsa sahibinden iste — kendin düzeltme.
 
-**Append-only dosyalarda çakışma nasıl önlenir:** `tx-hashes.md`, `DECISIONS.md` gibi ortak dosyalara **sadece dosyanın sonuna** ekleme yapılır, mevcut satırlara dokunulmaz. Git bunu sorunsuz birleştirir.
+**Append-only dosyalarda çakışma nasıl önlenir:** `docs/evidence/tx-hashes.md`, `DECISIONS.md` gibi ortak dosyalara **sadece dosyanın sonuna** ekleme yapılır, mevcut satırlara dokunulmaz. Git bunu sorunsuz birleştirir.
 
 ---
 
@@ -235,7 +235,7 @@ Bir görev şu üçü tamam olmadan bitmiş sayılmaz:
 |---|---|
 | Solidity fonksiyonu | `forge test` çıktısı (geçen test), dosyaya kaydedilmiş |
 | Gas ölçümü | `forge test --gas-report` çıktısı |
-| Sepolia deploy | Etherscan linki + tx hash (`tx-hashes.md`) |
+| Sepolia deploy | Etherscan linki + tx hash (`docs/evidence/tx-hashes.md`) |
 | JS kripto fonksiyonu | Çalışan script + konsol çıktısı |
 | Frontend ekranı | Ekran görüntüsü veya kısa video |
 | Digest uyum testi | İki taraftan da aynı 32 byte'ın çıktığını gösteren yan yana çıktı |
@@ -343,8 +343,8 @@ git push
 | Görev | Kanıt | Durum |
 |---|---|---|
 | Deploy scriptleri | Commit | ✅ Bitti — `contracts/script/Deploy.s.sol`, commit ea2a3e6 |
-| `Migration.sol` + `PQWallet.sol` + verifier Sepolia'ya deploy | Adresler → `tx-hashes.md` | ✅ Bitti (1 Eylül) — bkz. `docs/tx-hashes.md` |
-| Etherscan verify (kod görünür olsun) | Etherscan linkleri | ✅ Bitti (1 Eylül) — 4/4 kontrat doğrulandı, bkz. `docs/tx-hashes.md` |
+| `Migration.sol` + `PQWallet.sol` + verifier Sepolia'ya deploy | Adresler → `docs/evidence/tx-hashes.md` | ✅ Bitti (1 Eylül) — bkz. `docs/evidence/tx-hashes.md` |
+| Etherscan verify (kod görünür olsun) | Etherscan linkleri | ✅ Bitti (1 Eylül) — 4/4 kontrat doğrulandı, bkz. `docs/evidence/tx-hashes.md` |
 | Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti | ⬜ Akif'in imzalarını bekliyor |
 
 **Akif**
