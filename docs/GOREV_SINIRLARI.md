@@ -359,7 +359,13 @@ git push
 ## Sprint 4 (14–20 Eylül) — Demo + rapor
 
 **Akif:** demo cilası, demo videosu, rapor bölümleri
-**Hakan:** README (mimari, kurulum, adresler, gas tablosu), uç durum testleri, rapor için ham teknik içerik
+
+**Hakan**
+| Görev | Kanıt | Durum |
+|---|---|---|
+| README (mimari, kurulum, adresler, gas tablosu) | `README.md` | ✅ Bitti (7 Eylül) — commit c6d6554 |
+| Uç durum testleri | (belirlenecek) | ⬜ |
+| Rapor için ham teknik içerik | (belirlenecek) | ⬜ |
 
 ---
 
