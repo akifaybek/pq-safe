@@ -471,3 +471,26 @@ tx hash'leri ve Etherscan linkleri `docs/evidence/tx-hashes.md`'de.
 madde: gerçek migration + transfer (Akif'in ECDSA ve C13 imzalarını
 bekliyor).
 — Hakan
+
+---
+
+## 7 Eylül 2026 — Uç durum bulgusu: Migration.sol self-migration'ı engellemiyor
+
+**Karar/Bulgu:** `Migration.proveOwnership(oldAddress, newAddress, signature)`
+çağrısında `oldAddress == newAddress` verilirse (yani biri kendi adresini
+kendine migrate etmeye çalışırsa) kontrat bunu ENGELLEMİYOR — imza geçerliyse
+işlem başarıyla tamamlanıyor, `migrated[oldAddress]=true`,
+`migratedTo[oldAddress]=oldAddress` olarak kaydediliyor.
+
+**Doğrulama:** `test_ProveOwnership_SucceedsWhenOldAndNewAddressAreSame`
+(`contracts/test/Migration.t.sol`) ile kanıtlandı — 35/35 test geçti.
+
+**Neden:** Sprint 4 uç durum testleri kapsamında (GOREV_SINIRLARI.md Sprint 4)
+keşfedildi.
+
+**Etki:** Zararsız — self-migration state'te anlamsız ama zarar verici bir
+sonuç doğurmuyor (para taşımıyor, sadece "migrate edildi" bayrağı). Kasıtlı
+bir tasarım kararı değil, sadece bir kontrol eksikliği; kontrata ek bir
+`require(oldAddress != newAddress)` eklenip eklenmeyeceği takım kararı —
+şimdilik davranış olduğu gibi belgeleniyor.
+— Hakan
