@@ -365,7 +365,7 @@ git push
 |---|---|---|
 | README (mimari, kurulum, adresler, gas tablosu) | `README.md` | ✅ Bitti (7 Eylül) — commit c6d6554 |
 | Uç durum testleri | `contracts/test/Migration.t.sol`, `contracts/test/PQWallet.t.sol`, `docs/DECISIONS.md` | ✅ Bitti (7 Eylül) — 4 yeni test (self-migration, s-sınırı, hedef revert, self-transfer), commit 3532dce |
-| Rapor için ham teknik içerik | (belirlenecek) | ⬜ |
+| Rapor için ham teknik içerik | `docs/RAPOR_HAM_ICERIK.md` | ✅ Bitti (7 Eylül) — commit c3c7b5a |
 
 ---
 
