@@ -14,6 +14,14 @@ contract FalseVerifier is IPQVerifier {
     }
 }
 
+/// @dev Hedef kontratın çağrısının başarısız olduğu senaryoyu test etmek için —
+/// her çağrıda (fallback dahil) revert eder.
+contract AlwaysReverts {
+    fallback() external payable {
+        revert("AlwaysReverts: nope");
+    }
+}
+
 contract PQWalletTest is Test {
     using stdStorage for StdStorage;
 
@@ -87,6 +95,27 @@ contract PQWalletTest is Test {
         rejectingWallet.execute(address(0xCAFE), 1 ether, "", hex"00");
 
         assertEq(rejectingWallet.nonce(), 0);
+    }
+
+    function test_Execute_RevertsWhenTargetCallFails() public {
+        AlwaysReverts target = new AlwaysReverts();
+        vm.deal(address(wallet), 1 ether);
+        uint256 nonceBefore = wallet.nonce();
+
+        vm.expectRevert(bytes("PQWallet: call failed"));
+        wallet.execute(address(target), 0, "", hex"00");
+
+        // Tüm işlem revert olduğu için nonce++ dahil hiçbir state değişikliği kalıcı olmamalı.
+        assertEq(wallet.nonce(), nonceBefore);
+    }
+
+    function test_Execute_SucceedsWhenTargetIsSelf() public {
+        uint256 nonceBefore = wallet.nonce();
+
+        // receive() boş çalıştığı için value=0/data="" ile kendine çağrı sorunsuz yürür.
+        wallet.execute(address(wallet), 0, "", hex"00");
+
+        assertEq(wallet.nonce(), nonceBefore + 1);
     }
 
     // ---- Nonce replay koruması (yapısal kanıt) ----

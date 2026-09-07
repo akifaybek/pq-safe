@@ -9,6 +9,10 @@ contract MigrationTest is Test {
     /// sığdırmak için (0 ve n geçersiz private key'lerdir).
     uint256 private constant _SECP256K1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
+    /// @dev Migration.sol'deki private `_SECP256K1N_HALF` ile BİREBİR aynı olmalı
+    /// (secp256k1n / 2, OpenZeppelin ECDSA.sol ile aynı sabit).
+    uint256 private constant _SECP256K1N_HALF = 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0;
+
     Migration internal migration;
 
     uint256 internal oldPrivateKey = 0xA11CE;
@@ -117,6 +121,35 @@ contract MigrationTest is Test {
 
         vm.expectRevert(abi.encodeWithSelector(Migration.AlreadyMigrated.selector, signerAddress));
         migration.proveOwnership(signerAddress, fuzzedNewAddress, signature);
+    }
+
+    function test_ProveOwnership_SucceedsWhenOldAndNewAddressAreSame() public {
+        bytes memory signature = _sign(oldPrivateKey, oldAddress, oldAddress);
+
+        migration.proveOwnership(oldAddress, oldAddress, signature);
+
+        assertTrue(migration.migrated(oldAddress));
+        assertEq(migration.migratedTo(oldAddress), oldAddress);
+    }
+
+    function test_ProveOwnership_SucceedsWhenSValueExactlyAtHalfBoundary() public {
+        // Gerçek bir private key/mesaj çiftinden vm.sign ile s'nin BİREBİR
+        // _SECP256K1N_HALF'e denk gelmesini beklemek pratikte imkansız (n/2^256
+        // ihtimal) — imza malleability'sinin matematiği de bu sınırı ("gerçek"
+        // bir imzadan) elde etmeyi engelliyor (bkz. PR tartışması). Bu yüzden
+        // ecrecover precompile'ı (0x01) mock'lanarak sınır kontrolü ecrecover'dan
+        // bağımsız, izole şekilde test ediliyor: r/v gerçek bir imzadan alınıyor,
+        // s tam sınıra sabitleniyor, ecrecover'ın oldAddress dönmesi mock'lanıyor.
+        bytes memory realSignature = _sign(oldPrivateKey, oldAddress, newAddress);
+        (bytes32 r,, uint8 v) = _splitSignature(realSignature);
+        bytes memory boundarySignature = abi.encodePacked(r, bytes32(_SECP256K1N_HALF), v);
+
+        vm.mockCall(address(1), bytes(""), abi.encode(oldAddress));
+
+        migration.proveOwnership(oldAddress, newAddress, boundarySignature);
+
+        assertTrue(migration.migrated(oldAddress));
+        assertEq(migration.migratedTo(oldAddress), newAddress);
     }
 
     function _splitSignature(bytes memory signature) private pure returns (bytes32 r, bytes32 s, uint8 v) {
