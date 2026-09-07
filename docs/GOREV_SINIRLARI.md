@@ -345,7 +345,7 @@ git push
 | Deploy scriptleri | Commit | ✅ Bitti — `contracts/script/Deploy.s.sol`, commit ea2a3e6 |
 | `Migration.sol` + `PQWallet.sol` + verifier Sepolia'ya deploy | Adresler → `docs/evidence/tx-hashes.md` | ✅ Bitti (1 Eylül) — bkz. `docs/evidence/tx-hashes.md` |
 | Etherscan verify (kod görünür olsun) | Etherscan linkleri | ✅ Bitti (1 Eylül) — 4/4 kontrat doğrulandı, bkz. `docs/evidence/tx-hashes.md` |
-| Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti | ⬜ Akif'in imzalarını bekliyor |
+| Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti | ✅ Bitti (7 Eylül) — bkz. docs/evidence/tx-hashes.md |
 
 **Akif**
 | Görev | Kanıt |
