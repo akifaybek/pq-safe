@@ -221,41 +221,51 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 
 ## Gas
 
-### Elimizdeki ölçümler tutarlı bir tahmin vermiyor
+### Ölçüldü: 233.429 (gerçek zincir)
+
+> **8 Eylül 2026 güncellemesi.** Bu bölümün eski hâli "ölçümler tutarsız,
+> gerçek maliyet elimizde yok" diyordu. Artık var. Ayrıntı ve tam trace
+> dökümü: `docs/evidence/gas-reports/sprint4-execute-real-gas.md`.
 
 | Ölçüm | Gas | Kaynak |
 |---|---|---|
-| Saf `verify()`, `--gas-report` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
-| Saf `verify()`, test içi `gasleft()` | 110.194 | aynı belge — dış çağrı zarfını da sayıyor |
-| Verifier testi, test seviyesinde | 235.165 / 383.119 | `SPHINCSVerifier.t.sol` |
-| `PQWallet.execute()` gerçek verifier üzerinden | **1.130.002** | `sprint2-pqwallet-real-verifier-integration.md` |
+| **`PQWallet.execute()` gerçek Sepolia tx'i** | **233.429** | `sprint4-execute-real-gas.md`, tx `0xd62b812e…631ad9` |
+| `execute()` EVM içi (zarf hariç) | 164.313 | Foundry trace |
+| ├─ `SPHINCSVerifier.verify()` | 108.574 | aynı trace |
+| │  └─ `SphincsC13Asm.verify()` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
+| Intrinsic + calldata (3.908 bayt) | 81.116 | hesap: 21.000 + 60.116 |
+| `Migration.proveOwnership()` gerçek tx'i | 73.753 | `docs/evidence/tx-hashes.md` |
 
-Kaba tahmin ~200K çıkıyor (106.672 doğrulama + ~59.000 calldata + taban), ama
-**`execute()`'un izole edilmiş gerçek on-chain maliyeti elimizde yok.** 1.13M
-rakamı büyük olasılıkla Foundry'nin fixture okuma/JSON parse maliyetiyle şişmiş
-ve gerçek maliyet bunun çok altında olmalı — ama "büyük olasılıkla" ile demo
-gününe gidilmez.
+Eski tablodaki **1.130.002 rakamı `execute()`'un maliyeti değildi** — Foundry'nin
+test fonksiyonunun tamamını (üç kontrat deploy'u dahil, ~968K) raporladığı sayıydı.
+Fixture okuma/JSON parse'ın maliyeti sıfırdır (cheatcode'lar gas harcamaz), yani
+eski taslaktaki "fixture okuma maliyetiyle şişmiş" açıklaması da yanlıştı.
 
-### Fallback: 2.000.000
+### Fallback: 350.000
 
-Tahmin başarısız olursa manuel gas limit **2.000.000**.
+Tahmin başarısız olursa manuel gas limit **350.000** — ölçülenin ~1,5 katı.
 
-Önceki taslaktaki 500.000, doğrulanmamış bir tahminin katıydı — belirsizliği
-çözmüyor, sadece öteliyordu. Fallback'in tek amacı "out of gas ile ölen demo
-tx'i" ihtimalini sıfırlamak:
+Önceki değer 2.000.000'du ve gerekçesi "gerçek maliyeti bilmiyoruz"du; o gerekçe
+ortadan kalktı (ölçülenin 8,6 katı). Payın kapsadıkları:
 
-- Kullanılmayan gas **iade edilir**; yüksek tutmanın tek maliyeti peşin bloke
-  edilen bakiyedir: 2.000.000 × ~1,1 gwei ≈ **0,0022 ETH**
-- Sepolia blok gas limiti ~36M, yani 2M sorun değil
-- Düşük tutmanın maliyeti ölü bir demo tx'i
+- boş/soğuk bir alıcıya transfer (+~27.600 — gerçek tx'te alıcı sıcaktı)
+- `data` alanı dolu bir çağrı (birkaç yüz bayt calldata)
+- Hakan'ın gerçek tx'te kullandığı 300.000'lik limitin üstünde kalmak
 
-Tek koşul: MetaMask hesabında bu limiti karşılayacak bakiyenin durması.
+- Kullanılmayan gas **iade edilir**; tek maliyet peşin bloke edilen bakiyedir:
+  350.000 × ~1,1 gwei ≈ **0,00039 ETH** (2.000.000'de 0,0022 ETH idi — Sepolia
+  ETH'in kıt olduğu bir demoda anlamlı fark)
+- Düşük tutmanın maliyeti ölü bir demo tx'i; 350.000 ölçülene %50 pay bırakıyor
 
-### Bugün ölçülecek
+Bu fallback yalnızca `estimateGas` başarısız olduğunda devreye girer; normal
+yolda tahmin + %20 pay kullanılır.
 
-Gerçek tx atıldığı anda kullanılan gas ölçülecek, yukarıdaki tahmin tablosu o
-gerçek sayıyla değiştirilecek ve kanıt notuna yazılacak. Tahminle yaşamayı
-sürdürmeyeceğiz.
+### ~~Bugün ölçülecek~~ → ölçüldü (8 Eylül)
+
+Hakan'ın 7 Eylül'de attığı gerçek transfer tx'i bu maddeyi kapattı: tablo
+gerçek sayıyla değiştirildi, kanıt notu yazıldı
+(`docs/evidence/gas-reports/sprint4-execute-real-gas.md`). Artık tahminle
+yaşamıyoruz.
 
 **Risk:** public RPC uç noktası bu calldata boyutunda `eth_estimateGas`'ta
 zorlanabilir; MetaMask'in tahmini tutmayabilir. Fallback tam olarak bunun için

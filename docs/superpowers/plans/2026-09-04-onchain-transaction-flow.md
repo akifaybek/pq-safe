@@ -15,7 +15,7 @@
 - **Digest formatı dondurulmuş.** `digest.js` ve `buildTransaction.js` bu planda DEĞİŞTİRİLMEZ.
 - **`execute()` calldata'sı yalnızca `buildDigest`'in döndürdüğü `fields`'tan kurulur.** DOM'dan yeniden okunmaz. İhlali: digest kayar, ekranda "PQWallet: invalid signature" yazar, imza sağlamken.
 - **Koruma sırası sabittir: nonce kontrolü → canlı digest karşılaştırması → `eth_call` ön-uçuşu.** Bu bir teşhis sırasıdır, performans için yeniden sıralanmaz (gerekçe spec'te).
-- **Gas fallback: `2000000n`.** Tahmin başarısız olursa bu kullanılır.
+- **Gas fallback: `350000n`.** Tahmin başarısız olursa bu kullanılır. (8 Eylül'de `2000000n`'den düşürüldü — `execute()`'un gerçek maliyeti ölçüldü: 233.429. Bkz. `docs/evidence/gas-reports/sprint4-execute-real-gas.md`.)
 - **Doğrulanmamış provider sızdırılmaz.** Her zincir okuması `getSepoliaProvider()` ya da `assertSepoliaNetwork()`'ten geçer.
 - **Tüm hata metinleri `esc()` ile kaçırılır.** Sayfa mnemonic'i DOM'a yazıyor.
 - **Sadece Akif'in dosyaları değiştirilir:** `frontend/**`, `docs/evidence/**`, `docs/superpowers/**`. `contracts/src/PQWallet.sol`, `docs/tx-hashes.md`, `README.md` Hakan'ın — DOKUNULMAZ.
@@ -885,13 +885,13 @@ import { CONTRACTS } from '../config/contracts.js';
 
 // Gas tahmini başarısız olursa kullanılacak sabit limit.
 //
-// Neden 2.000.000: execute()'un izole edilmiş gerçek on-chain maliyeti
-// elimizde YOK. Ölçümler tutarsız (saf verify 106.672; Foundry'de
-// execute() 1.130.002 — fixture okuma maliyetiyle şişmiş). Kullanılmayan
-// gas iade edildiği için yüksek tutmanın tek maliyeti peşin bloke edilen
-// bakiye (~0,0022 ETH); düşük tutmanın maliyeti ölü bir demo tx'i.
-// Sepolia blok limiti ~36M, 2M sorun değil.
-export const GAS_FALLBACK = 2000000n;
+// Neden 350.000: execute()'un gerçek on-chain maliyeti ÖLÇÜLDÜ — 233.429
+// (Sepolia tx 0xd62b812e…631ad9). Bu, ölçülenin ~1,5 katı; pay boş/soğuk
+// alıcıyı (+~27.600) ve data alanı dolu bir çağrıyı kapsıyor. Kullanılmayan
+// gas iade edildiği için tek maliyet peşin bloke edilen bakiye (~0,00039 ETH).
+// Önceki değer 2.000.000'du; gerekçesi "gerçek maliyeti bilmiyoruz"du ve o
+// gerekçe kalktı. Ayrıntı: docs/evidence/gas-reports/sprint4-execute-real-gas.md
+export const GAS_FALLBACK = 350000n;
 
 // eth_call ön-uçuşu: gaz harcamadan aynı çağrıyı simüle eder. Nonce
 // uyuşmazlığı, bozuk imza, yetersiz bakiye ve hedef çağrının patlaması —
