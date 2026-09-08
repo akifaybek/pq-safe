@@ -74,6 +74,11 @@
     <button id="btn-connect-wallet">Cüzdanı bağla</button>
     <button id="btn-send" disabled>Zincire gönder</button>
     <button id="btn-negative-proof" disabled>Bozuk imzayla dene (negatif kanıt)</button>
+    <!-- Bağlantı durumu kendi alanında: bağlantı state'i ile imza state'i
+         birbirinden habersiz değişiyor, aynı div'i paylaşmaları rastgele bir
+         ezme sırası yaratır ve kullanıcı "neden gönderemiyorum"un cevabını
+         kaybeder. -->
+    <div id="wallet-out"></div>
     <div id="tx-out"></div>
     <div id="send-out"></div>
   </section>

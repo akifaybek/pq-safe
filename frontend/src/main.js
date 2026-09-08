@@ -4,6 +4,7 @@ import { formatEther } from 'ethers';
 import { buildAndSign } from './tx/buildTransaction.js';
 import { CONTRACTS } from './config/contracts.js';
 import { readNonce, readBalance, readOwnerPublicKey } from './contracts/pqwallet.js';
+import { connectWallet, watchWalletChanges, disconnectMessage } from './tx/sendTransaction.js';
 
 // Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
 // hatalı olduğunu söylemek için) ve innerHTML ile basılıyor. Sayfa aynı
@@ -27,11 +28,23 @@ let ownerKeyLoaded = false;
 let signed = null;
 // Son okunan on-chain nonce. Gönderim öncesi karşılaştırma için.
 let chainNonce = null;
+// MetaMask bağlantısı: { signer, address, chainId } ya da null. Bağlantı
+// anının fotoğrafıdır — MetaMask'te ağ/hesap değişirse null'a düşürülür
+// (dosyanın sonundaki watchWalletChanges).
+let connected = null;
 
 const walletDisplay = document.getElementById('tx-wallet-display');
 const nonceDisplay = document.getElementById('tx-nonce-display');
 const balanceDisplay = document.getElementById('tx-balance-display');
 const sendOut = document.getElementById('send-out');
+// Bağlantı durumu send-out'u DEĞİL kendi alanını kullanır: iki state bağımsız,
+// dolayısıyla iki alan. Bağlantı durumu ile imza durumu birbirinden habersiz
+// değişiyor; aynı div'i paylaşsalardı hangisinin yazdığı rastgele bir ezme
+// sırasına bağlı olurdu — "bağlantı düştü" mesajı bir sonraki girdi
+// değişikliğinde silinir ve kullanıcı gönderemediğinin sebebini göremezdi.
+// (Tüm çıktı desenini tek bir render()'da toplamak daha doğru olurdu; Sprint
+// 4 "demo cilası" kalemine bırakıldı — gerekçe için plan dosyasına bakın.)
+const walletOut = document.getElementById('wallet-out');
 const btnSend = document.getElementById('btn-send');
 const btnNegativeProof = document.getElementById('btn-negative-proof');
 const btnRefreshChain = document.getElementById('btn-refresh-chain');
@@ -349,4 +362,47 @@ btnImportMnemonic.addEventListener('click', async () => {
   } finally {
     btnImportMnemonic.disabled = false;
   }
+});
+
+// ── MetaMask bağlantısı ─────────────────────────────────────────────────────
+//
+// Bağlanan hesap PQWallet'ın SAHİBİ DEĞİLDİR — sahiplik C13 imzasıyla
+// kanıtlanır. Bu hesap yalnızca tx'i zincire taşır ve gas'ı öder.
+const btnConnectWallet = document.getElementById('btn-connect-wallet');
+
+btnConnectWallet.addEventListener('click', async () => {
+  btnConnectWallet.disabled = true;
+  walletOut.innerHTML = '<p>Cüzdan bağlanıyor…</p>';
+  try {
+    connected = await connectWallet();
+    walletOut.innerHTML = `
+      <label>Bağlı hesap (gas'ı bu öder)</label>
+      <div class="field">${esc(connected.address)}</div>
+      <p class="ok">MetaMask bağlandı, ağ Sepolia (${esc(connected.chainId)})</p>
+    `;
+  } catch (e) {
+    connected = null;
+    walletOut.innerHTML = `<p class="err">Hata: ${esc(e.message)}</p>`;
+  } finally {
+    btnConnectWallet.disabled = false;
+  }
+});
+
+// Bağlantı kurulduktan SONRAKİ ağ/hesap değişimleri. Gerekçe
+// sendTransaction.js'teki watchWalletChanges yorumunda.
+//
+// İki olay da bağlantıyı düşürür ama mesajları AYRI: sebepleri farklı,
+// düzeltmeleri de farklı. Aynı metni basmak provada yanlış yere baktırır.
+watchWalletChanges((change) => {
+  // Hiç bağlanmadan ağ değiştirmek "bağlantı düştü" demek değildir.
+  if (!connected) return;
+  connected = null;
+  // btn-send burada devre dışı bırakılmıyor: onun kilidi imza state'ine ait
+  // (invalidateSignature) ve imza hâlâ geçerli. Task 5'teki gönderim
+  // handler'ı `connected === null` durumunu da kontrol EDECEK.
+  const { title, fix } = disconnectMessage(change);
+  walletOut.innerHTML = `
+    <p class="err">${esc(title)}</p>
+    <p class="warn">${esc(fix)}</p>
+  `;
 });
