@@ -15,7 +15,7 @@
 - **Digest formatı dondurulmuş.** `digest.js` ve `buildTransaction.js` bu planda DEĞİŞTİRİLMEZ.
 - **`execute()` calldata'sı yalnızca `buildDigest`'in döndürdüğü `fields`'tan kurulur.** DOM'dan yeniden okunmaz. İhlali: digest kayar, ekranda "PQWallet: invalid signature" yazar, imza sağlamken.
 - **Koruma sırası sabittir: nonce kontrolü → canlı digest karşılaştırması → `eth_call` ön-uçuşu.** Bu bir teşhis sırasıdır, performans için yeniden sıralanmaz (gerekçe spec'te).
-- **Gas fallback: `350000n`.** Tahmin başarısız olursa bu kullanılır. (8 Eylül'de `2000000n`'den düşürüldü — `execute()`'un gerçek maliyeti ölçüldü: 233.429. Bkz. `docs/evidence/gas-reports/sprint4-execute-real-gas.md`.)
+- **Gas fallback: `350000n`.** Tahmin başarısız olursa bu kullanılır. (8 Eylül'de `2000000n`'den düşürüldü — `execute()`'un gerçek maliyeti ölçüldü: 233.429. Bkz. `docs/evidence/gas-reports/sprint3-execute-real-gas.md`.)
 - **Doğrulanmamış provider sızdırılmaz.** Her zincir okuması `getSepoliaProvider()` ya da `assertSepoliaNetwork()`'ten geçer.
 - **Tüm hata metinleri `esc()` ile kaçırılır.** Sayfa mnemonic'i DOM'a yazıyor.
 - **Sadece Akif'in dosyaları değiştirilir:** `frontend/**`, `docs/evidence/**`, `docs/superpowers/**`. `contracts/src/PQWallet.sol`, `docs/evidence/tx-hashes.md`, `README.md` Hakan'ın — DOKUNULMAZ.
@@ -775,17 +775,46 @@ açık anahtar gösteriliyor — ekran kaydında mnemonic görünmüyor."
 
 ---
 
-### Task 4: MetaMask bağlantısı
+### Task 4: MetaMask bağlantısı — ✅ BİTTİ (8 Eylül)
+
+Kanıt: `docs/evidence/crypto-tests/sprint3-metamask-connection.md`.
+Node testi 16/16 geçti; tarayıcı doğrulamasının MetaMask onayı gerektiren
+kısmı Akif'te **bekliyor** (kanıt notundaki "Doğrulama 3" listesi).
 
 **Files:**
 - Create: `frontend/src/tx/sendTransaction.js`
+- Create: `frontend/src/tx/send-transaction-test.mjs` *(sapma A ile geldi)*
 - Modify: `frontend/src/main.js`
+- Modify: `frontend/index.html` *(sapma B ile geldi)*
 
 **Interfaces:**
 - Consumes: `CONTRACTS` (Task 1)
-- Produces: `connectWallet(): Promise<{ signer, address: string, chainId: bigint }>`
+- Produces: `connectWallet(): Promise<{ signer, address: string, chainId: bigint }>`,
+  `watchWalletChanges(onDisconnect)`, `disconnectMessage(change)`
 
-- [ ] **Step 1: `sendTransaction.js`'i yaz**
+**Uygulanan iki sapma (Akif onayladı):**
+
+- **A — bağlantı sonrası ağ/hesap değişimi.** `connectWallet()` chainId'i bir
+  kez okur; o değer bağlantı anının fotoğrafıdır ve MetaMask'te ağ/hesap sonra
+  değişebilir. Bayat `connected` ile gönderim, bu görevin var olma sebebi olan
+  chainId kontrolünü bağlantı sonrasındaki her an için kör bırakırdı.
+  `chainChanged`/`accountsChanged` dinleniyor, ikisi de `connected = null`
+  yapıyor. Üç durum için **üç ayrı metin** (ağ değişti / site erişimi kesildi /
+  hesap değişti) — sebepleri ve düzeltmeleri farklı, aynı metin provada yanlış
+  yere baktırır.
+- **B — `#wallet-out`.** Bağlantı mesajları `#send-out`'u paylaşmıyor; iki state
+  bağımsız değiştiği için paylaşım rastgele bir ezme sırası yaratıyordu.
+
+> **Sprint 4 "demo cilası"na devredildi:** main.js'in çıktı deseni (her handler
+> kendi div'ine yazar) yerine tek bir `render()`. Daha doğru olurdu, ama Sprint
+> 3'ün ortasında tüm çıktı desenini değiştirmek Task 5-7'nin diff'ini büyütür ve
+> o görevlerin asıl riski (üç kalkan, negatif kanıt saflığı) başka yerde.
+
+> **Task 5'e devredilen yükümlülük:** bağlantı düştüğünde `btn-send` devre dışı
+> bırakılMIYOR — onun kilidi imza state'ine ait ve imza hâlâ geçerli. Task 5'in
+> gönderim handler'ı `connected === null` durumunu **ayrıca kontrol etmelidir.**
+
+- [x] **Step 1: `sendTransaction.js`'i yaz**
 
 `frontend/src/tx/sendTransaction.js`:
 
@@ -817,7 +846,7 @@ export async function connectWallet() {
 }
 ```
 
-- [ ] **Step 2: `main.js`'e bağlan listener'ı ekle**
+- [x] **Step 2: `main.js`'e bağlan listener'ı ekle**
 
 `main.js` import bloğuna ekle:
 
@@ -850,14 +879,14 @@ document.getElementById('btn-connect-wallet').addEventListener('click', async ()
 });
 ```
 
-- [ ] **Step 3: Tarayıcıda doğrula**
+- [~] **Step 3: Tarayıcıda doğrula** — otomatik kısmı bitti; MetaMask onayı gerektiren adımlar Akif'te (kanıt notu, "Doğrulama 3")
 
 Run: `cd frontend && npx vite`
 - "Cüzdanı bağla"ya bas → MetaMask açılır, onayla → hesap adresi ve "Sepolia (11155111)" görünür
 - MetaMask'i Ethereum Mainnet'e al, tekrar bas → chainId söyleyen net hata çıkar
 - Sepolia'ya geri dön
 
-- [ ] **Step 4: Commit önerisini kullanıcıya ver**
+- [x] **Step 4: Commit önerisini kullanıcıya ver**
 
 ```bash
 git add frontend/src/tx/sendTransaction.js frontend/src/main.js
@@ -894,7 +923,7 @@ import { CONTRACTS } from '../config/contracts.js';
 // dolu bir çağrıyı da kapsıyor. Kullanılmayan gas iade edildiği için tek
 // maliyet peşin bloke edilen bakiye (~0,00039 ETH).
 // Önceki değer 2.000.000'du; gerekçesi "gerçek maliyeti bilmiyoruz"du ve o
-// gerekçe kalktı. Ayrıntı: docs/evidence/gas-reports/sprint4-execute-real-gas.md
+// gerekçe kalktı. Ayrıntı: docs/evidence/gas-reports/sprint3-execute-real-gas.md
 export const GAS_FALLBACK = 350000n;
 
 // eth_call ön-uçuşu: gaz harcamadan aynı çağrıyı simüle eder. Nonce

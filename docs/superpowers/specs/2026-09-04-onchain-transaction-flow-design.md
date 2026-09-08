@@ -225,16 +225,16 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 
 > **8 Eylül 2026 güncellemesi.** Bu bölümün eski hâli "ölçümler tutarsız,
 > gerçek maliyet elimizde yok" diyordu. Artık var. Ayrıntı ve tam trace
-> dökümü: `docs/evidence/gas-reports/sprint4-execute-real-gas.md`.
+> dökümü: `docs/evidence/gas-reports/sprint3-execute-real-gas.md`.
 
 | Ölçüm | Gas | Kaynak |
 |---|---|---|
-| **`PQWallet.execute()` gerçek Sepolia tx'i** | **233.429** | `sprint4-execute-real-gas.md`, tx `0xd62b812e…631ad9` |
+| **`PQWallet.execute()` gerçek Sepolia tx'i** | **233.429** | `sprint3-execute-real-gas.md`, tx `0xd62b812e…631ad9` |
 | `execute()` EVM içi (zarf hariç) | 164.313 | Foundry trace |
 | ├─ `SPHINCSVerifier.verify()` | 108.574 | aynı trace |
 | │  └─ `SphincsC13Asm.verify()` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
 | Intrinsic + calldata (3.908 bayt) | 81.116 | hesap: 21.000 + 60.116 |
-| Yeni (var olmayan) alıcıya transferin ek maliyeti | +25.000 | ölçüldü, `sprint4-execute-real-gas.md` |
+| Yeni (var olmayan) alıcıya transferin ek maliyeti | +25.000 | ölçüldü, `sprint3-execute-real-gas.md` |
 | `Migration.proveOwnership()` gerçek tx'i | 73.753 | `docs/evidence/tx-hashes.md` |
 
 Eski tablodaki **1.130.002 rakamı `execute()`'un maliyeti değildi** — Foundry'nin
@@ -267,7 +267,7 @@ yolda tahmin + %20 pay kullanılır.
 
 Hakan'ın 7 Eylül'de attığı gerçek transfer tx'i bu maddeyi kapattı: tablo
 gerçek sayıyla değiştirildi, kanıt notu yazıldı
-(`docs/evidence/gas-reports/sprint4-execute-real-gas.md`). Artık tahminle
+(`docs/evidence/gas-reports/sprint3-execute-real-gas.md`). Artık tahminle
 yaşamıyoruz.
 
 **Risk:** public RPC uç noktası bu calldata boyutunda `eth_estimateGas`'ta
