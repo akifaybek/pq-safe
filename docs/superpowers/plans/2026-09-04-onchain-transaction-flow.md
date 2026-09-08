@@ -886,9 +886,13 @@ import { CONTRACTS } from '../config/contracts.js';
 // Gas tahmini başarısız olursa kullanılacak sabit limit.
 //
 // Neden 350.000: execute()'un gerçek on-chain maliyeti ÖLÇÜLDÜ — 233.429
-// (Sepolia tx 0xd62b812e…631ad9). Bu, ölçülenin ~1,5 katı; pay boş/soğuk
-// alıcıyı (+~27.600) ve data alanı dolu bir çağrıyı kapsıyor. Kullanılmayan
-// gas iade edildiği için tek maliyet peşin bloke edilen bakiye (~0,00039 ETH).
+// (Sepolia tx 0xd62b812e…631ad9), ölçülenin ~1,5 katı.
+//
+// DİKKAT: o 233.429, VAR OLAN bir alıcıya yapılan transferdi. Demoda daha önce
+// hiç kullanılmamış bir adrese gönderilirse EVM'in yeni hesap oluşturma bedeli
+// +25.000 biner (ölçüldü) ve maliyet 258.429 olur. 350.000 bunu da, data alanı
+// dolu bir çağrıyı da kapsıyor. Kullanılmayan gas iade edildiği için tek
+// maliyet peşin bloke edilen bakiye (~0,00039 ETH).
 // Önceki değer 2.000.000'du; gerekçesi "gerçek maliyeti bilmiyoruz"du ve o
 // gerekçe kalktı. Ayrıntı: docs/evidence/gas-reports/sprint4-execute-real-gas.md
 export const GAS_FALLBACK = 350000n;

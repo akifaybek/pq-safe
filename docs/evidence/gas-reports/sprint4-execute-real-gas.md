@@ -55,11 +55,69 @@ tx bunun üstüne işlem zarfını da öder:
 | Calldata: 3.908 bayt (201 sıfır × 4 + 3.707 sıfır-dışı × 16) | 60.116 |
 | **Zarf toplamı** | **81.116** |
 
-164.313 + 81.116 = 245.429; gerçek ölçüm 233.429, yani **12.000 daha ucuz**.
-Fark, iki ortamın hesap durumu farkından geliyor: testte alıcı (`0x…cafE`)
-boş ve soğuk bir hesap (hesap oluşturma + soğuk erişim bedeli), gerçek tx'te
-alıcı zaten var olan ve tx göndereni olduğu için önceden ısıtılmış bir hesap.
-Yön ve büyüklük olarak tutarlı; **bağlayıcı sayı gerçek zincirdeki 233.429'dur.**
+164.313 + 81.116 = 245.429 beklenirken **233.429 ölçüldü** — gerçek tx 12.000
+daha ucuz. Bu fark tahmin edilmedi, **ölçüldü**: testin iki koşulu gerçek
+zincirinkinden farklıydı ve her biri ayrı ayrı izole edildi.
+
+### Ölçüm 1: alıcının var olması −25.000
+
+Testteki alıcı `0x…cAFE` hiç var olmayan bir hesap; ona value göndermek
+**yeni hesap oluşturma** bedeli doğuruyor. Gerçek tx'in alıcısı
+(`0x7268a7c3…075b6`) zaten var olan bir hesap — üstelik tx'in göndereni, yani
+EIP-2929 gereği başlangıç erişim listesinde, önceden sıcak.
+
+Teste geçici olarak `vm.deal(RECIPIENT, 1)` eklenip alıcı var edildi:
+
+| Koşul | `execute()` |
+|---|---|
+| Alıcı boş (mevcut test) | 164.313 |
+| Alıcı var | **139.313** |
+
+Fark tam olarak **25.000** — EVM'in yeni hesap oluşturma sabiti.
+
+### Ölçüm 2: cüzdan storage'ının soğuk olması +8.000
+
+Testte `execute()`'tan önce `ownerPublicKey()`, `nonce()` ve `_computeDigest()`
+çağrılıyor (sanity kontrolleri). Aynı tx içinde yapıldıkları için cüzdanın
+storage slotlarını **ısıtıyorlar**; gerçek zincirde `execute()` bu slotlara
+soğuk erişiyor.
+
+`vm.cool(WALLET_ADDR)` ile slotlar tekrar soğutuldu:
+
+| Koşul (alıcı var, her ikisinde) | `execute()` |
+|---|---|
+| Storage sıcak | 139.313 |
+| Storage soğuk | **147.313** |
+
+Fark **8.000** = 4 soğuk SLOAD × (2.100 − 100). Okunan dört slot:
+`nonce` (slot 1) + `ownerPublicKey`'in üç slotu (uzunluk + iki veri slotu).
+
+### AÇIKLANMAMIŞ KALAN: 5.000
+
+Düzeltilmiş tahmin: 147.313 + 81.116 = **228.429**. Gerçek ölçüm **233.429**.
+**5.000 gas açıklanmadan kalıyor.**
+
+En olası açıklama, `execute()`'un çağırdığı iki kontratın (`SPHINCSVerifier` ve
+onun içindeki `SphincsC13Asm`) gerçek zincirde soğuk adresler olması:
+2 × (2.600 − 100) = 5.000, rakamla birebir örtüşüyor. **Ama bu ölçülemedi:**
+`vm.cool` bu iki adrese uygulandığında `execute()` 147.313'te kaldı, yani
+cheatcode hesap sıcaklığını (yalnızca storage'ı) sıfırlamıyor. Kontrol koşusu:
+sadece `vm.cool(WALLET_ADDR)` ile de sonuç aynı 147.313.
+
+Dolayısıyla bu 5.000 **hesaplanmış bir eşleşmedir, doğrulanmış bir teşhis
+değildir.** Jüri sorarsa verilecek cevap budur. Kesin çözüm için gereken:
+`--fork-url` ile gerçek tx'in bir önceki bloğunda koşan bir test (arşiv RPC'si
+gerekir) — yapılmadı, çünkü **bağlayıcı sayı zaten gerçek zincirdeki
+233.429'dur**; bu ayrıştırma yalnızca "sayıyı anlıyor muyuz"un kontrolü.
+
+### Özet
+
+| Kalem | Gas | Nasıl |
+|---|---|---|
+| `execute()` EVM içi, gerçek zincir koşullarına yaklaştırılmış | 147.313 | ölçüldü |
+| Intrinsic + calldata | 81.116 | hesaplandı (EIP-2028 tarifesi) |
+| Açıklanmamış kalan | 5.000 | **ölçülmedi** — muhtemel: 2 soğuk kontrat erişimi |
+| **Gerçek tx** | **233.429** | **ölçüldü (zincir)** |
 
 Calldata'nın 3.908 baytının ~3.750'si C13 imzasıdır — `execute()` maliyetinin
 en büyük tek kalemi doğrulama (108.574) değil, doğrulama + imzayı zincire
@@ -74,7 +132,9 @@ Gerekçesi ortadan kalktı: ölçülenin ~8,6 katı.
 
 Yeni değer **350.000** — ölçülenin ~1,5 katı. Payın kapsadıkları:
 
-- boş/soğuk bir alıcıya transfer (+~27.600)
+- **Yeni bir alıcıya transfer: +25.000** (yukarıda ölçüldü). 233.429 var olan
+  bir alıcıya yapılan transferdi; demoda daha önce hiç kullanılmamış bir adrese
+  gönderilirse maliyet 258.429'a çıkar. 350.000 bunu da rahat kapsıyor.
 - `data` alanı dolu bir çağrı (birkaç yüz bayt calldata → +birkaç bin gas)
 - Hakan'ın gerçek tx'te kullandığı 300.000'in üstünde kalması
 
@@ -95,4 +155,13 @@ forge test --mt test_RealWasmSignatureExecutesThroughRealVerifier -vvvv
 # Gerçek tx (RPC gerektirir):
 cast receipt 0xd62b812e6a0e0c31d79d4a85c1bd61c738e02368fe51490c57a19ea6ca631ad9 \
   --rpc-url "$SEPOLIA_RPC_URL" | grep gasUsed
+```
+
+25.000 ve 8.000 ölçümleri, `test_RealWasmSignatureExecutesThroughRealVerifier`
+içine `execute()` çağrısından hemen önce **geçici olarak** şu satırlar eklenip
+alındı (testin kendisi değiştirilmedi, çalışma ağacı temiz bırakıldı):
+
+```solidity
+vm.deal(RECIPIENT, 1);   // alıcıyı var et      -> 164.313'ten 139.313'e
+vm.cool(WALLET_ADDR);    // storage'ı soğut     -> 139.313'ten 147.313'e
 ```

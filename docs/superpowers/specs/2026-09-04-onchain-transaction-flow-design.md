@@ -234,6 +234,7 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 | ├─ `SPHINCSVerifier.verify()` | 108.574 | aynı trace |
 | │  └─ `SphincsC13Asm.verify()` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
 | Intrinsic + calldata (3.908 bayt) | 81.116 | hesap: 21.000 + 60.116 |
+| Yeni (var olmayan) alıcıya transferin ek maliyeti | +25.000 | ölçüldü, `sprint4-execute-real-gas.md` |
 | `Migration.proveOwnership()` gerçek tx'i | 73.753 | `docs/evidence/tx-hashes.md` |
 
 Eski tablodaki **1.130.002 rakamı `execute()`'un maliyeti değildi** — Foundry'nin
@@ -248,7 +249,9 @@ Tahmin başarısız olursa manuel gas limit **350.000** — ölçülenin ~1,5 ka
 Önceki değer 2.000.000'du ve gerekçesi "gerçek maliyeti bilmiyoruz"du; o gerekçe
 ortadan kalktı (ölçülenin 8,6 katı). Payın kapsadıkları:
 
-- boş/soğuk bir alıcıya transfer (+~27.600 — gerçek tx'te alıcı sıcaktı)
+- **yeni bir alıcıya transfer: +25.000** (ölçüldü). 233.429, var olan bir
+  alıcıya yapılan transferdi; demoda hiç kullanılmamış bir adrese gönderilirse
+  258.429 olur.
 - `data` alanı dolu bir çağrı (birkaç yüz bayt calldata)
 - Hakan'ın gerçek tx'te kullandığı 300.000'lik limitin üstünde kalmak
 
