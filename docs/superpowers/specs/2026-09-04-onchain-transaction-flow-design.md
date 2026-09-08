@@ -7,7 +7,7 @@
 
 ## Bağlam
 
-Hakan deploy'u tamamladı (`docs/tx-hashes.md`, 4/4 kontrat Etherscan'de
+Hakan deploy'u tamamladı (`docs/evidence/tx-hashes.md`, 4/4 kontrat Etherscan'de
 doğrulandı) ve zincirdeki `PQWallet`'ın doğru owner anahtarını taşıdığı
 bağımsız olarak doğrulandı (`sprint3-live-signature-verification.md`).
 Böylece frontend'in üç maddesi açıldı:
@@ -187,7 +187,7 @@ deploy edilmemişti. `PQWallet.ownerPublicKey` yalnızca constructor'da yazılı
 tamamı `constructor`, `receive`, `_computeDigest`, `execute`, `nonce`,
 `ownerPublicKey`, `verifier`. Üçüncü sızıntının çaresi **`PQWallet`'ı yeniden
 deploy etmek**: yeni adres, Hakan'ın yeniden deploy + Etherscan verify'ı,
-`docs/tx-hashes.md`'nin baştan yazılması,
+`docs/evidence/tx-hashes.md`'nin baştan yazılması,
 `sprint3-live-signature-verification.md`'deki canlı doğrulama kanıtının
 geçersizleşmesi.
 
@@ -309,7 +309,7 @@ DOM'a yazıyor.
 
 ## Kanıt
 
-- **Transfer tx hash'i Hakan'a gönderilir, `docs/tx-hashes.md`'ye o ekler.**
+- **Transfer tx hash'i Hakan'a gönderilir, `docs/evidence/tx-hashes.md`'ye o ekler.**
   Karar gerekçesi: `GOREV_SINIRLARI.md:83` bu dosyayı 🔴 HAKAN'a veriyor
   (append-only) ve `CLAUDE.md` kural 1 karşı tarafın dosyasına dokunmayı
   yasaklıyor. `:93`'teki append-only kuralı teknik çakışmayı zaten

@@ -1,4 +1,4 @@
-// Sepolia'ya deploy edilmiş kontrat adresleri. Kaynak: docs/tx-hashes.md
+// Sepolia'ya deploy edilmiş kontrat adresleri. Kaynak: docs/evidence/tx-hashes.md
 // (Hakan, 1 Eylül 2026 — 4/4 kontrat Etherscan'de doğrulandı).
 //
 // Neden .env değil: bu adresler gizli değil, zincirde zaten herkese açık.

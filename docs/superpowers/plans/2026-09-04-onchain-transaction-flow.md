@@ -18,9 +18,9 @@
 - **Gas fallback: `350000n`.** Tahmin başarısız olursa bu kullanılır. (8 Eylül'de `2000000n`'den düşürüldü — `execute()`'un gerçek maliyeti ölçüldü: 233.429. Bkz. `docs/evidence/gas-reports/sprint4-execute-real-gas.md`.)
 - **Doğrulanmamış provider sızdırılmaz.** Her zincir okuması `getSepoliaProvider()` ya da `assertSepoliaNetwork()`'ten geçer.
 - **Tüm hata metinleri `esc()` ile kaçırılır.** Sayfa mnemonic'i DOM'a yazıyor.
-- **Sadece Akif'in dosyaları değiştirilir:** `frontend/**`, `docs/evidence/**`, `docs/superpowers/**`. `contracts/src/PQWallet.sol`, `docs/tx-hashes.md`, `README.md` Hakan'ın — DOKUNULMAZ.
+- **Sadece Akif'in dosyaları değiştirilir:** `frontend/**`, `docs/evidence/**`, `docs/superpowers/**`. `contracts/src/PQWallet.sol`, `docs/evidence/tx-hashes.md`, `README.md` Hakan'ın — DOKUNULMAZ.
 - **Claude `git commit`/`git push` ÇALIŞTIRMAZ.** Commit komutu kullanıcıya verilir, o çalıştırır.
-- Deploy adresleri (Sepolia, `docs/tx-hashes.md`):
+- Deploy adresleri (Sepolia, `docs/evidence/tx-hashes.md`):
   - `PQWallet`: `0x2EafA294C14b6752128bfd4f5873D1EA39f000BB`
   - `SPHINCSVerifier`: `0x143Db127BE77FdE689629b18F9F415014C514a2E`
   - `Migration`: `0x93e2938A04AE4FbC59a5FDe59D7683667eDD5536`
@@ -62,7 +62,7 @@
 `frontend/src/config/contracts.js`:
 
 ```js
-// Sepolia'ya deploy edilmiş kontrat adresleri. Kaynak: docs/tx-hashes.md
+// Sepolia'ya deploy edilmiş kontrat adresleri. Kaynak: docs/evidence/tx-hashes.md
 // (Hakan, 1 Eylül 2026 — 4/4 kontrat Etherscan'de doğrulandı).
 //
 // Neden .env değil: bu adresler gizli değil, zincirde zaten herkese açık.
@@ -654,7 +654,7 @@ kez yaptı (bkz. `sprint3-owner-key-rotation.md`).
 >
 > Üçüncü sızıntının çaresi anahtar rotasyonu değil, **`PQWallet`'ı yeniden
 > deploy etmek**: yeni adres, Hakan'ın yeniden deploy + Etherscan verify'ı,
-> `docs/tx-hashes.md`'nin baştan yazılması ve
+> `docs/evidence/tx-hashes.md`'nin baştan yazılması ve
 > `sprint3-live-signature-verification.md`'deki canlı doğrulama kanıtının
 > geçersizleşmesi. Yarışmaya dört hafta kala ödenecek bedel değil.
 >
@@ -1133,7 +1133,7 @@ nonce'un 0→1 arttığının zincirden doğrulaması.
 
 - [ ] **Step 5: Tx hash'ini Hakan'a gönder**
 
-`docs/tx-hashes.md` 🔴 HAKAN'ın (`GOREV_SINIRLARI.md:83`, append-only) ve
+`docs/evidence/tx-hashes.md` 🔴 HAKAN'ın (`GOREV_SINIRLARI.md:83`, append-only) ve
 `CLAUDE.md` kural 1 karşı tarafın dosyasına dokunmayı yasaklıyor. Hash Hakan'a
 iletilir, o ekler. Bu, o dosyadaki *"Kapsam dışı: gerçek migration + transfer
 denemesi"* satırını kapatır.
