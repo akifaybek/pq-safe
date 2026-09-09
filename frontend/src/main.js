@@ -396,11 +396,14 @@ btnConnectWallet.addEventListener('click', async () => {
 watchWalletChanges((change) => {
   // Hiç bağlanmadan ağ değiştirmek "bağlantı düştü" demek değildir.
   if (!connected) return;
+  // Düşürmeden ÖNCE alınır: accountsChanged'de "aktif hesap gerçekten değişti mi"
+  // sorusunu ancak eski adresle karşılaştırarak cevaplayabiliyoruz.
+  const previousAddress = connected.address;
   connected = null;
   // btn-send burada devre dışı bırakılmıyor: onun kilidi imza state'ine ait
   // (invalidateSignature) ve imza hâlâ geçerli. Task 5'teki gönderim
   // handler'ı `connected === null` durumunu da kontrol EDECEK.
-  const { title, fix } = disconnectMessage(change);
+  const { title, fix } = disconnectMessage(change, previousAddress);
   walletOut.innerHTML = `
     <p class="err">${esc(title)}</p>
     <p class="warn">${esc(fix)}</p>

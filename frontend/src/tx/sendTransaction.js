@@ -49,15 +49,24 @@ export function watchWalletChanges(onDisconnect) {
   });
 }
 
-// Bağlantının NEDEN düştüğünü anlatan metin. Üç durumun üçü de bağlantıyı
+// Bağlantının NEDEN düştüğünü anlatan metin. Dört durumun dördü de bağlantıyı
 // düşürür ama sebepleri ve DÜZELTMELERİ farklıdır; hepsine aynı metni basmak
 // provada yanlış yere baktırır ("bağlantı düştü" görüp ağa bakarsın, oysa
 // hesap değişmiştir).
 //
+// `previousAddress`: bağlantı düşmeden önce bağlı olan hesap. MetaMask
+// `accountsChanged` ile yalnızca yeni hesabı değil, İZİNLİ HESAPLARIN TAM
+// LİSTESİNİ gönderiyor (ilk eleman aktif olan) — 8 Eylül elle doğrulamasında
+// olay dökümünden görüldü. Bu yüzden "liste değişti" ile "aktif hesap değişti"
+// aynı şey değil: kullanıcı aktif hesabı değiştirmeden listeye yeni bir hesap
+// eklerse (MetaMask "connect more accounts") olay yine gelir. O durumda
+// bağlantıyı düşürmek doğru (izin yüzeyi değişti, signer tazelenmeli) ama
+// "aktif hesap değişti" demek YANLIŞ olurdu.
+//
 // Saf fonksiyon ve HTML üretmiyor (yalnızca metin) — böylece node'dan test
 // edilebiliyor (`send-transaction-test.mjs`) ve kaçış işi tek bir yerde,
 // çağıranın `esc()`inde kalıyor.
-export function disconnectMessage(change) {
+export function disconnectMessage(change, previousAddress = null) {
   if (change.reason === 'chainChanged') {
     const which = change.chainIdHex ? ` (yeni chainId: ${change.chainIdHex})` : '';
     return {
@@ -67,10 +76,21 @@ export function disconnectMessage(change) {
         `MetaMask'i Sepolia'ya (${CONTRACTS.chainId}) alıp yeniden bağlanın.`,
     };
   }
-  if ((change.accounts ?? []).length === 0) {
+  const accounts = change.accounts ?? [];
+  if (accounts.length === 0) {
     return {
       title: 'Cüzdan bağlantısı düştü — MetaMask bu sitenin erişimini kesti.',
       fix: "MetaMask'ten bu siteye tekrar izin verip yeniden bağlanın.",
+    };
+  }
+  const sameActive =
+    previousAddress && accounts[0]?.toLowerCase() === previousAddress.toLowerCase();
+  if (sameActive) {
+    return {
+      title: "Cüzdan bağlantısı düştü — MetaMask'te bu sitenin hesap izinleri değişti.",
+      fix:
+        'Aktif hesap aynı kaldı, ama izinli hesap listesi değişti. Bağlantıyı ' +
+        'yenilemek için tekrar bağlanın.',
     };
   }
   return {

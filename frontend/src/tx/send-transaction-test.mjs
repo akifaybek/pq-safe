@@ -26,25 +26,57 @@ function check(name, cond, detail = '') {
 
 console.log('=== disconnectMessage() testi ===\n');
 
-const chain = disconnectMessage({ reason: 'chainChanged', chainIdHex: '0x1' });
-const revoked = disconnectMessage({ reason: 'accountsChanged', accounts: [] });
-const switched = disconnectMessage({
-  reason: 'accountsChanged',
-  accounts: ['0x1111111111111111111111111111111111111111'],
-});
+const ACTIVE = '0x80a98eb27DC9e688d1A9dE073315B6E4B532ACF4';
+const OTHER = '0x1111111111111111111111111111111111111111';
 
-// 1. Üç durumun üçü de bağlantının düştüğünü söylemeli.
-for (const [name, m] of [['chainChanged', chain], ['erişim kesildi', revoked], ['hesap değişti', switched]]) {
+const chain = disconnectMessage({ reason: 'chainChanged', chainIdHex: '0x1' });
+const revoked = disconnectMessage({ reason: 'accountsChanged', accounts: [] }, ACTIVE);
+const switched = disconnectMessage({ reason: 'accountsChanged', accounts: [OTHER, ACTIVE] }, ACTIVE);
+// MetaMask accountsChanged ile izinli hesapların TAM listesini gönderiyor
+// (ilk eleman aktif olan) — 8 Eylül elle doğrulamasında olay dökümünden
+// görüldü. Aktif hesap aynı kalıp listeye yeni hesap eklenmesi ayrı bir durum.
+const permsOnly = disconnectMessage({ reason: 'accountsChanged', accounts: [ACTIVE, OTHER] }, ACTIVE);
+
+// 1. Dört durumun dördü de bağlantının düştüğünü söylemeli.
+const CASES = [
+  ['chainChanged', chain],
+  ['erişim kesildi', revoked],
+  ['hesap değişti', switched],
+  ['sadece izinler değişti', permsOnly],
+];
+for (const [name, m] of CASES) {
   check(`${name}: bağlantının düştüğünü söylüyor`, m.title.includes('bağlantısı düştü'), `gelen: ${m.title}`);
   check(`${name}: düzeltme metni boş değil`, m.fix.length > 0);
 }
 
-// 2. ASIL İDDİA: üç metin de birbirinden FARKLI. Aynı metni basmak,
+// 2. ASIL İDDİA: dört metin de birbirinden FARKLI. Aynı metni basmak,
 //    provada yanlış yere baktırır — sebepler de düzeltmeler de farklı.
-const titles = [chain.title, revoked.title, switched.title];
-const fixes = [chain.fix, revoked.fix, switched.fix];
-check('üç başlık da birbirinden farklı', new Set(titles).size === 3, `gelen: ${JSON.stringify(titles, null, 2)}`);
-check('üç düzeltme metni de birbirinden farklı', new Set(fixes).size === 3, `gelen: ${JSON.stringify(fixes, null, 2)}`);
+const titles = CASES.map(([, m]) => m.title);
+const fixes = CASES.map(([, m]) => m.fix);
+check('dört başlık da birbirinden farklı', new Set(titles).size === 4, `gelen: ${JSON.stringify(titles, null, 2)}`);
+check('dört düzeltme metni de birbirinden farklı', new Set(fixes).size === 4, `gelen: ${JSON.stringify(fixes, null, 2)}`);
+
+// 2b. Aktif hesap DEĞİŞMEDİYSE "aktif hesap değişti" DENMEMELİ — düzeltmenin
+//     asıl sebebi bu. Liste büyüdü ama accounts[0] aynı.
+check('izin listesi büyüdü ama aktif hesap aynı: "aktif hesap değişti" demiyor',
+  !permsOnly.title.includes('aktif hesap değişti'), `gelen: ${permsOnly.title}`);
+check('aktif hesap gerçekten değiştiyse öyle diyor',
+  switched.title.includes('aktif hesap değişti'), `gelen: ${switched.title}`);
+// Checksum tuzağı: MetaMask accounts[0]'ı bazen checksum'lı, bazen küçük
+// harfli döndürür. Ham string karşılaştırması yapılırsa HER accountsChanged
+// "hesap değişti" görünür — yani bu düzeltmenin tam tersi üretilir. İki yön de
+// test ediliyor.
+check('kayıtlı checksum\'lı, gelen küçük harfli → "hesap değişti" DEMİYOR',
+  disconnectMessage({ reason: 'accountsChanged', accounts: [ACTIVE.toLowerCase()] }, ACTIVE).title
+    === permsOnly.title);
+check('kayıtlı küçük harfli, gelen checksum\'lı → "hesap değişti" DEMİYOR',
+  disconnectMessage({ reason: 'accountsChanged', accounts: [ACTIVE] }, ACTIVE.toLowerCase()).title
+    === permsOnly.title);
+
+// 2c. previousAddress bilinmiyorsa (savunmacı yol) hesap değişimi varsayılır —
+//     "izinler değişti" demek, aslında hesap değişmişken yanlış olur.
+check('previousAddress yoksa "aktif hesap değişti" dalına düşüyor',
+  disconnectMessage({ reason: 'accountsChanged', accounts: [OTHER] }).title === switched.title);
 
 // 3. Her metin doğru DÜZELTMEYİ söylüyor mu.
 check("chainChanged: Sepolia'ya dönmeyi söylüyor", chain.fix.includes('Sepolia'));
