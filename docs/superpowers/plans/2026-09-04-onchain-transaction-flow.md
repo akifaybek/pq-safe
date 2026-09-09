@@ -1127,6 +1127,17 @@ eth_call ile, gaz harcamadan. Saklanan imza mutasyona uğramıyor."
 adresin** olsun — transfer edilen ETH geri gelir ve `PQWallet.receive()`
 (`PQWallet.sol:27`) üzerinden cüzdana iade edilebilir; provalar bakiye yakmaz.
 
+> **⚠️ MetaMask'te ağ SİTE-BAŞINA seçilir.** Cüzdanın genel görünümündeki ağ
+> (token listesindeki "Network: …" filtresi) bağlı sitenin ağını değiştirmez.
+> Sitenin ağı, MetaMask panelinin **en altındaki** `127.0.0.1:5178 · Account N`
+> satırının sağındaki küçük rozetten (`S ⌄`) seçilir.
+>
+> 8 Eylül'deki Task 4 doğrulamasında bu bir adımı sahte bir "başarısızlık"
+> gibi gösterdi: ağ değiştirildi sanıldı, site hâlâ Sepolia'daydı, hiçbir olay
+> yayınlanmadı. Kayıt/prova sırasında **ağı bu rozetten kontrol et** — özellikle
+> "yanlış ağ" senaryosunu göstereceksen. Ayrıntı ve ekran görüntüsü:
+> `docs/evidence/crypto-tests/sprint3-metamask-connection.md`.
+
 - [ ] **Step 1: Gerçek işlemi at**
 
 Run: `cd frontend && npx vite`
