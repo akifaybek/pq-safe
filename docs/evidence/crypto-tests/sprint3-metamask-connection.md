@@ -21,6 +21,9 @@ digest geçersizdir. `chainChanged` ve `accountsChanged` dinleniyor, ikisinde de
 Bu, kod tabanındaki mevcut desenin aynısı: girdi değişince `signed` temizleniyor
 (`invalidateSignature`). Aynı gerekçe, farklı state.
 
+Mesajlar **dört** durumu ayırıyor (biri elle doğrulama sırasında eklendi, bkz.
+aşağıda "olay dökümünden çıkan bulgu").
+
 **SAPMA B — bağlantı durumu kendi çıktı alanında (`#wallet-out`).**
 Brief bağlantı mesajlarını `#send-out`'a yazıyordu; orası imza akışının alanı
 (`invalidateSignature` "değerler değişti" yazıyor). İki state bağımsız
@@ -33,15 +36,16 @@ gönderemediğinin sebebini göremezdi. İki state, iki alan.
 > ve o görevlerin asıl riski (üç kalkan, negatif kanıt saflığı) başka yerde —
 > **Sprint 4 "demo cilası" kalemine bırakıldı.**
 
-**Üç ayrı düşme mesajı.** `chainChanged` ve `accountsChanged` ikisi de bağlantıyı
-düşürür ama sebepleri ve düzeltmeleri farklıdır; aynı metni basmak provada
-yanlış yere baktırır. `accountsChanged` da kendi içinde ikiye ayrılıyor:
+**Dört ayrı düşme mesajı.** `chainChanged` ve `accountsChanged` ikisi de
+bağlantıyı düşürür ama sebepleri ve düzeltmeleri farklıdır; aynı metni basmak
+provada yanlış yere baktırır. `accountsChanged` da kendi içinde üçe ayrılıyor:
 
 | Durum | Ne söylüyor | Düzeltme |
 |---|---|---|
 | `chainChanged` | ağ değişti (+ yeni chainId) | MetaMask'i Sepolia'ya (11155111) al, yeniden bağlan |
 | `accountsChanged`, `accounts = []` | site erişimi kesildi | MetaMask'ten siteye tekrar izin ver |
-| `accountsChanged`, hesap var | aktif hesap değişti | önceki hesabı geri seç ya da yeniden bağlan |
+| `accountsChanged`, `accounts[0]` aynı | hesap izinleri değişti, aktif hesap aynı | yeniden bağlan |
+| `accountsChanged`, `accounts[0]` farklı | aktif hesap değişti | önceki hesabı geri seç ya da yeniden bağlan |
 
 ## Doğrulama 1 — node testi (otomatik)
 
@@ -55,15 +59,32 @@ karıştırılması sessizce yanlış teşhise yol açar.
 cd frontend && node src/tx/send-transaction-test.mjs
 ```
 
-**16/16 assertion geçti.** Kapsanan iddialar:
+**22/22 assertion geçti.** Kapsanan iddialar:
 
-- üç başlığın da, üç düzeltme metninin de birbirinden **farklı** olduğu
+- dört başlığın da, dört düzeltme metninin de birbirinden **farklı** olduğu
   (asıl iddia — aynı metni basmama garantisi)
+- aktif hesap aynı kalıp liste büyüdüğünde "aktif hesap değişti" **denmediği**,
+  gerçekten değiştiğinde ise dendiği
+- **checksum tuzağı, iki yönde de:** kayıtlı adres checksum'lı/gelen küçük
+  harfli ve tersi — ikisinde de "hesap değişti" denmemesi
+- `previousAddress` bilinmiyorsa savunmacı şekilde "aktif hesap değişti" dalına
+  düşüldüğü ("izinler değişti" demek, hesap gerçekten değişmişken yanlış olur)
 - `chainChanged` metninin Sepolia'yı ve doğru chainId'i (11155111) söylediği,
   ayrıca yeni ağın chainId'ini gösterdiği
 - olay argümansız gelirse metnin bozulmadığı ve `"undefined"` sızmadığı
 - `accounts` hiç gelmezse "erişim kesildi" dalına düştüğü (sessizce "hesap
   değişti" dememesi)
+
+### Testin kendisi test edildi (mutasyon)
+
+Yeşil bir testin gerçekten bir şey tuttuğunu göstermek için eşlemeler kasten
+bozulup kırmızı görüldü, sonra geri alındı:
+
+| Mutasyon | Sonuç |
+|---|---|
+| `toLowerCase()` kaldırıldı (ham string karşılaştırma) | ✗ 2 assertion — tam da checksum tuzağını tutanlar |
+| `if (sameActive)` → `if (!sameActive)` (eşleme ters çevrildi) | ✗ 3 assertion |
+| Geri alındı | ✅ 22/22 |
 
 ## Doğrulama 2 — tarayıcı (otomatik kısım)
 
@@ -81,26 +102,77 @@ cd frontend && node src/tx/send-transaction-test.mjs
 
 `vite build` de temiz geçti (modül çözümlemesi + sözdizimi).
 
-## Doğrulama 3 — MetaMask ile elle (Akif, BEKLİYOR)
+## Doğrulama 3 — MetaMask ile elle ✅ (Akif, 8 Eylül)
 
-Aşağıdakiler MetaMask onay penceresi gerektirdiği için otomatikleştirilmedi.
-`npx vite` sonrası:
+Beş adımın beşi de geçti. Her adım iki bağımsız kaynaktan doğrulandı: Akif'in
+ekranda gördüğü metin **ve** sayfaya kurulan bir probe'un kaydettiği ham
+MetaMask olayları (probe, bizim handler'dan bağımsız olarak `window.ethereum`u
+dinliyordu — "olay gelmedi mi, yoksa handler mı çalışmadı" ayrımını yapabilmek
+için).
 
-- [ ] "Cüzdanı bağla" → MetaMask açılır, onayla → `#wallet-out`'ta hesap adresi
-      ve "MetaMask bağlandı, ağ Sepolia (11155111)" görünür
-- [ ] MetaMask'i Ethereum Mainnet'e al, **sayfaya dokunmadan** → bağlantının
-      düştüğü ve "Sepolia'ya alıp yeniden bağlanın" mesajı görünür (SAPMA A'nın
-      asıl testi)
-- [ ] Sepolia'ya dön, yeniden bağlan → bağlı duruma geri dönülür
-- [ ] MetaMask'te başka bir hesaba geç → "aktif hesap değişti" mesajı görünür
-      (ağ mesajından farklı olduğu ekranda teyit edilir)
-- [ ] Bağlıyken `tx-to` alanına dokun → `#send-out`'a "değerler değişti" yazar
-      ama `#wallet-out`'taki bağlantı satırı **silinmez** (SAPMA B'nin testi)
-- [ ] Ekran görüntüleri `docs/evidence/screenshots/` altına
+| # | Adım | Sonuç |
+|---|---|---|
+| 1 | Bağlan | ✅ hesap adresi + "MetaMask bağlandı, ağ Sepolia (11155111)" |
+| 2 | Sitenin ağını Mainnet yap | ✅ probe: `chainChanged → 0x1`; sağlayıcının gerçek zinciri `0x1`; doğru kırmızı mesaj, doğru chainId |
+| 3 | Sepolia'ya dön | ✅ probe: `chainChanged → 0xaa36a7`; mesaj **kasıtlı olarak** ekranda kaldı (ağ düzeldi, bağlantı hâlâ düşük); yeniden bağlanınca yeşil satır döndü |
+| 4 | Hesabı değiştir | ✅ probe: `accountsChanged`; "aktif hesap değişti" — 2. adımın metninden **farklı** |
+| 5 | İmzala, bağlantıyı düşür, sonra `tx-to`'ya dokun | ✅ "değerler değişti" `#send-out`'ta belirdi, `#wallet-out`'taki kırmızı mesaj **silinmedi**; ikisi aynı anda ekranda |
 
-MetaMask'siz bir tarayıcıda "MetaMask bulunamadı" yolu da elle görülebilir;
-bu oturumda test edilen Chrome'da eklenti kurulu olduğu için o dal
-çalıştırılmadı.
+Ekran görüntüleri:
+`docs/evidence/screenshots/sprint3-metamask-chain-dropped.png`,
+`sprint3-metamask-account-changed.png`,
+`sprint3-wallet-out-survives-input.png`,
+`sprint3-metamask-site-network-gotcha.png`.
+
+MetaMask'siz bir tarayıcıda "MetaMask bulunamadı" yolu çalıştırılmadı; test
+edilen Chrome'da eklenti kuruluydu.
+
+### ⚠️ Prosedür tuzağı: MetaMask'te ağ site-başınadır
+
+İlk denemede 2. adım **başarısız göründü** — ağ değiştirildi, sayfada hiçbir şey
+olmadı. Probe boş çıktı ve `eth_chainId` hâlâ `0xaa36a7` döndürdü: **site
+gerçekten Sepolia'da kalmıştı**, yani yayınlanacak bir olay yoktu. Kodda sorun
+yoktu, testin kendisi yanlıştı.
+
+MetaMask 12'den beri açılır menüdeki ağ **global bir anahtar değil**, aktif dapp
+sitesine ait bir seçim. Cüzdanın genel görünümünü ("Network: Ethereum" filtresi)
+değiştirmek bağlı sitenin ağını değiştirmiyor.
+
+**Sitenin ağını değiştiren kontrol**, MetaMask panelinin en altındaki
+`127.0.0.1:5178 · Account N` satırının sağındaki küçük ağ rozeti (`S ⌄`).
+Ekran görüntüsü: `sprint3-metamask-site-network-gotcha.png` — cüzdan
+"Ethereum" gösterirken sayfa hâlâ "ağ Sepolia (11155111)" diyor.
+
+**Provada bu tuzağa düşülür.** Ağ hatası senaryosu gösterilecekse ağ, o rozetten
+değiştirilmeli.
+
+### Olay dökümünden çıkan bulgu: `accountsChanged` tam listeyi gönderiyor
+
+Probe kaydı, MetaMask'in `accountsChanged` ile yalnızca yeni hesabı değil
+**izinli hesapların tam listesini** (ilk eleman aktif olan) gönderdiğini
+gösterdi:
+
+```
+accountsChanged ["0xe0bf…7351", "0x80a9…acf4"]
+accountsChanged ["0x7755…cc70", "0xe0bf…7351", "0x80a9…acf4"]
+```
+
+İlk hâlde kod yalnızca "liste boş mu" diye bakıyordu. Sonucu: kullanıcı aktif
+hesabı **değiştirmeden** listeye yeni bir hesap eklerse (MetaMask "connect more
+accounts") bağlantı yine düşüyor ve ekranda "aktif hesap değişti" yazıyordu —
+oysa değişmemişti. Düşürmenin kendisi doğru (izin yüzeyi değişti, signer
+tazelenmeli); yanlış olan metindi, ve üç ayrı mesaj yazmamızın sebebi tam olarak
+"yanlış metin insanı yanlış yere baktırır"dı.
+
+**Düzeltildi:** `disconnectMessage(change, previousAddress)` artık `accounts[0]`
+ile bağlıyken kaydedilen adresi karşılaştırıyor, **iki tarafı da
+`toLowerCase()` ile normalleştirerek.** Normalleştirme şart: MetaMask
+`accounts[0]`'ı bazen checksum'lı (`0xAbC…`), bazen küçük harfli (`0xabc…`)
+döndürüyor; ham string karşılaştırması her `accountsChanged` olayını "hesap
+değişti" gösterir, yani düzeltmenin tam tersini üretirdi.
+
+Mesaj artık dört durumu ayırıyor: ağ değişti / site erişimi kesildi / **hesap
+izinleri değişti (aktif hesap aynı)** / aktif hesap değişti.
 
 ## Bilinmesi gereken
 
