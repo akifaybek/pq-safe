@@ -62,7 +62,7 @@ noktalar — savunmada doğrudan kullanılabilir:
 
 | Soru (jüri sorabilir) | Cevap | Kanıt |
 |---|---|---|
-| "Migration'da biri kendi adresini kendine migrate ederse ne olur?" | İzin veriliyor, zararsız (para taşımıyor, sadece bayrak) — kasıtlı bir tasarım kararı değil, keşfedilmiş bir davranış | `test_ProveOwnership_SucceedsWhenOldAndNewAddressAreSame`, DECISIONS.md 7 Eylül |
+| "Migration'da biri kendi adresini kendine migrate ederse ne olur?" | İzin veriliyor, kasıtlı olarak düzeltilmedi — saldırgan yolu yok (kurbanın kendi imzası gerekir) ama zararsız da değil: kendine migrate eden adres AlreadyMigrated kontrolü yüzünden bir daha asla gerçek bir PQ cüzdanına geçemez. Redeploy bedeli finale göre gereksiz görüldü, kasıtlı olarak belgelendi. | `test_ProveOwnership_SucceedsWhenOldAndNewAddressAreSame`, DECISIONS.md 7 Eylül |
 | "ECDSA imza malleability sınırı (`s` değeri) doğru mu uygulanmış?" | Sınırın hem üstü (reddediliyor) hem tam sınıra eşiti (kabul ediliyor) ayrı ayrı test edildi | `test_RevertsOnHighSValue`, `test_ProveOwnership_SucceedsWhenSValueExactlyAtHalfBoundary` |
 | "Hedef kontrat çağrıyı reddederse (revert) ne olur, cüzdan tutarsız bir duruma düşer mi?" | Hayır — EVM'in atomik semantiği sayesinde `nonce++` dahil TÜM state geri alınıyor, imza "yanmış" olmuyor | `test_Execute_RevertsWhenTargetCallFails` |
 | "Cüzdan kendi kendine çağrı yapabilir mi?" | Evet, sorunsuz (value=0/data=boş → `receive()`'e düşüyor) | `test_Execute_SucceedsWhenTargetIsSelf` |
