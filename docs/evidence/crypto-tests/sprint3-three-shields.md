@@ -131,6 +131,43 @@ Blok       11690650
 - Ekran görüntüleri: `../screenshots/sprint3-receipt-status0-revert.png`,
   `../screenshots/sprint3-receipt-status1-success.png`
 
+### ⚠️ BU DALIN AÇIK SINIRI — ne kanıtlar, ne kanıtlamaz
+
+Status-0 dalı **PQWallet'ın KENDİ revert'iyle sınanmadı.** Kullanılan
+`0xe6bc4e2c…a388a0`, Sepolia'da revert etmiş **ilgisiz** bir işlem; PQWallet ile
+hiçbir bağı yok.
+
+Bu düzenek şunu kanıtlar: *UI'ın status-0 dalı doğru render ediliyor, yeşil
+yazmıyor, hash/link/gas'ı koruyor, imzayı düşürmüyor.* Ve (bölüm 9'daki oracle
+testiyle birlikte) ethers'ın revert sözleşmesini sabitliyor.
+
+Şunu kanıtlamaz: **PQWallet'ın gerçekten nasıl revert ettiğini.** `execute()`
+revert ettiğinde zincirdeki nonce'un artmadığı iddiası **kaynak okumasına**
+dayanıyor (`PQWallet.sol:48` — `nonce++` fonksiyonun içinde, EVM revert'i tüm
+state değişikliklerini geri alır), ampirik bir gözleme değil.
+
+**Ve Task 7 de bunu doğrulamayacak:** Task 7 başarılı bir transfer atıyor,
+kasten revert eden bir tx atmıyor — o gaz yakardı ve cüzdanda 0.002 ETH var.
+Bu iddia bilerek kaynak seviyesinde bırakılıyor; Foundry tarafında sınanmak
+istenirse doğru yer `contracts/test/` (Hakan'ın alanı, bu görevin kapsamı
+dışında).
+
+### Kalkan 3'ün `"PQWallet: call failed"` dalı HİÇ ÇALIŞTIRILMADI
+
+Kalkan 3 yalnızca `"PQWallet: invalid signature"` dalında görüldü. Diğer dal
+geçerli owner imzası gerektiriyor: `execute()` önce imzayı doğruluyor
+(`PQWallet.sol:44`), bakiye/hedef çağrı ancak ondan sonra patlıyor (`:50-51`).
+
+Bu, kapatılması gereken bir boşluk — çünkü spec'te **bakiye göstergesinin tek
+varlık gerekçesi** tam olarak bu mesajı ayırt etmekti: `"PQWallet: call failed"`
+hem yetersiz bakiyeyi hem hedef çağrının kendi revert'ini kapsıyor ve ikisini
+ayıran tek şey ekrandaki bakiye. O mesaj hiç görülmediği için gösterge de
+işlevini yaparken görülmedi.
+
+→ Plan Task 7'ye **adlandırılmış bir adım** olarak eklendi (Step 0). Nota gömülü
+bırakılmadı: Task 1'deki "yanlış-ağ dalı hiç çalıştırılmamış" bulgusu tam olarak
+öyle kaçmıştı.
+
 ### Brief'in varsayımı düzeltildi
 
 Brief "ethers v6'da `wait()` revert eden bir tx için de dolu bir receipt
@@ -228,22 +265,113 @@ md5 (bozmadan önce ve geri aldıktan sonra): 08e688c1b0dd057d28bb92a546891096
 'false &&' kalıntısı: 0
 ```
 
+## 8b. Sonradan kapatılan dört madde (13 Eylül)
+
+### A1 — status-0 testinin oracle'ı KENDİNE REFERANSLIYDI (bulgu, düzeltildi)
+
+İlk sürümde revert testini sahte bir signer yürütüyordu ve `CALL_EXCEPTION`'ı
+**testin kendisi** kuruyordu. Yani kanıtlanan şey "ethers böyle davranır" değil,
+"benim taklidim böyle davranır"dı. ethers `e.receipt` yerine `e.info.receipt`
+kullansaydı bunu Task 7'de, sahnede öğrenirdik. (Aynı bulgu sınıfı progress.md'de
+iki kez geçiyor: Task 2'nin boş assertion'ı, devreden Minor (c).)
+
+**Düzeltme:** `send-transaction-test.mjs`'e "GERÇEK ETHERS — canlı Sepolia
+oracle" bölümü eklendi. Taklit yok:
+
+- gerçek `JsonRpcProvider` (`frontend/.env`'deki RPC)
+- zincirde gerçekten revert etmiş, var olan bir tx
+- ethers'ın **kendi** `TransactionResponse.wait()`'i
+
+Sabitlenen sözleşme (canlı doğrulandı):
+
+```
+✓ GERÇEK ethers: revert eden tx için wait() FIRLATIYOR (receipt döndürmüyor)
+✓ GERÇEK ethers: code === CALL_EXCEPTION
+✓ GERÇEK ethers: receipt `e.receipt` alanında (e.info.receipt DEĞİL)
+✓ GERÇEK ethers: e.receipt.status === 0
+✓ GERÇEK ethers: e.receipt.gasUsed zincirdeki değer (63730)
+✓ sendExecute GERÇEK ethers hatasından receipt kurtarıyor
+✓ sendExecute → gerçek status 1 ve status 0 AYIRT EDİLİYOR
+```
+
+Sahte signer'lı testler silinmedi ama **yeniden etiketlendi**: onlar yalnızca
+`sendExecute`'un dallanma mantığını sınar, ethers'ın davranışını değil.
+
+Assertion'ların dişi: revert kurtarması KASTEN kapatıldı → gerçek oracle
+bölümündeki 4 assertion KIRMIZI; geri alındı → YEŞİL. md5
+`08e688c1b0dd057d28bb92a546891096`, kalıntı 0.
+
+### A2 — kurtarma koşulu ve `e.txHash`'in ölü olup olmadığı
+
+**Koşul zaten dardı:** `e?.code === 'CALL_EXCEPTION' && e.receipt`
+(`sendTransaction.js:164`). Yani receipt taşımayan bir CALL_EXCEPTION kurtarma
+dalına girmiyor, `receipt.status` üzerinde TypeError üretemiyor; else dalına
+düşüp hash'i iliştirerek yeniden fırlatılıyor. Değişiklik gerekmedi.
+
+**`e.txHash` ölü kod DEĞİLMİŞ — ama hiç çalıştırılmamıştı.** Çalıştırıldı:
+`eth_sendTransaction` gerçek bir hash döndürürken `eth_getTransactionReceipt`
+ağ hatası verecek şekilde ayarlandı (tx gönderildi, onay beklerken ağ koptu).
+Sonuç ekranda:
+
+```
+Gönderim sonrası hata: could not coalesce error
+İşlem gönderildi ama sonucu doğrulanamadı — zincirde gerçekleşmiş OLABİLİR.
+Tekrar göndermeden önce Etherscan'den durumunu kontrol edin.
+Tx hash    0x3eb20c48…659843
+Etherscan  https://sepolia.etherscan.io/tx/0x3eb20c48…659843
+```
+
+İmza korundu, buton yeniden açıldı.
+Ekran görüntüsü: `../screenshots/sprint3-sent-but-unconfirmed.png`
+
+**Bu sırada bulunan ve düzeltilen hata:** başlık `"Gönderilemedi:"` yazıyordu —
+oysa tx GÖNDERİLMİŞTİ. Kullanıcının tx'in hiç çıkmadığını sanıp tekrar
+göndermesi, aynı nonce'a ikinci bir tx demekti. Başlık artık hash'in varlığına
+göre değişiyor: `"Gönderim sonrası hata"`.
+
+### A3 — revert sonrası ZORUNLU teşhis
+
+`status !== 1` yolunda `refreshChainState({ quiet: true })` artık zorunlu ve
+okuduğu değerler ekrana teşhis olarak **ekleniyor** (tx kanıtı EZİLMİYOR —
+`insertAdjacentHTML`). Üç dalın üçü de çalıştırıldı:
+
+| Dal | Ekranda |
+|---|---|
+| Nonce AYNI | `zincirdeki nonce: 1 · imzalanan nonce: 1 · bakiye: 1000000000000000 wei = 0.001 ETH` + *"Nonce AYNI — sebep imza değil. Geriye hedef çağrının kendi revert'i ya da yetersiz bakiye kalıyor… körlemesine tekrar göndermeyin."* |
+| Nonce DEĞİŞMİŞ | `zincirdeki nonce: 1 · imzalanan nonce: 0 · …` + *"Nonce DEĞİŞMİŞ — imzanız bu nonce'a bağlı… kalkan 1 zaten durduracak."* |
+| Zincir OKUNAMADI | *"Revert sonrası zincir durumu OKUNAMADI — sebebi teşhis edemiyoruz… nonce ile bakiyeyi görmeden tekrar göndermeyin."* + `#chain-warn` uyarısı |
+
+Üçünde de tx hash'i ve Etherscan linki ekranda kaldı, `.ok` sayısı 0.
+Başarılı yolda teşhis **eklenmiyor** (doğrulandı: `teshisVarMi: false`).
+Ekran görüntüsü: `../screenshots/sprint3-revert-diagnosis.png`
+
+`refreshChainState` artık `{ nonce, balance }` (ya da hata halinde `null`)
+döndürüyor — teşhis ikinci bir RPC gidiş-dönüşü yapmıyor.
+
 ## 9. Otomatik testler
 
 ```
-node src/tx/send-transaction-test.mjs        → 42 assertion, TÜMÜ GEÇTİ
+node src/tx/send-transaction-test.mjs        → 57 assertion, TÜMÜ GEÇTİ
 node src/tx/build-transaction-test.mjs       → 21 assertion, TÜM TESTLER GEÇTİ
 CAST_EXPECTED=… node src/contracts/pqwallet-test.mjs → 9 assertion (cast oracle dahil)
 npx vite build                               → geçti
 ```
 
-`send-transaction-test.mjs`'e eklenen 19 assertion `sendExecute`'u sahte bir
-signer'la sınıyor: gas tahmini (+%20 pay), tahmin patlayınca `GAS_FALLBACK =
-350000n`, revert receipt'inin CALL_EXCEPTION'dan kurtarılması, timeout/
-replacement'ın YUTULMAYIP hash iliştirilerek yeniden fırlatılması.
+`send-transaction-test.mjs`'e eklenen 34 assertion iki katman:
+
+- **Dallanma mantığı (sahte signer):** gas tahmini (+%20 pay), tahmin patlayınca
+  `GAS_FALLBACK = 350000n`, hangi hatanın yutulup hangisinin fırlatıldığı.
+  Bunlar ethers'ın davranışı hakkında hiçbir şey kanıtlamaz.
+- **Gerçek oracle (canlı Sepolia, taklit yok):** ethers 6.17'nin revert
+  sözleşmesi — bkz. bölüm 8b/A1.
 
 Neden node'da: revert yolunu tarayıcıda tetiklemek zincirde gerçekten revert
 eden bir tx atmayı gerektirir — gaz yakar, Sepolia ETH kıt.
+
+**Testin kırılganlığı, bilerek:** oracle bölümü iki sabit Sepolia tx hash'ine
+bağlı. RPC bunları budarsa test SESSİZCE ATLAMAZ, kırmızı yanar ("revert eden tx
+zincirden okunabildi ✗") ve yeni bir hash seçilir. Atlanan kontrol, yapılmamış
+kontroldür.
 
 ## 10. Console
 

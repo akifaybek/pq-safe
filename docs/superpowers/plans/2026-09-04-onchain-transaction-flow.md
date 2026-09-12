@@ -1142,6 +1142,30 @@ adresin** olsun — transfer edilen ETH geri gelir ve `PQWallet.receive()`
 > "yanlış ağ" senaryosunu göstereceksen. Ayrıntı ve ekran görüntüsü:
 > `docs/evidence/crypto-tests/sprint3-metamask-connection.md`.
 
+- [ ] **Step 0: Kalkan 3'ün `call failed` dalını kanıtla (gerçek tx'ten ÖNCE, sıfır maliyet)**
+
+Task 5'te kalkan 3 yalnızca `"PQWallet: invalid signature"` dalında görüldü.
+Diğer dal geçerli owner imzası gerektiriyor: `execute()` önce imzayı doğruluyor
+(`PQWallet.sol:44`), bakiye/hedef çağrı ancak ondan sonra patlıyor (`:50-51`).
+Yani rastgele anahtarla o mesaja ULAŞILAMIYOR.
+
+Bu adım bir "nice to have" değil: spec'te **bakiye göstergesinin tek varlık
+gerekçesi** `"PQWallet: call failed"` mesajını hedef çağrının kendi revert'inden
+ayırmaktı. Mesaj hiç görülmediyse gösterge de işlevini yaparken görülmemiş olur.
+
+Sıra: owner mnemonic'ini **içe aktar** → `value` = **bakiye + 1 wei** (ekranda
+yazan bakiyeden) → imzala → cüzdanı bağla → **Zincire gönder**.
+
+Beklenen:
+- ön-uçuşta `PQWallet: call failed`
+- **MetaMask AÇILMAZ**, gaz harcanmaz
+- ekran görüntüsü: `docs/evidence/screenshots/sprint3-shield3-call-failed.png`
+
+Sonra `value`'yu gerçek değere düşürüp Step 1'e geç.
+
+> Nota gömülü bırakılmadı, adım olarak yazıldı: Task 1'deki "yanlış-ağ dalı hiç
+> çalıştırılmamış" bulgusu tam olarak öyle kaçmıştı.
+
 - [ ] **Step 1: Gerçek işlemi at**
 
 Run: `cd frontend && npx vite`

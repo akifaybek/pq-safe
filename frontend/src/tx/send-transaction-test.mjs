@@ -103,16 +103,27 @@ check('accounts undefined ise "erişim kesildi" metni', noAccounts.title === rev
 
 // ── sendExecute() — receipt/revert mantığı ──────────────────────────────────
 //
-// NEDEN NODE'DA: bu davranışı tarayıcıda tetiklemek için zincirde GERÇEKTEN
-// revert eden bir tx atmak gerekir (gas yakar, Sepolia ETH kıt). Sahte bir
-// signer ile hem revert hem timeout yolu maliyetsiz ve deterministik olarak
-// sınanıyor.
+// İKİ AYRI KATMAN, karıştırılmamalı:
 //
-// SINANAN İDDİA: ethers v6'nın `tx.wait()`i revert eden bir tx için receipt
-// DÖNDÜRMEZ, CALL_EXCEPTION fırlatır (provider.js:1139 `checkReceipt`). Bu
-// hata olduğu gibi yukarı bırakılırsa çağıran generic hata dalına düşer ve
-// GERÇEK bir tx'in hash'i ekrandan kaybolur. sendExecute onu kurtarıyor mu?
+//   A) Sahte signer'lı testler — YALNIZCA sendExecute'un kendi dallanma
+//      mantığını sınar (gas payı, fallback, hangi hatayı yutup hangisini
+//      fırlattığı). Bunlar ethers'ın NE YAPTIĞI hakkında HİÇBİR ŞEY
+//      kanıtlamaz: hatayı testin kendisi kuruyor.
+//
+//   B) Gerçek oracle (aşağıda, "GERÇEK ETHERS" bölümü) — gerçek
+//      JsonRpcProvider, zincirde gerçekten revert etmiş bir tx ve GERÇEK
+//      `.wait()`. ethers 6.17'nin revert karşısındaki sözleşmesini
+//      (`code`, `receipt`in nerede durduğu) burada sabitliyoruz.
+//
+// Bu ayrım bilerek yazıldı: ilk sürümde yalnızca (A) vardı ve iddia
+// "ethers CALL_EXCEPTION fırlatır" idi — oysa CALL_EXCEPTION'ı testin
+// kendisi fırlatıyordu. Kendine referanslı bir test, ethers `e.receipt`
+// yerine `e.info.receipt` kullansaydı bunu Task 7'de, sahnede öğrenirdik.
+// (Aynı bulgu sınıfı progress.md'de iki kez geçiyor: Task 2'nin boş
+// assertion'ı ve devreden Minor (c) "bağımsız oracle değil".)
 
+import { readFileSync } from 'node:fs';
+import { JsonRpcProvider } from 'ethers';
 import { sendExecute, GAS_FALLBACK } from './sendTransaction.js';
 
 console.log('\n=== sendExecute() receipt/revert testi ===\n');
@@ -170,7 +181,10 @@ const revertReceipt = { status: 0, gasUsed: 123456n, blockNumber: 9000001 };
   check('tahmin patladı → gasEstimated false (kullanıcıya söylenebilsin)', r.gasEstimated === false);
 }
 
-// 3. ASIL İDDİA: revert eden tx'in receipt'i CALL_EXCEPTION'dan kurtarılır.
+// 3. Dallanma mantığı: CALL_EXCEPTION + receipt geldiğinde kurtarılıyor mu?
+//    DİKKAT — bu test hatayı KENDİSİ kuruyor, yani ethers'ın gerçekten böyle
+//    bir hata ürettiğini KANITLAMAZ. O iddianın kanıtı aşağıdaki "GERÇEK
+//    ETHERS" bölümü.
 {
   const err = Object.assign(new Error('transaction execution reverted'), {
     code: 'CALL_EXCEPTION',
@@ -222,6 +236,93 @@ const revertReceipt = { status: 0, gasUsed: 123456n, blockNumber: 9000001 };
   }
   check('receipt\'siz CALL_EXCEPTION → fırlatılıyor', thrown !== null);
   check('receipt\'siz CALL_EXCEPTION → hash iliştirilmiş', thrown?.txHash === '0xaaaa');
+}
+
+// ── GERÇEK ETHERS — bağımsız oracle ────────────────────────────────────────
+//
+// Yukarıdaki testlerin hiçbiri ethers'ın revert karşısında NE YAPTIĞINI
+// kanıtlamıyor; hatayı testin kendisi kuruyor. Burada taklit YOK:
+//
+//   - gerçek JsonRpcProvider (frontend/.env'deki Sepolia RPC'si)
+//   - zincirde GERÇEKTEN revert etmiş, var olan bir tx
+//   - ethers'ın KENDİ TransactionResponse.wait()'i
+//
+// Zincire hiçbir şey yayınlanmıyor: tx zaten orada, yalnızca okunuyor.
+//
+// Bu bölüm ethers'ın sözleşmesini sabitler: hangi `code`, `receipt` nerede
+// duruyor (`e.receipt` mi, `e.info.receipt` mi). ethers sürümü yükseltilir de
+// sözleşme değişirse burası kırmızı yanar — sahnede değil, burada.
+
+console.log('\n=== GERÇEK ETHERS — canlı Sepolia oracle ===\n');
+
+// Sepolia'da revert etmiş gerçek bir tx (blok 11690650). PQWallet ile İLGİSİ
+// YOK — burada sınanan şey ethers'ın revert sözleşmesi, PQWallet'ın davranışı
+// değil. PQWallet'ın kendi revert'i Task 7'de görülecek.
+const REVERTED_TX = '0xe6bc4e2c67593cfea5a372af7e4af3b64391ad192bd336b10abca10897a388a0';
+// Aynı bölgeden başarılı bir tx (blok 11690651) — status 1 yolunun karşılığı.
+const SUCCESS_TX = '0x3eb20c482dc3a3503fdd5e18cb57ded0489b0a9b9d0b139c06461d1e82659843';
+
+const envText = readFileSync(new URL('../../.env', import.meta.url), 'utf8');
+const rpcUrl = envText.match(/^VITE_SEPOLIA_RPC_URL=(.*)$/m)?.[1]?.trim();
+check('frontend/.env içinde VITE_SEPOLIA_RPC_URL var', Boolean(rpcUrl));
+
+const provider = new JsonRpcProvider(rpcUrl);
+const revertedTx = await provider.getTransaction(REVERTED_TX);
+const successTx = await provider.getTransaction(SUCCESS_TX);
+
+// Zincirden gelmediyse sessizce atlama YOK — atlanan kontrol, yapılmamış
+// kontroldür. (RPC bu tx'leri budadıysa test kırmızı yanar ve yeni bir hash
+// seçilir; sessiz yeşilden iyidir.)
+check('revert eden tx zincirden okunabildi', revertedTx !== null, `hash: ${REVERTED_TX}`);
+check('başarılı tx zincirden okunabildi', successTx !== null, `hash: ${SUCCESS_TX}`);
+
+if (revertedTx && successTx) {
+  // 1) ethers'ın KENDİ wait()'i revert karşısında ne yapıyor?
+  let realErr = null;
+  let realReceipt = null;
+  try {
+    realReceipt = await revertedTx.wait();
+  } catch (e) {
+    realErr = e;
+  }
+  check('GERÇEK ethers: revert eden tx için wait() FIRLATIYOR (receipt döndürmüyor)',
+    realErr !== null && realReceipt === null,
+    `dönen receipt: ${realReceipt?.status}`);
+  check('GERÇEK ethers: code === CALL_EXCEPTION', realErr?.code === 'CALL_EXCEPTION', `gelen: ${realErr?.code}`);
+  check('GERÇEK ethers: receipt `e.receipt` alanında (e.info.receipt DEĞİL)',
+    realErr?.receipt != null,
+    `e.receipt: ${realErr?.receipt}, e.info?.receipt: ${realErr?.info?.receipt}`);
+  check('GERÇEK ethers: e.receipt.status === 0', realErr?.receipt?.status === 0, `gelen: ${realErr?.receipt?.status}`);
+  check('GERÇEK ethers: e.receipt.gasUsed zincirdeki değer (63730)', realErr?.receipt?.gasUsed === 63730n, `gelen: ${realErr?.receipt?.gasUsed}`);
+
+  // 2) sendExecute bu GERÇEK hatadan receipt'i kurtarabiliyor mu?
+  //    signer stub'ı yalnızca "tx gönderildi" numarası yapıyor; wait()'i
+  //    yürüten ethers'ın kendi TransactionResponse'u.
+  const realSigner = {
+    async estimateGas() { return 200000n; },
+    async sendTransaction() { return revertedTx; },
+  };
+  let rr = null;
+  let rrThrown = null;
+  try {
+    rr = await sendExecute({ signer: realSigner, calldata: CALLDATA });
+  } catch (e) {
+    rrThrown = e;
+  }
+  check('sendExecute GERÇEK ethers hatasından receipt kurtarıyor', rrThrown === null && rr?.receipt != null, `fırlayan: ${rrThrown?.code}`);
+  check('sendExecute → gerçek status 0 çağırana ulaşıyor', rr?.receipt?.status === 0, `gelen: ${rr?.receipt?.status}`);
+  check('sendExecute → gerçek hash korunuyor', rr?.hash === REVERTED_TX);
+  check('sendExecute → gerçek gasUsed korunuyor (63730)', rr?.receipt?.gasUsed === 63730n);
+
+  // 3) Başarılı yol: gerçek wait() receipt döndürüyor, status 1.
+  const okSigner = {
+    async estimateGas() { return 200000n; },
+    async sendTransaction() { return successTx; },
+  };
+  const okRes = await sendExecute({ signer: okSigner, calldata: CALLDATA });
+  check('GERÇEK ethers: başarılı tx için wait() receipt DÖNDÜRÜYOR', okRes.receipt != null);
+  check('sendExecute → gerçek status 1', okRes.receipt.status === 1, `gelen: ${okRes.receipt.status}`);
+  check('sendExecute → status 1 ve status 0 AYIRT EDİLİYOR', okRes.receipt.status !== rr?.receipt?.status);
 }
 
 console.log(failures === 0 ? '\nTÜMÜ GEÇTİ' : `\n${failures} BAŞARISIZ`);

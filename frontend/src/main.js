@@ -116,6 +116,10 @@ for (const id of TX_INPUT_IDS) {
 // modda o kanıtı EZERDİ — gerçek tx atılmış, ekranda "Zincir okunamadı" yazar.
 // Zincir göstergesinin yenilenememesi, tx'in kendisi hakkında hiçbir şey
 // söylemez ve onu şüpheye düşürmemelidir.
+//
+// DÖNÜŞ: okunan `{ nonce, balance }`, okuma patlarsa `null`. Çağıranın ikinci
+// bir RPC gidiş-dönüşü yapmadan teşhis basabilmesi için — revert sonrası
+// "zincirdeki nonce kaç, bakiye ne" sorusunun cevabı zaten burada okunuyor.
 async function refreshChainState({ quiet = false } = {}) {
   btnRefreshChain.disabled = true;
   chainWarn.innerHTML = '';
@@ -126,6 +130,7 @@ async function refreshChainState({ quiet = false } = {}) {
     chainNonce = n;
     nonceDisplay.textContent = String(n);
     balanceDisplay.textContent = `${b} wei = ${formatEther(b)} ETH`;
+    return { nonce: n, balance: b };
   } catch (e) {
     nonceDisplay.textContent = '—';
     balanceDisplay.textContent = '—';
@@ -140,6 +145,7 @@ async function refreshChainState({ quiet = false } = {}) {
     } else {
       sendOut.innerHTML = `<p class="err">Zincir okunamadı: ${esc(e.message)}</p>`;
     }
+    return null;
   } finally {
     btnRefreshChain.disabled = false;
   }
@@ -619,8 +625,7 @@ btnSend.addEventListener('click', async () => {
         ${receiptHtml}
         <p class="warn">İmzanız hâlâ geçerli, yeniden imzalamanız gerekmiyor: execute() revert ettiyse
         kontratın nonce'u ARTMAMIŞTIR (PQWallet.sol:48 — nonce++ execute()'un içindedir, revert
-        tüm state değişikliklerini geri alır). En olası sebep, ön-uçuş ile gönderim arasında zincir
-        state'inin değişmesidir. Nonce'u yenileyip tekrar deneyin.</p>
+        tüm state değişikliklerini geri alır).</p>
       `;
       // `signed` KORUNUR — yukarıdaki gerekçe.
     }
@@ -629,14 +634,44 @@ btnSend.addEventListener('click', async () => {
     // Başarı/revert render'ından SONRA ve kendi try/catch'inde. try'ın içinde
     // olsaydı buradaki bir RPC hatası az önce basılan tx kanıtını "Gönderilemedi"
     // ile EZERDİ: gerçek tx atılmış, hash'i ekrandan kaybolmuş olurdu.
+    let chainState = null;
     try {
-      await refreshChainState({ quiet: true });
+      chainState = await refreshChainState({ quiet: true });
     } catch {
       // refreshChainState kendi hatasını zaten yutuyor; bu catch onun
       // beklenmedik bir şekilde fırlatmasına karşı son settir. Gönderim
       // sonucuna DOKUNMAZ.
       chainWarn.innerHTML =
         '<p class="warn">Zincir göstergesi yenilenemedi. Yukarıdaki işlem sonucu geçerlidir — "Zincirden yenile"ye basın.</p>';
+    }
+
+    // REVERT sonrası ZORUNLU teşhis. Kullanıcının ilk refleksi tekrar basmak
+    // olacak; sebep nonce'sa kalkan 1 ikinci denemede ucuza yakalar, ama sebep
+    // hedef çağrı ya da bakiyeyse ikinci tx de revert eder ve bir gas daha
+    // yanar. Cüzdanda 0.002 ETH var — körlemesine ikinci deneme pahalı.
+    //
+    // Teşhis EKLENİR (innerHTML EZİLMEZ): yukarıdaki tx kanıtı ekranda kalmalı.
+    if (receipt.status !== 1) {
+      let diagnosis;
+      if (chainState) {
+        const nonceChanged = chainState.nonce !== signed.nonce;
+        diagnosis = `
+          <label>Revert sonrası zincir durumu</label>
+          <div class="field">zincirdeki nonce: ${esc(chainState.nonce)} · imzalanan nonce: ${esc(signed.nonce)} · bakiye: ${esc(chainState.balance)} wei = ${esc(formatEther(chainState.balance))} ETH</div>
+          <p class="warn">${
+            nonceChanged
+              ? 'Nonce DEĞİŞMİŞ — imzanız bu nonce\'a bağlı olduğu için artık geçmez. Yeniden imzalayın; tekrar göndermeyi denerseniz kalkan 1 zaten durduracak.'
+              : 'Nonce AYNI — yani sebep imza değil. Geriye hedef çağrının kendi revert\'i ya da yetersiz bakiye kalıyor (ikisi de "PQWallet: call failed" verir). value değerini bakiyeyle karşılaştırın; körlemesine tekrar göndermeyin, ikinci tx de revert eder ve gas yanar.'
+          }</p>
+        `;
+      } else {
+        diagnosis = `
+          <p class="warn">Revert sonrası zincir durumu OKUNAMADI — sebebi teşhis edemiyoruz.
+          "Zincirden yenile"ye basıp nonce ile bakiyeyi görmeden tekrar göndermeyin: ikinci tx de
+          revert ederse bir gas daha yanar.</p>
+        `;
+      }
+      sendOut.insertAdjacentHTML('beforeend', diagnosis);
     }
   } catch (e) {
     // Kullanıcının MetaMask'te iptal etmesi bir HATA değil — kırmızı hata
@@ -661,7 +696,11 @@ btnSend.addEventListener('click', async () => {
       <div class="field"><a href="${esc(CONTRACTS.explorerTxBase + e.txHash)}" target="_blank" rel="noopener">${esc(CONTRACTS.explorerTxBase + e.txHash)}</a></div>
     `
         : '';
-      sendOut.innerHTML = `<p class="err">Gönderilemedi: ${esc(reason)}</p>${sentHtml}`;
+      // Başlık, hash'in varlığına göre değişir: hash varsa tx GÖNDERİLDİ ve
+      // "Gönderilemedi" demek yanlış olur — kullanıcı tx'in hiç çıkmadığını
+      // sanıp tekrar gönderir, aynı nonce'a ikinci bir tx daha yollar.
+      const headline = e.txHash ? 'Gönderim sonrası hata' : 'Gönderilemedi';
+      sendOut.innerHTML = `<p class="err">${headline}: ${esc(reason)}</p>${sentHtml}`;
     }
     // Kilit tek kaynaktan: imza hâlâ duruyorsa buton açılır, tüketildiyse
     // açılmaz. Koşulsuz `= false` YOK, finally YOK.
