@@ -100,3 +100,74 @@ export function disconnectMessage(change, previousAddress = null) {
       'geri seçin ya da yeni hesapla yeniden bağlanın.',
   };
 }
+
+// Gas tahmini başarısız olursa kullanılacak sabit limit.
+//
+// Neden 350.000: execute()'un gerçek on-chain maliyeti ÖLÇÜLDÜ — 233.429
+// (Sepolia tx 0xd62b812e…631ad9), bu onun ~1,5 katı.
+//
+// DİKKAT: o 233.429, VAR OLAN bir alıcıya yapılan transferdi. Demoda daha önce
+// hiç kullanılmamış bir adrese gönderilirse EVM'in yeni hesap oluşturma bedeli
+// +25.000 biner (ölçüldü) ve maliyet 258.429 olur. 350.000 bunu da, `data`
+// alanı dolu bir çağrıyı da kapsıyor. Kullanılmayan gas iade edildiği için tek
+// maliyet peşin bloke edilen bakiyedir (~0,00039 ETH).
+// Önceki değer 2.000.000'du; gerekçesi "gerçek maliyeti bilmiyoruz"du ve o
+// gerekçe kalktı. Ayrıntı: docs/evidence/gas-reports/sprint3-execute-real-gas.md
+export const GAS_FALLBACK = 350000n;
+
+// KALKAN 3 — eth_call ön-uçuşu: gaz harcamadan aynı çağrıyı simüle eder. Bozuk
+// imza, yetersiz bakiye, hedef çağrının patlaması ve (kalkan 1'den kaçan) nonce
+// uyuşmazlığı — hepsini yakalar. Kontrattaki require string'leri ethers
+// tarafından okunabilir metne çevrilir ve hatanın `reason` alanında döner
+// ("PQWallet: invalid signature" — PQWallet.sol:44, "PQWallet: call failed" —
+// PQWallet.sol:51).
+export async function preflight({ signer, calldata }) {
+  await signer.call({ to: CONTRACTS.pqWallet, data: calldata });
+}
+
+// İmzalı execute() çağrısını zincire gönderir.
+//
+// DÖNÜŞ: { hash, receipt, gasLimit }. receipt.status'u ÇAĞIRAN kontrol eder —
+// bu fonksiyon "başarılı" demez, yalnızca "zincire yazıldı" der.
+export async function sendExecute({ signer, calldata }) {
+  let gasLimit;
+  let gasEstimated = true;
+  try {
+    const estimated = await signer.estimateGas({ to: CONTRACTS.pqWallet, data: calldata });
+    gasLimit = (estimated * 12n) / 10n; // %20 pay
+  } catch {
+    // Public RPC bu calldata boyutunda (3,9 KB) eth_estimateGas'ta zorlanabilir.
+    // Tahminin başarısız olması gönderimi öldürmemeli — ölçülmüş sabit limite
+    // düşülür ve çağıran bunu kullanıcıya bildirebilsin diye bayrak döner.
+    gasLimit = GAS_FALLBACK;
+    gasEstimated = false;
+  }
+
+  const tx = await signer.sendTransaction({ to: CONTRACTS.pqWallet, data: calldata, gasLimit });
+
+  // ethers v6'da `tx.wait()` revert eden bir tx için receipt DÖNDÜRMEZ:
+  // provider.js'teki `checkReceipt` (v6.17, satır 1139) `receipt.status === 0`
+  // görünce CALL_EXCEPTION fırlatır. O hatanın `receipt` alanı DOLUDUR.
+  //
+  // Burada yakalanmasının sebebi: revert eden bir tx de zincire yazılmıştır —
+  // hash'i, blok numarası ve HARCANAN gas'ı gerçektir ve kanıttır. Hatayı
+  // olduğu gibi yukarı bırakmak, çağıranın generic hata dalına düşmesine ve
+  // ekranda tx hash'i ile Etherscan linkinin KAYBOLMASINA yol açıyordu.
+  //
+  // Yalnızca CALL_EXCEPTION + receipt kurtarılır. TRANSACTION_REPLACED ve
+  // TIMEOUT başka şeylerdir (tx'in akıbeti belirsizdir, "revert etti"
+  // denemez); onlar hash'i taşıyarak yeniden fırlatılır.
+  let receipt;
+  try {
+    receipt = await tx.wait();
+  } catch (e) {
+    if (e?.code === 'CALL_EXCEPTION' && e.receipt) {
+      receipt = e.receipt;
+    } else {
+      if (e && typeof e === 'object') e.txHash = tx.hash;
+      throw e;
+    }
+  }
+
+  return { hash: tx.hash, receipt, gasLimit, gasEstimated };
+}

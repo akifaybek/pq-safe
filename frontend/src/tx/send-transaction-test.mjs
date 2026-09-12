@@ -100,5 +100,129 @@ check('chainId gelmezse "undefined" sızmıyor', !chainNoId.title.includes('unde
 const noAccounts = disconnectMessage({ reason: 'accountsChanged' });
 check('accounts undefined ise "erişim kesildi" metni', noAccounts.title === revoked.title, `gelen: ${noAccounts.title}`);
 
+
+// ── sendExecute() — receipt/revert mantığı ──────────────────────────────────
+//
+// NEDEN NODE'DA: bu davranışı tarayıcıda tetiklemek için zincirde GERÇEKTEN
+// revert eden bir tx atmak gerekir (gas yakar, Sepolia ETH kıt). Sahte bir
+// signer ile hem revert hem timeout yolu maliyetsiz ve deterministik olarak
+// sınanıyor.
+//
+// SINANAN İDDİA: ethers v6'nın `tx.wait()`i revert eden bir tx için receipt
+// DÖNDÜRMEZ, CALL_EXCEPTION fırlatır (provider.js:1139 `checkReceipt`). Bu
+// hata olduğu gibi yukarı bırakılırsa çağıran generic hata dalına düşer ve
+// GERÇEK bir tx'in hash'i ekrandan kaybolur. sendExecute onu kurtarıyor mu?
+
+import { sendExecute, GAS_FALLBACK } from './sendTransaction.js';
+
+console.log('\n=== sendExecute() receipt/revert testi ===\n');
+
+const CALLDATA = '0xdeadbeef';
+
+// Sahte signer: ethers Signer'ın sendExecute'un kullandığı üç yüzeyi.
+function fakeSigner({ estimateGas, waitResult, waitError }) {
+  const seen = {};
+  return {
+    seen,
+    async estimateGas(tx) {
+      seen.estimateTx = tx;
+      if (typeof estimateGas === 'function') return estimateGas();
+      return estimateGas;
+    },
+    async sendTransaction(tx) {
+      seen.sentTx = tx;
+      return {
+        hash: '0xaaaa',
+        async wait() {
+          if (waitError) throw waitError;
+          return waitResult;
+        },
+      };
+    },
+  };
+}
+
+const okReceipt = { status: 1, gasUsed: 233429n, blockNumber: 9000000 };
+const revertReceipt = { status: 0, gasUsed: 123456n, blockNumber: 9000001 };
+
+// 1. Normal yol: tahmin alınır, %20 pay eklenir.
+{
+  const signer = fakeSigner({ estimateGas: 200000n, waitResult: okReceipt });
+  const r = await sendExecute({ signer, calldata: CALLDATA });
+  check('tahmin başarılı → gasLimit = tahmin * 1.2', r.gasLimit === 240000n, `gelen: ${r.gasLimit}`);
+  check('tahmin başarılı → gasEstimated true', r.gasEstimated === true);
+  check('receipt olduğu gibi dönüyor (status 1)', r.receipt.status === 1);
+  check('hash dönüyor', r.hash === '0xaaaa');
+  check('calldata sendTransaction\'a aynen gidiyor', signer.seen.sentTx.data === CALLDATA);
+  check('hedef PQWallet adresi', signer.seen.sentTx.to === CONTRACTS.pqWallet);
+  check('gasLimit tx\'e geçiyor', signer.seen.sentTx.gasLimit === 240000n);
+}
+
+// 2. Tahmin patlarsa ölçülmüş sabit limite düşülür — gönderim ölmez.
+{
+  const signer = fakeSigner({
+    estimateGas: () => { throw new Error('rpc: estimate failed'); },
+    waitResult: okReceipt,
+  });
+  const r = await sendExecute({ signer, calldata: CALLDATA });
+  check('tahmin patladı → GAS_FALLBACK', r.gasLimit === GAS_FALLBACK, `gelen: ${r.gasLimit}`);
+  check('tahmin patladı → 350.000 (spec değeri)', GAS_FALLBACK === 350000n, `gelen: ${GAS_FALLBACK}`);
+  check('tahmin patladı → gasEstimated false (kullanıcıya söylenebilsin)', r.gasEstimated === false);
+}
+
+// 3. ASIL İDDİA: revert eden tx'in receipt'i CALL_EXCEPTION'dan kurtarılır.
+{
+  const err = Object.assign(new Error('transaction execution reverted'), {
+    code: 'CALL_EXCEPTION',
+    receipt: revertReceipt,
+  });
+  const signer = fakeSigner({ estimateGas: 200000n, waitError: err });
+  // try/catch: kurtarma kaldırılırsa bu satır FIRLATIR. Yakalanmazsa test
+  // yakalanmamış bir reddedişle ÇÖKER — kırmızıdır ama hangi iddianın
+  // düştüğünü söylemez. Burada isimli bir ✗'e çevriliyor.
+  let r = null;
+  let thrown = null;
+  try {
+    r = await sendExecute({ signer, calldata: CALLDATA });
+  } catch (e) {
+    thrown = e;
+  }
+  check('revert → fırlatmıyor, receipt döndürüyor', thrown === null && r?.receipt != null, `fırlayan: ${thrown?.code}`);
+  check('revert → status 0 ÇAĞIRANA ULAŞIYOR', r?.receipt?.status === 0, `gelen: ${r?.receipt?.status}`);
+  check('revert → hash korunuyor (Etherscan kanıtı)', r?.hash === '0xaaaa');
+  check('revert → harcanan gas korunuyor', r?.receipt?.gasUsed === 123456n);
+}
+
+// 4. Belirsiz yollar YUTULMAZ: timeout/replacement "revert etti" değildir,
+//    tx'in akıbeti bilinmiyordur. Fırlatılır — ama hash iliştirilerek, yoksa
+//    zincirde olabilecek gerçek bir tx kaybolur.
+{
+  const err = Object.assign(new Error('wait for transaction timeout'), { code: 'TIMEOUT' });
+  const signer = fakeSigner({ estimateGas: 200000n, waitError: err });
+  let thrown = null;
+  try {
+    await sendExecute({ signer, calldata: CALLDATA });
+  } catch (e) {
+    thrown = e;
+  }
+  check('timeout → fırlatılıyor (sessizce başarı sayılmıyor)', thrown !== null);
+  check('timeout → hash hataya iliştirilmiş', thrown?.txHash === '0xaaaa', `gelen: ${thrown?.txHash}`);
+  check('timeout → kod korunuyor', thrown?.code === 'TIMEOUT');
+}
+
+// 5. receipt'siz CALL_EXCEPTION de yutulmaz — kurtaracak bir şey yok.
+{
+  const err = Object.assign(new Error('call exception, no receipt'), { code: 'CALL_EXCEPTION' });
+  const signer = fakeSigner({ estimateGas: 200000n, waitError: err });
+  let thrown = null;
+  try {
+    await sendExecute({ signer, calldata: CALLDATA });
+  } catch (e) {
+    thrown = e;
+  }
+  check('receipt\'siz CALL_EXCEPTION → fırlatılıyor', thrown !== null);
+  check('receipt\'siz CALL_EXCEPTION → hash iliştirilmiş', thrown?.txHash === '0xaaaa');
+}
+
 console.log(failures === 0 ? '\nTÜMÜ GEÇTİ' : `\n${failures} BAŞARISIZ`);
 process.exit(failures === 0 ? 0 : 1);

@@ -897,7 +897,7 @@ Yanlış ağda gönderim engelleniyor — digest chainId'e bağlı."
 
 ---
 
-### Task 5: Üç kalkanlı gönderim
+### Task 5: Üç kalkanlı gönderim — ✅ BİTTİ (12 Eylül)
 
 **Files:**
 - Modify: `frontend/src/tx/sendTransaction.js`
@@ -907,7 +907,7 @@ Yanlış ağda gönderim engelleniyor — digest chainId'e bağlı."
 - Consumes: `encodeExecute`, `readNonce`, `readDigest` (Task 1-2), `connectWallet` (Task 4)
 - Produces: `preflight({ signer, calldata }): Promise<void>`, `sendExecute({ signer, calldata }): Promise<{ hash, receipt }>`
 
-- [ ] **Step 1: Ön-uçuş ve gönderimi `sendTransaction.js`'e ekle**
+- [x] **Step 1: Ön-uçuş ve gönderimi `sendTransaction.js`'e ekle**
 
 ```js
 import { CONTRACTS } from '../config/contracts.js';
@@ -948,7 +948,7 @@ export async function sendExecute({ signer, calldata }) {
 }
 ```
 
-- [ ] **Step 2: `main.js`'e gönder listener'ı ekle**
+- [x] **Step 2: `main.js`'e gönder listener'ı ekle**
 
 `main.js` import bloğunu güncelle:
 
@@ -1028,22 +1028,26 @@ btnSend.addEventListener('click', async () => {
 });
 ```
 
-- [ ] **Step 3: Ön-uçuşun gerçekten yakaladığını doğrula (gaz harcamadan)**
+- [x] **Step 3: Ön-uçuşun gerçekten yakaladığını doğrula (gaz harcamadan)** — SAPMA 6 ile genişletildi: üç kalkan da ayrı ayrı kırmızıya boyandı, kanıt `docs/evidence/crypto-tests/sprint3-three-shields.md`
 
 Run: `cd frontend && npx vite`
 Tarayıcıda: anahtar üret → imzala → **`tx-value`'yu cüzdan bakiyesinden büyük yap**
 (ör. `9000000000000000000`) → yeniden imzala → Gönder.
 Expected: MetaMask AÇILMADAN hata çıkar, mesaj `PQWallet: call failed` içerir.
 
-- [ ] **Step 4: Commit önerisini kullanıcıya ver**
+- [x] **Step 4: Commit önerisini kullanıcıya ver**
 
 ```bash
 git add frontend/src/tx/sendTransaction.js frontend/src/main.js
 git commit -m "feat(frontend): üç kalkanlı execute() gönderimi
 
 Nonce kontrolü, canlı digest karşılaştırması, eth_call ön-uçuşu; gas tahmini
-başarısız olursa 2M fallback. Kullanılan gas sonuçta gösteriliyor."
+başarısız olursa 350.000 fallback. Kullanılan gas sonuçta gösteriliyor."
 ```
+
+> **Plan düzeltmesi (12 Eylül):** bu mesaj "2M fallback" diyordu. Değer 8
+> Eylül'de 350.000'e düşürüldü (Global Constraints + spec'in gas bölümü);
+> kanıt zincirinde yanlış sayı bırakmamak için düzeltildi.
 
 ---
 
