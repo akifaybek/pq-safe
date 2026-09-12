@@ -303,10 +303,31 @@ bölümündeki 4 assertion KIRMIZI; geri alındı → YEŞİL. md5
 
 ### A2 — kurtarma koşulu ve `e.txHash`'in ölü olup olmadığı
 
-**Koşul zaten dardı:** `e?.code === 'CALL_EXCEPTION' && e.receipt`
-(`sendTransaction.js:164`). Yani receipt taşımayan bir CALL_EXCEPTION kurtarma
-dalına girmiyor, `receipt.status` üzerinde TypeError üretemiyor; else dalına
-düşüp hash'i iliştirerek yeniden fırlatılıyor. Değişiklik gerekmedi.
+**Koşul zaten dardı — `sendTransaction.js:164`:**
+
+```js
+if (e?.code === 'CALL_EXCEPTION' && e.receipt) {
+  receipt = e.receipt;
+} else {
+  if (e && typeof e === 'object') e.txHash = tx.hash;
+  throw e;
+}
+```
+
+`&& e.receipt` orada. Sonradan eklenmedi: aynı satır Task 5 commit'inde
+(`3795b70:frontend/src/tx/sendTransaction.js:164`) birebir böyle ve dosya A
+turunda hiç değişmedi (`git diff` boş). Değişiklik gerekmedi.
+
+**Sadece `code`'a bakılsaydı ne olurdu:** receipt taşımayan bir CALL_EXCEPTION
+geldiğinde `receipt = e.receipt` → `undefined` olur, çağıran `receipt.status`'u
+okurken TypeError fırlatır, o da gönderim handler'ının generic catch'ine düşer
+ve tx hash'i ekrandan kaybolur — yani SAPMA 1'in önlemek için var olduğu şeyin
+ta kendisi. Şimdiki halde o hata else dalına düşüyor, hash'i iliştirilip yeniden
+fırlatılıyor ve ekranda hash + Etherscan linkiyle gösteriliyor (bölüm A2'nin
+ikinci yarısı — canlı çalıştırıldı).
+
+Bu dalın kendi testi de var: *"receipt'siz CALL_EXCEPTION → fırlatılıyor"* ve
+*"… → hash iliştirilmiş"* (`send-transaction-test.mjs`, sahte signer bölümü).
 
 **`e.txHash` ölü kod DEĞİLMİŞ — ama hiç çalıştırılmamıştı.** Çalıştırıldı:
 `eth_sendTransaction` gerçek bir hash döndürürken `eth_getTransactionReceipt`
