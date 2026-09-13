@@ -263,10 +263,10 @@ bu görevin kapsamı dışında.
 
 | | |
 |---|---|
-| Dosya | `kanıt video 2.mp4` |
+| Dosya | `sprint3-end-to-end-recording.mp4` |
 | Boyut | 93.087.866 bayt (~93 MB) |
 | SHA-256 | `f7be0790747634e8e2fc38ac68d28843462b932d2136d84d1722089cc22abe1b` |
-| Konum | Repo **dışında** tutuluyor — 93 MB'lık ikili dosya depoyu kalıcı şişirirdi |
+| Konum | Repo **dışında** tutuluyor — 93 MB'lık ikili dosya depoyu kalıcı şişirirdi. Dosya adı değişebilir; kaydın kimliği yukarıdaki SHA-256'dır |
 
 Kaydın gösterdikleri, sırayla: owner anahtarının zincirdeki `ownerPublicKey`
 ile eşleştiği (`✓ AYNI`) → nonce ve bakiyenin zincirden canlı okunması →
