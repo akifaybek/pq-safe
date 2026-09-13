@@ -476,13 +476,63 @@ Yani kontrol gerçekten yayından önce duruyor: A'da cüzdan katmanı görülü
 B'de hiç görülmüyor. Ekran görüntüsü:
 `../screenshots/sprint3-send-aborted-signature-changed.png`
 
-**Düzeneğin açık sınırı:** önleme katmanı (girdi kilidi) gerçek kullanıcıya
-karşı çalışır — `disabled` bir input'a yazılamaz. Ama testteki programatik
-`dispatchEvent(new Event('input'))` `disabled`ı umursamaz ve dinleyiciyi yine de
-tetikler. Yani **önleme katmanı tarayıcı testiyle ihlal edilemez biçimde
-ölçülemedi**; ölçülen şey kilidin kurulduğu (yukarıdaki tablo). Yakalama
-katmanı ise tam da bu boşluktan geçilerek sınandı — önleme aşılsa bile tx'in
-yayınlanmadığı gösterildi. İki katmanın ayrı olmasının sebebi de bu.
+### Katman 1 KULLANICI SEVİYESİNDE ölçüldü — Playwright `fill()` oracle'ı
+
+İlk turda önleme katmanını `dispatchEvent(new Event('input'))` ile sınamıştım.
+**O bir ölçüm değildi:** `dispatchEvent` benim kendi taklidim ve `disabled`
+özniteliğini umursamadan dinleyiciyi tetikliyor. Kilidin gerçek kullanıcıya
+karşı tuttuğunu göstermiyordu.
+
+Playwright'ın `locator.fill()`'i **bağımsız oracle**: tarayıcının kendi
+actionability kontrolünden geçiyor ve `disabled` bir input "editable"
+sayılmadığı için dolduramıyor.
+
+**Pozitif kontrol önce** (kilit yokken `fill()` geçmeli — geçmeseydi aşağıdaki
+timeout'lar kilidi değil, selector'ı ya da düzeneği ölçmüş olurdu):
+
+| Alan | Kilit YOKKEN `fill()` | Sonuç |
+|---|---|---|
+| `tx-to` | GEÇTİ | değer yazıldı |
+| `tx-value` | GEÇTİ | değer yazıldı |
+| `tx-data` | GEÇTİ | değer yazıldı |
+
+**Gönderim penceresi AÇIKKEN** (ön-uçuş bilerek 20 sn'ye yavaşlatıldı, üç
+deneme paralel, her birinin timeout'u 3 sn — yani hepsi pencerenin içinde):
+
+```
+click #btn-send sonrası input.disabled : [true, true, true]
+
+locator.fill('#tx-to',    …) → locator.fill: Timeout 3000ms exceeded.   REDDEDİLDİ
+locator.fill('#tx-value', …) → locator.fill: Timeout 3000ms exceeded.   REDDEDİLDİ
+locator.fill('#tx-data',  …) → locator.fill: Timeout 3000ms exceeded.   REDDEDİLDİ
+
+denemelerden sonra alan değerleri : değişmedi (birebir aynı)
+denemeler biterken akış           : HÂLÂ sürüyordu ("Ön-uçuş yapılıyor…")
+```
+
+Son satır assertion'ın üçüncü ayağı: akış bitmiş olsaydı `finally` kilitleri
+açardı ve timeout'lar kilidi değil, pencerenin kapanmasını ölçerdi.
+
+**İlk denemede bu tam olarak başıma geldi ve bulgu olarak duruyor:** denemeler
+SIRAYLA yapılmıştı (2,5 sn × 3) ve pencere 6 sn'ydi; üçüncü deneme
+(`tx-data`) GEÇTİ. Sebep kilidin aşılması değil — **Playwright'ın `fill()`'i
+reddetmiyor, BEKLİYOR;** kilit açılınca doldurdu. Yani bu testte pencere,
+denemelerin toplam süresinden uzun tutulmak zorunda. Paralel + 20 sn'lik
+pencereyle tekrarlandı, üçü de reddedildi.
+
+### Hangi katman hangi oracle'la kanıtlandı
+
+| Katman | Oracle | Ne gösterildi |
+|---|---|---|
+| **1 — ÖNLE** (girdi + btnBuildSign kilidi) | Playwright `locator.fill()` — tarayıcının kendi actionability kontrolü, bağımsız | Gerçek kullanıcı gönderim penceresinde üç alanın hiçbirine yazamıyor; değerler değişmiyor |
+| **2 — YAKALA** (`signed !== sig`) | Cüzdan katmanına giden RPC metod kaydı (`eth_estimateGas`/`eth_sendTransaction` var mı) | Önleme AŞILSA bile tx yayınlanmıyor |
+
+İkinci katmanı sınamak için önleme katmanını kasten atlamak gerekiyordu; bunun
+için `dispatchEvent`in `disabled`ı umursamaması ve test kancasının
+`dropSignature()`'ı kullanıldı. Yani **taklit yalnızca katman 2'yi sınarken,
+katman 1'i devre dışı bırakmak amacıyla** kullanıldı — katman 1'in kendi
+kanıtında değil. İki katmanın ayrı olmasının ve ayrı oracle'larla
+ölçülmesinin sebebi de bu.
 
 ## 14. Devreden
 
