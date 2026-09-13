@@ -348,11 +348,11 @@ git push
 | Canlı ağda gerçek migration + gerçek transfer | Tx hash'ler + gerçek gas maliyeti | ✅ Bitti (7 Eylül) — bkz. docs/evidence/tx-hashes.md |
 
 **Akif**
-| Görev | Kanıt |
-|---|---|
-| Frontend'i Sepolia'ya bağla | Ekran görüntüsü |
-| ABI'ları `frontend/src/contracts/` altına kopyala | Commit |
-| Uçtan uca akış çalışıyor | Ekran kaydı |
+| Görev | Kanıt | Durum |
+|---|---|---|
+| Frontend'i Sepolia'ya bağla | Ekran görüntüsü | ✅ Bitti — `docs/evidence/crypto-tests/sprint3-sepolia-readonly-connection.md`, `sprint3-metamask-connection.md` |
+| ABI'ları `frontend/src/contracts/` altına kopyala | Commit | ✅ Bitti — `frontend/src/contracts/PQWallet.json`, `Migration.json` |
+| Uçtan uca akış çalışıyor | Ekran kaydı | ✅ Bitti (13 Eylül) — gerçek Sepolia tx `0x320e03d9…e50da`, gasUsed 216.221, nonce 1→2. Kanıt: `docs/evidence/crypto-tests/sprint3-end-to-end-transaction.md`. Ekran kaydı repo dışında (93 MB), SHA-256 kanıt notunda |
 
 ---
 

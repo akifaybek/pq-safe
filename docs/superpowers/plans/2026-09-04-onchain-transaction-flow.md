@@ -1142,7 +1142,7 @@ adresin** olsun — transfer edilen ETH geri gelir ve `PQWallet.receive()`
 > "yanlış ağ" senaryosunu göstereceksen. Ayrıntı ve ekran görüntüsü:
 > `docs/evidence/crypto-tests/sprint3-metamask-connection.md`.
 
-- [ ] **Step 0: Kalkan 3'ün `call failed` dalını kanıtla (gerçek tx'ten ÖNCE, sıfır maliyet)**
+- [x] **Step 0: Kalkan 3'ün `call failed` dalını kanıtla (gerçek tx'ten ÖNCE, sıfır maliyet)**
 
 Task 5'te kalkan 3 yalnızca `"PQWallet: invalid signature"` dalında görüldü.
 Diğer dal geçerli owner imzası gerektiriyor: `execute()` önce imzayı doğruluyor
@@ -1166,7 +1166,7 @@ Sonra `value`'yu gerçek değere düşürüp Step 1'e geç.
 > Nota gömülü bırakılmadı, adım olarak yazıldı: Task 1'deki "yanlış-ağ dalı hiç
 > çalıştırılmamış" bulgusu tam olarak öyle kaçmıştı.
 
-- [ ] **Step 1: Gerçek işlemi at**
+- [x] **Step 1: Gerçek işlemi at**
 
 Run: `cd frontend && npx vite`
 Sırayla: anahtar üret → `to` = kendi MetaMask adresin → `value` = `100000000000000`
@@ -1181,23 +1181,35 @@ sonrası gösterilen publicKey'in `jq -r .publicKeyConcat .env.pqwallet-owner-ke
 **Ekran kaydı öncesi kontrol:** mnemonic alanı boşaldı mı, sayfada mnemonic'in
 hiçbir kelimesi görünüyor mu (`Ctrl+F`)? Kayıt başlamadan doğrula.
 
-- [ ] **Step 2: Ekran kaydını HEMEN al**
+- [x] **Step 2: Ekran kaydını HEMEN al**
 
 Çalıştığı anda kaydet, sonraya bırakma. Kayıt şunları göstermeli: nonce/bakiye
 zincirden okunuyor → imza üretiliyor → negatif kanıt reddediliyor → gerçek tx
 gönderiliyor → Etherscan linki → bakiye düşüyor.
 
-- [ ] **Step 3: Ölçülen gas'ı spec'e yaz**
+- [x] **Step 3: Ölçülen gas'ı spec'e yaz**
 
-`docs/superpowers/specs/2026-09-04-onchain-transaction-flow-design.md` içindeki
-"Elimizdeki ölçümler tutarlı bir tahmin vermiyor" tablosuna gerçek satırı ekle
-ve "Bugün ölçülecek" bölümünü ölçülen değerle güncelle.
+> **Plan düzeltmesi (13 Eylül):** bu adım "Elimizdeki ölçümler tutarlı bir
+> tahmin vermiyor" tablosundan söz ediyordu — o tablo **8 Eylül'de zaten
+> gerçek sayıyla değiştirilmişti** (233.429, Hakan'ın tx'i). Task 7'nin
+> eklediği şey o satırın düzeltilmesi değil, **ikinci bir gerçek ölçüm**:
+> frontend'den, C13 imzayla, kalıcı rejimde.
 
-- [ ] **Step 4: Kanıt notunu yaz**
+`docs/superpowers/specs/2026-09-04-onchain-transaction-flow-design.md` → `## Gas`
+tablosuna YENİ satır: **216.221** (tx `0x320e03d9…e50da`). 233.429 satırı
+SİLİNMEZ, "İLK tx (nonce 0→1)" diye etiketlenir; yenisi "KALICI REJİM
+(nonce 1→2)". Aradaki 17.208'in ayrıştırması da yazılır (SSTORE_SET 20.000 vs
+SSTORE_RESET 2.900).
+
+- [x] **Step 4: Kanıt notunu yaz**
 
 `docs/evidence/crypto-tests/sprint3-end-to-end-transaction.md` — tx hash,
 Etherscan linki, **ölçülen gas**, negatif kanıt çıktısı, ekran görüntüleri,
-nonce'un 0→1 arttığının zincirden doğrulaması.
+nonce artışının zincirden doğrulaması.
+
+> **Plan düzeltmesi (13 Eylül):** burada "nonce'un 0→1 arttığı" yazıyordu.
+> Bayattı — 0→1'i Hakan'ın 7 Eylül tx'i yapmıştı, bizimki **1→2**. Fark
+> kozmetik değil: gas analizinin merkezinde tam olarak bu duruyor.
 
 - [ ] **Step 5: Tx hash'ini Hakan'a gönder**
 

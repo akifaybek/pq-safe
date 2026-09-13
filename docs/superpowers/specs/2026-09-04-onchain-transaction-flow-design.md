@@ -229,13 +229,38 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 
 | Ölçüm | Gas | Kaynak |
 |---|---|---|
-| **`PQWallet.execute()` gerçek Sepolia tx'i** | **233.429** | `sprint3-execute-real-gas.md`, tx `0xd62b812e…631ad9` |
+| **`PQWallet.execute()` — İLK tx (nonce 0→1)** | **233.429** | `sprint3-execute-real-gas.md`, tx `0xd62b812e…631ad9` (Hakan, 7 Eylül) |
+| **`PQWallet.execute()` — KALICI REJİM (nonce 1→2)** | **216.221** | `sprint3-end-to-end-transaction.md`, tx `0x320e03d9…e50da` (Akif, 13 Eylül — frontend'den, C13 imzayla) |
 | `execute()` EVM içi (zarf hariç) | 164.313 | Foundry trace |
 | ├─ `SPHINCSVerifier.verify()` | 108.574 | aynı trace |
 | │  └─ `SphincsC13Asm.verify()` (kanonik) | 106.672 | `sprint0-c13-verifier-gas.md` |
 | Intrinsic + calldata (3.908 bayt) | 81.116 | hesap: 21.000 + 60.116 |
 | Yeni (var olmayan) alıcıya transferin ek maliyeti | +25.000 | ölçüldü, `sprint3-execute-real-gas.md` |
 | `Migration.proveOwnership()` gerçek tx'i | 73.753 | `docs/evidence/tx-hashes.md` |
+
+### İki gerçek ölçüm neden farklı: 233.429 → 216.221 (13 Eylül)
+
+İkisi de gerçek Sepolia tx'i, ikisi de doğru. Fark **17.208** ve tamamı
+`nonce++`'ın (`PQWallet.sol:48`) depolama yazma fiyatından geliyor:
+
+| | İlk tx (Hakan) | Kalıcı rejim (Akif) |
+|---|---|---|
+| nonce | **0 → 1** | **1 → 2** |
+| soğuk slot erişimi | 2.100 | 2.100 |
+| `SSTORE` | **20.000** (`SSTORE_SET`, sıfırdan çıkış) | **2.900** (`SSTORE_RESET`) |
+| toplam | 22.100 | 5.000 |
+
+22.100 − 5.000 = **17.100** — ölçülen EVM farkının birebiri (kalan 108,
+calldata'daki 9 sıfır baytlık kodlama farkı).
+
+**Planlamada kullanılacak sayı 216.221'dir.** 233.429 tek seferlikti; PQWallet
+bir daha asla nonce'u sıfırdan çıkarmayacak.
+
+İkincil iki terim var, birbirini büyük ölçüde götürüyor: `verify()` imzaya göre
+değişiyor (bizim imzamızla ölçüldü: **113.771**; WOTS+ zincir uzunlukları
+digest'e bağlı, varyans beklenen) ve `execute()`'un `to`'su tx göndericisiyle
+aynı olduğu için EIP-2929 uyarınca sıcak (`CALL` 2.600 yerine 100). Ayrıntı:
+`docs/evidence/crypto-tests/sprint3-end-to-end-transaction.md` § 3.
 
 Eski tablodaki **1.130.002 rakamı `execute()`'un maliyeti değildi** — Foundry'nin
 test fonksiyonunun tamamını (üç kontrat deploy'u dahil, ~968K) raporladığı sayıydı.
@@ -270,9 +295,16 @@ gerçek sayıyla değiştirildi, kanıt notu yazıldı
 (`docs/evidence/gas-reports/sprint3-execute-real-gas.md`). Artık tahminle
 yaşamıyoruz.
 
-**Risk:** public RPC uç noktası bu calldata boyutunda `eth_estimateGas`'ta
-zorlanabilir; MetaMask'in tahmini tutmayabilir. Fallback tam olarak bunun için
-var.
+**13 Eylül eki — frontend'den kendi ölçümümüz alındı.** Yukarıdaki satır
+Hakan'ın tx'ini anlatıyor; Task 7'de aynı akış **frontend'den, C13 imzayla,
+MetaMask üzerinden** koştu ve ikinci bir gerçek ölçüm verdi: **216.221**
+(tx `0x320e03d9…e50da`). Aradaki farkın tamamı yukarıdaki SSTORE analizinde.
+
+**Risk — bu tx'te GERÇEKLEŞMEDİ:** public RPC uç noktası bu calldata boyutunda
+`eth_estimateGas`'ta zorlanabilir; MetaMask'in tahmini tutmayabilir. Fallback
+tam olarak bunun için var. 13 Eylül'de tahmin **başarılı** oldu (219.104, limit
+262.924 = ×1,2) ve fallback devreye girmedi — yani `GAS_FALLBACK = 350.000`
+dalı hâlâ canlı görülmemiş durumda.
 
 ## Hata durumları
 
