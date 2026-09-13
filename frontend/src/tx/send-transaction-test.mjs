@@ -10,7 +10,11 @@
 // `window.ethereum`a bağlı, node'da yok. Onların doğrulaması tarayıcıda
 // yapılır (plan Task 4, Step 3).
 
-import { disconnectMessage } from './sendTransaction.js';
+import {
+  disconnectMessage,
+  classifyNegativeProofError,
+  INVALID_SIGNATURE_REASON,
+} from './sendTransaction.js';
 import { CONTRACTS } from '../config/contracts.js';
 
 let failures = 0;
@@ -324,6 +328,101 @@ if (revertedTx && successTx) {
   check('sendExecute → gerçek status 1', okRes.receipt.status === 1, `gelen: ${okRes.receipt.status}`);
   check('sendExecute → status 1 ve status 0 AYIRT EDİLİYOR', okRes.receipt.status !== rr?.receipt?.status);
 }
+
+console.log('\n=== classifyNegativeProofError() — ÜÇ YOL ===\n');
+
+// Neden bu testler var: negatif kanıtın ekrana YEŞİL mi GRİ mi yazacağına bu
+// saf fonksiyon karar veriyor. Brief'teki tek yollu kontrol
+// (`String(reason).includes('PQWallet: invalid signature')`) bir ağ hatasını
+// "Reddedildi, ama beklenen mesaj değil: <ağ hatası>" diye basıyordu — sahnede
+// güvenlik bulgusu gibi okunan bir yanlış alarm.
+//
+// Girdiler ethers 6.17'nin GERÇEK hata şekillerine göre kuruldu: revert eden
+// bir eth_call'da `code === 'CALL_EXCEPTION'`, `reason` çözülmüş require
+// string'i, `data` ise ham Error(string) revert verisi (0x08c379a0…).
+// Canlı doğrulaması ayrıca tarayıcıda yapıldı (kanıt notu, bölüm 3).
+
+// Error(string) ABI kodlaması: selector 0x08c379a0 + offset + uzunluk + veri.
+const REVERT_DATA_INVALID_SIG =
+  '0x08c379a0' +
+  '0000000000000000000000000000000000000000000000000000000000000020' +
+  '000000000000000000000000000000000000000000000000000000000000001a' +
+  Buffer.from('PQWallet: invalid signature').toString('hex').padEnd(64, '0');
+
+const cRejected = classifyNegativeProofError({
+  code: 'CALL_EXCEPTION',
+  reason: 'PQWallet: invalid signature',
+  shortMessage: 'execution reverted: "PQWallet: invalid signature"',
+  data: REVERT_DATA_INVALID_SIG,
+});
+check('(a) CALL_EXCEPTION + beklenen sebep → rejected (YEŞİL)', cRejected.outcome === 'rejected', `gelen: ${cRejected.outcome}`);
+check('(a) sebep metni olduğu gibi taşınıyor', cRejected.reason === INVALID_SIGNATURE_REASON);
+check('(a) why === revert', cRejected.why === 'revert');
+
+const cOther = classifyNegativeProofError({
+  code: 'CALL_EXCEPTION',
+  reason: 'PQWallet: call failed',
+  data: '0x08c379a0deadbeef',
+});
+check('(b) CALL_EXCEPTION + BAŞKA sebep → unexpected-revert (SARI)', cOther.outcome === 'unexpected-revert', `gelen: ${cOther.outcome}`);
+check('(b) SARI yolu YEŞİL değil', cOther.outcome !== 'rejected');
+
+// (c) Ağ hataları. ethers bunları CALL_EXCEPTION ile DEĞİL kendi kodlarıyla
+// fırlatır; hiçbirinde `reason` yoktur.
+for (const netErr of [
+  { code: 'NETWORK_ERROR', shortMessage: 'could not detect network' },
+  { code: 'SERVER_ERROR', shortMessage: 'could not coalesce error' },
+  { code: 'TIMEOUT', shortMessage: 'timeout' },
+  { code: 'UNKNOWN_ERROR', message: 'Failed to fetch' },
+  new TypeError('Failed to fetch'),
+]) {
+  const c = classifyNegativeProofError(netErr);
+  check(
+    `(c) ${netErr.code ?? 'TypeError'} → unavailable/network (GRİ)`,
+    c.outcome === 'unavailable' && c.why === 'network',
+    `gelen: ${c.outcome}/${c.why}`,
+  );
+}
+
+// Kritik yanlış-alarm testi: ağ hatasının metninde beklenen require string'i
+// GEÇSE bile yeşile boyanmamalı. Sınıflandırma metne DEĞİL, kontratın cevap
+// verip vermediğine bakar.
+const cTrap = classifyNegativeProofError({
+  code: 'SERVER_ERROR',
+  message: 'proxy error while handling PQWallet: invalid signature',
+});
+check('(c) ağ hatası metninde beklenen string geçse BİLE yeşil değil', cTrap.outcome === 'unavailable', `gelen: ${cTrap.outcome}`);
+
+// Aynı tuzağın tersi: brief'in kontrolü bu girdide ne yapardı? Assertion'ın
+// boş olmadığını gösterir — eski mantık bu satırda YANLIŞ cevap veriyor.
+const briefWouldSay = String(cTrap.reason).includes(INVALID_SIGNATURE_REASON);
+check("(c) brief'in tek yollu kontrolü aynı girdide YANILIYOR (assertion boş değil)", briefWouldSay === true);
+
+// Revert verisi OLMAYAN CALL_EXCEPTION: ethers "missing revert data" der.
+// Kontratın ne dediğini okuyamıyoruz → sarı DEĞİL, gri.
+const cNoData = classifyNegativeProofError({
+  code: 'CALL_EXCEPTION',
+  reason: null,
+  data: null,
+  shortMessage: 'missing revert data',
+});
+check('(c) CALL_EXCEPTION ama revert verisi yok → unavailable/no-revert-data', cNoData.outcome === 'unavailable' && cNoData.why === 'no-revert-data', `gelen: ${cNoData.outcome}/${cNoData.why}`);
+check("(c) 'missing revert data' SARI değil (bulgu adayı diye basılmaz)", cNoData.outcome !== 'unexpected-revert');
+
+const cEmptyData = classifyNegativeProofError({ code: 'CALL_EXCEPTION', data: '0x', shortMessage: 'execution reverted' });
+check("(c) data === '0x' boş sayılıyor", cEmptyData.outcome === 'unavailable' && cEmptyData.why === 'no-revert-data');
+
+// `reason` yok ama ham revert verisi VAR: kontrat cevap vermiştir (özel bir
+// error tipi olabilir). Kontratın cevabı okunamadığı için beklenen metinle
+// eşleşmez → SARI, bulgu adayı.
+const cDataOnly = classifyNegativeProofError({ code: 'CALL_EXCEPTION', data: '0xdeadbeef', shortMessage: 'execution reverted (unknown custom error)' });
+check('(b) reason yok ama revert verisi VAR → unexpected-revert', cDataOnly.outcome === 'unexpected-revert', `gelen: ${cDataOnly.outcome}`);
+
+check('undefined/null hata patlatmıyor', classifyNegativeProofError(undefined).outcome === 'unavailable');
+
+// Beklenen sebep sabitinin kontrat kaynağıyla aynı olduğu — elle yazılmış bir
+// metin, typo sessizce YEŞİLİ SARIYA çevirirdi.
+check('INVALID_SIGNATURE_REASON birebir kontrattaki string', INVALID_SIGNATURE_REASON === 'PQWallet: invalid signature');
 
 console.log(failures === 0 ? '\nTÜMÜ GEÇTİ' : `\n${failures} BAŞARISIZ`);
 process.exit(failures === 0 ? 0 : 1);

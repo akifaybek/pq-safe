@@ -14,6 +14,15 @@
     .ok { color: #0a7d2c; font-weight: bold; }
     .warn { color: #9a5b00; font-size: 12px; }
     .err { color: #b00020; }
+    /* Negatif kanıtın iki ara sonucu. Ayrı sınıflar, çünkü ikisi de ne .ok
+       (yeşil, "kanıt geçerli") ne .err (kırmızı, "işlem başarısız") demek:
+       .finding — kontrat cevap verdi ama BEKLENEN mesajı vermedi. Bulgu adayı,
+                  bakılması gerekir; .warn'un 12px'lik dipnot görünümü sahnede
+                  bunu gözden kaçırtır.
+       .neutral — kontrata ulaşılamadı. Kanıt ALINAMADI; olumlu da olumsuz da
+                  değil. Renk bilerek gri: ekranda hiçbir hüküm iddia etmiyor. */
+    .finding { color: #9a5b00; font-weight: bold; }
+    .neutral { color: #555; font-weight: bold; }
   </style>
 </head>
 <body>

@@ -9,6 +9,7 @@ import {
   readOwnerPublicKey,
   readDigest,
   encodeExecute,
+  buildNegativeProofCalldata,
 } from './contracts/pqwallet.js';
 import {
   connectWallet,
@@ -16,6 +17,8 @@ import {
   disconnectMessage,
   preflight,
   sendExecute,
+  classifyNegativeProofError,
+  INVALID_SIGNATURE_REASON,
 } from './tx/sendTransaction.js';
 
 // Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
@@ -85,13 +88,24 @@ walletDisplay.textContent = CONTRACTS.pqWallet;
 // bir gönder butonu ya "Önce imzalayın" der ya da bir sonraki imzayla İKİNCİ
 // bir tx gönderir.
 //
-// btnSend: imza VE bağlantı ister — gönderim ikisini de kullanır.
-// btnNegativeProof: yalnızca imza ister. Negatif kanıt bir eth_call'dır ve
-// salt-okunur provider'la da yapılabilir; bağlantı şartı koymak onu gereksiz
-// yere MetaMask'e bağlardı. (Hangi provider'ı kullanacağı Task 6'nın kararı.)
+// İKİ BUTON DA imza VE bağlantı ister, çünkü ikisi de MetaMask signer'ını
+// kullanır: gönderim `eth_sendTransaction` için, negatif kanıt `eth_call` için.
+//
+// Kilit ile handler'ın koşulu AYNI ŞEYİ söylemeli. Önceki hali
+// (`btnNegativeProof.disabled = !signed`) söylemiyordu: cüzdan bağlı değilken
+// buton AÇIK kalıyor, basınca handler'ın başındaki `if (!conn)` kırmızı "Önce
+// cüzdanı bağlayın" basıyordu. Açık ama iş yapmayan bir buton, kilidin ikinci
+// ve çelişen bir kopyasıdır.
+//
+// Negatif kanıt PRENSİPTE bağlantı istemiyor — saf bir eth_call, salt-okunur
+// getSepoliaProvider() ile de yapılabilirdi. Bu seçenek Task 6 kanıt notunda
+// raporlandı, kararı kullanıcıya bırakıldı. Provider'a geçilirse BURASI
+// `!signed`e döner VE handler'daki bağlantı kontrolü tamamen kalkar — ikisi
+// birlikte değişir, tek başına değil.
 function syncSendButtons() {
-  btnSend.disabled = !(signed && connected);
-  btnNegativeProof.disabled = !signed;
+  const ready = Boolean(signed && connected);
+  btnSend.disabled = !ready;
+  btnNegativeProof.disabled = !ready;
 }
 
 // İmzadan sonra girdileri değiştirmek, üç kalkanın da GÖREMEDİĞİ bir hata
@@ -497,9 +511,10 @@ watchWalletChanges((change) => {
   const previousAddress = connected.address;
   connected = null;
   // İMZA DÜŞÜRÜLMEZ — bağlantının kopması imzayı geçersiz kılmaz, o hâlâ
-  // geçerlidir. Yalnızca butonların kilidi tazelenir: btnSend kapanır (bağlantı
-  // şartı düştü), negatif kanıt açık kalır (imza şartı duruyor). Tek kaynak
-  // syncSendButtons — burada elle `disabled` atanmaz.
+  // geçerlidir. Yalnızca butonların kilidi tazelenir: ikisi de kapanır, çünkü
+  // ikisi de MetaMask signer'ını kullanıyor. Yeniden bağlanınca imza hâlâ
+  // yerinde olduğu için ikisi de geri açılır. Tek kaynak syncSendButtons —
+  // burada elle `disabled` atanmaz.
   syncSendButtons();
   // Task 5 NOTU: gönderim handler'ı ayrıca `connected`ı akışın İÇİNDE de
   // kontrol ediyor (snapshot karşılaştırması). Buradaki kilit yeterli değil:
@@ -542,6 +557,17 @@ btnSend.addEventListener('click', async () => {
     return;
   }
 
+  // İŞ-SÜRERKEN kilidi. syncSendButtons()'ın yerine geçmez, ONUN İFADE
+  // EDEMEDİĞİ bir durumu kapatır: state (imza + bağlantı) bu akış boyunca
+  // GEÇERLİ kalıyor, yani tek kaynağa sorulsa iki buton da "açık" cevabını
+  // verirdi. Kapatılmasının sebebi state değil, akışın kendisi:
+  //   - btnSend: çift tıklama aynı nonce'a İKİ tx demektir.
+  //   - btnNegativeProof: negatif kanıt da sendOut'a yazıyor. Ön-uçuş ile
+  //     MetaMask onayı arasındaki 2-4 saniyede basılırsa "MetaMask onayı
+  //     bekleniyor…" ezilir ve iki akışın render'ları yarışır.
+  // SAPMA 2 kuralıyla çelişmiyor: kural KOŞULSUZ AÇMAYI yasaklar
+  // (`disabled = false`), kapatmayı değil. Açma tek kaynaktan yapılır —
+  // aşağıdaki syncSendButtons() çağrıları ve catch'teki.
   btnSend.disabled = true;
   btnNegativeProof.disabled = true;
   chainWarn.innerHTML = '';
@@ -707,3 +733,147 @@ btnSend.addEventListener('click', async () => {
     syncSendButtons();
   }
 });
+
+// ── NEGATİF KANIT ───────────────────────────────────────────────────────────
+//
+// "Transfer geçti" tek başına imzanın DOĞRULANDIĞINI kanıtlamaz. Şüpheci bir
+// jüri üyesi "imza gerçekten kontrol ediliyor mu, yoksa kod onu yok mu
+// sayıyor?" diye sorabilir ve haklıdır: doğrulamayı hiç çağırmayan bir
+// execute() de aynı yeşil ekranı üretirdi. Bir baytı bozulmuş imzayla eth_call
+// yapıp kontratın REDDETTİĞİNİ gösteriyoruz. Gaz harcanmaz.
+btnNegativeProof.addEventListener('click', async () => {
+  if (!signed) {
+    sendOut.innerHTML = '<p class="err">Önce imzalayın.</p>';
+    return;
+  }
+  // Bağlantının fotoğrafı — gerekçe btnSend'dekiyle aynı (bkz. yukarısı).
+  // Burada ayrıca bir kanıt bütünlüğü işi görür: çağrının PQWallet'a mı
+  // gittiğini akış SONUNDA `connected !== conn` ile sorgulayabiliyoruz.
+  const conn = connected;
+  if (!conn) {
+    sendOut.innerHTML = '<p class="err">Önce cüzdanı bağlayın.</p>';
+    return;
+  }
+
+  // İŞ-SÜRERKEN kilidi; gerekçe gönderim handler'ındaki blokla aynı. Buradaki
+  // asıl risk btnSend: negatif kanıtın eth_call'ı sürerken gönderime basılırsa
+  // iki akış aynı sendOut'a yazar ve hangisinin kazandığı zamanlamaya kalır.
+  btnSend.disabled = true;
+  btnNegativeProof.disabled = true;
+  chainWarn.innerHTML = '';
+  sendOut.innerHTML = '<p>Bozuk imzayla ön-uçuş yapılıyor… (gaz harcanmaz)</p>';
+
+  // İmzanın da fotoğrafı. Sonuç yazılmadan önce hâlâ AYNI imzayı mı
+  // gösteriyoruz diye sorulacak.
+  //
+  // Neden gerekli — ÖLÇÜLDÜ: eth_call sürerken kullanıcı tx-to/value/data
+  // alanlarını değiştirirse invalidateSignature() imzayı düşürüyor ve
+  // sendOut'a "Değerler değişti — imza geçersiz kılındı" yazıyor. Bu kontrol
+  // yokken çağrı bitince handler O UYARIYI EZİP yerine yeşil "✓ Kontrat bozuk
+  // imzayı reddetti … 'Zincire gönder' hâlâ kullanılabilir" basıyordu — oysa
+  // imza artık YOK ve gönder butonu kapalı. Kullanıcı ekranda yeşil görür,
+  // butonun neden kapalı olduğunu anlayamaz, uyarıyı hiç görmez.
+  //
+  // Kilit doğruydu (syncSendButtons kapatmıştı); yanlış olan EKRANDI. Task
+  // 3'teki "ekranda yeni değerler, calldata'da eski fields" hatasının kardeşi:
+  // gösterilen sonuç, artık var olmayan bir state'e ait.
+  const sigSnapshot = signed;
+  const showResult = (html) => {
+    if (signed !== sigSnapshot) {
+      sendOut.innerHTML =
+        '<p class="warn">Değerler çağrı sırasında değişti — imza geçersiz kılındı. Az önceki negatif kanıt artık BAYAT (silinmiş imzaya ait), bu yüzden gösterilmiyor. Yeniden imzalayıp tekrar deneyin.</p>';
+      return;
+    }
+    sendOut.innerHTML = html;
+  };
+
+  try {
+    // DİKKAT: bozma ve calldata kurma buraya AÇILMAZ. buildNegativeProofCalldata
+    // `signed`'ı yalnızca OKUR; burada `signed.signature = tamperSignature(...)`
+    // gibi bir atama yapılırsa saklanan gerçek imza bozulur ve ardından
+    // "Zincire gönder"e basan kullanıcı bozuk imzayı zincire yollar. O
+    // fonksiyonun state'i bozmadığı otomatik testle sabitlenmiş durumda
+    // (pqwallet-test.mjs — anlık görüntü signature'ı VE fields'ı kapsıyor).
+    const badCalldata = buildNegativeProofCalldata(signed);
+    await preflight({ signer: conn.signer, calldata: badCalldata });
+
+    // Buraya düşmek "kontrat bozuk imzayı KABUL ETTİ" demek — ama yalnızca
+    // çağrı gerçekten PQWallet'a gittiyse. Kullanıcı akışın ortasında MetaMask'i
+    // başka bir ağa alırsa eth_call, o ağda PQWallet'ın BULUNMADIĞI bir adrese
+    // gider: kod yok, revert yok, dönen değer boş (0x). Sessizlik buraya
+    // düşürür. O sessizliği "güvenlik bulgusu" diye basmak, sahnede alınabilecek
+    // en kötü yanlış alarmdır — bu yüzden önce bağlantı sorgulanır.
+    if (connected !== conn) {
+      showResult(`
+        <p class="neutral">Kanıt ALINAMADI — bağlantı ya da ağ çağrı sırasında değişti.</p>
+        <p class="warn">eth_call başka bir ağa gitmiş olabilir; orada PQWallet bulunmadığı için
+        çağrı revert etmeden boş döner. Bu, kontratın bozuk imzayı kabul ettiği anlamına GELMEZ.
+        Cüzdanı Sepolia'ya alıp yeniden bağlayın ve tekrar deneyin.</p>
+        <p class="warn">Gaz harcanmadı (eth_call). Saklanan gerçek imza değişmedi.</p>
+      `);
+    } else {
+      showResult(`
+        <p class="err">BEKLENMEYEN: bozuk imza reddedilmedi — eth_call revert etmeden döndü.</p>
+        <p class="warn">Bu bir GÜVENLİK BULGUSUDUR, araştırın: bağlantı ve ağ çağrı boyunca
+        değişmedi, yani çağrı Sepolia'daki PQWallet'a gitti ve kontrat bir baytı bozulmuş
+        imzayı kabul etti. Zincire işlem GÖNDERMEYİN.</p>
+      `);
+    }
+  } catch (e) {
+    // ÜÇ YOL: kontrat reddetti / kontrat başka bir şey dedi / kontrata
+    // ulaşılamadı. Ayrımın gerekçesi ve kuralı sendTransaction.js'te
+    // (classifyNegativeProofError) — saf olduğu için node'dan test edilebiliyor.
+    const { outcome, reason, why } = classifyNegativeProofError(e);
+
+    // Her üç yolda da doğru: eth_call gaz harcamaz ve calldata `signed`ın
+    // KOPYASINDAN kuruldu.
+    const footer =
+      '<p class="warn">Gaz harcanmadı (eth_call). Saklanan gerçek imza değişmedi — "Zincire gönder" hâlâ kullanılabilir.</p>';
+    const reasonHtml = `
+      <label>${outcome === 'unavailable' ? 'Hata' : 'Kontratın döndürdüğü sebep'}</label>
+      <div class="field">${esc(reason)}</div>
+    `;
+
+    if (outcome === 'rejected') {
+      showResult(`
+        <p class="ok">✓ Kontrat bozuk imzayı reddetti — imza gerçekten doğrulanıyor.</p>
+        ${reasonHtml}
+        <p class="warn">Metin kontrattan geldi (PQWallet.sol:44'teki require string'i), UI'dan değil.</p>
+        ${footer}
+      `);
+    } else if (outcome === 'unexpected-revert') {
+      showResult(`
+        <p class="finding">Kontrat reddetti, ama BEKLENEN mesaj değil — bulgu adayı.</p>
+        ${reasonHtml}
+        <p class="warn">Kontrat cevap verdi (revert verisi çözüldü), yani ağ sorunu değil.
+        Beklenen: "${esc(INVALID_SIGNATURE_REASON)}". Başka bir require daha önce devreye girmiş
+        olabilir; negatif kanıt bu haliyle imza doğrulamasını kanıtlamaz. İnceleyin.</p>
+        ${footer}
+      `);
+    } else {
+      // GRİ — ne yeşil ne kırmızı. Kontrat cevap vermedi; kanıt YOK, olumsuz
+      // kanıt da yok. İki alt sebep ayrı metin istiyor: "ulaşılamadı" ile
+      // "ulaşıldı ama sebep verisi gelmedi" farklı şeyleri düzelttirir.
+      const detail =
+        why === 'no-revert-data'
+          ? 'Çağrıdan sebep verisi gelmedi, yani kontratın NE dediğini okuyamıyoruz. MetaMask üzerinden gelen AĞ ve RPC hataları da buraya düşüyor (ölçüldü — ethers hepsini "missing revert data" diye sarıyor), bu yüzden en olası sebep bağlantıdır. Cüzdanın ağını ve internet bağlantısını kontrol edip tekrar deneyin.'
+          : 'Çağrı kontrata hiç ulaşmadı (ağ ya da RPC hatası). Kontratın bozuk imza karşısında ne yaptığı hakkında bu sonuç hiçbir şey söylemez.';
+      showResult(`
+        <p class="neutral">Kanıt ALINAMADI — kontrat cevap vermedi.</p>
+        ${reasonHtml}
+        <p class="warn">${esc(detail)}</p>
+        ${footer}
+      `);
+    }
+  } finally {
+    // İş-sürerken kilidi kalkar, kilit TEK KAYNAĞA geri döner. Brief burada
+    // koşulsuz `btnNegativeProof.disabled = false` yazıyordu; o satır Task 5
+    // SAPMA 2 ile doğrudan çelişir ve kapatılan deliği geri açardı: eth_call
+    // sürerken kullanıcı tx-to/value/data alanlarını değiştirirse
+    // invalidateSignature() imzayı düşürür, ama koşulsuz açma butonu imzasız
+    // durumda tıklanabilir bırakırdı. Aynı hata bu kod tabanında iki kez
+    // yaşandı (btnKeygen — Task 3B, btnSend — Task 5); üçüncüsü olmasın.
+    syncSendButtons();
+  }
+});
+

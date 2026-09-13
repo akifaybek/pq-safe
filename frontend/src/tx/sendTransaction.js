@@ -125,6 +125,71 @@ export async function preflight({ signer, calldata }) {
   await signer.call({ to: CONTRACTS.pqWallet, data: calldata });
 }
 
+// Negatif kanıtta BEKLENEN revert sebebi. PQWallet.sol:44'teki require
+// string'inden okundu, uydurulmadı.
+export const INVALID_SIGNATURE_REASON = 'PQWallet: invalid signature';
+
+// Negatif kanıtın ön-uçuş hatasını ÜÇ yola ayırır.
+//
+// Neden: brief tek bir yol öngörüyordu — `String(reason).includes(...)`. O
+// kontrol "kontrat ne dedi" ile "kontrata ulaşılabildi mi" sorularını aynı
+// kefeye koyar. RPC takılır ya da bağlantı düşerse ekranda
+// *"Reddedildi, ama beklenen mesaj değil: could not coalesce error"* yazardı;
+// sahnede bu, jüriye bir GÜVENLİK BULGUSU gibi okunur — oysa kontrat o çağrıyı
+// hiç görmemiştir. Kanıt alınamaması, kanıtın olumsuz çıkması DEĞİLDİR.
+//
+// Ayırt edici: ethers revert verisini çözebildiğinde `CALL_EXCEPTION` fırlatır
+// ve `reason`ı doldurur.
+//
+// AMA `code === 'CALL_EXCEPTION'` TEK BAŞINA YETMEZ — bu ÖLÇÜLDÜ, tahmin
+// değil. MetaMask signer'ı (BrowserProvider) üzerinden yapılan bir eth_call'da
+// ethers, AĞ HATALARINI DA `CALL_EXCEPTION` + "missing revert data" olarak
+// sarıyor: sağlayıcı `code: -32603` döndürdüğünde de, `request`in kendisi
+// kodsuz bir TypeError('Failed to fetch') fırlattığında da aynı kod geldi
+// (Task 6 doğrulaması, iki senaryo da tarayıcıda çalıştırıldı). Yani
+// NETWORK_ERROR/SERVER_ERROR/TIMEOUT bu yolda pratikte HİÇ görülmüyor.
+//
+// Sonuç: yalnızca koda bakan bir sınıflandırma, her ağ hıçkırığını SARI
+// "bulgu adayı" diye basardı — brief'in hatasının biraz daha kılıklı hali.
+// Bu yüzden ikinci koşul var: revert VERİSİ (ya da çözülmüş `reason`) geldi mi?
+// Gelmediyse kontratın ne dediğini bilmiyoruz demektir — sarı değil, GRİ.
+// Yeşil ile sarı arasındaki farkı okunabilir bir metne dayandırıyoruz; metin
+// yoksa karar da yoktur.
+//
+// 'network' dalı ölü kod DEĞİL: negatif kanıt salt-okunur provider'a taşınırsa
+// (bkz. kanıt notu, SAPMA 3) JsonRpcProvider bu kodları fırlatır. Node
+// testinde beş ayrı hata şekliyle kapsandı.
+//
+// DÖNÜŞ: { outcome, reason, why }
+//   outcome 'rejected'          → kontrat revert etti, mesaj beklenen  (YEŞİL)
+//   outcome 'unexpected-revert' → kontrat revert etti, mesaj farklı    (SARI)
+//   outcome 'unavailable'       → kontrat cevap vermedi                (GRİ)
+//   why: 'revert' | 'no-revert-data' | 'network'  — gri yolun iki alt sebebi
+//        ayrı metinler istiyor: biri "RPC'ye ulaşılamadı", diğeri "ulaşıldı
+//        ama sebep verisi gelmedi".
+//
+// Saf fonksiyon, HTML üretmez — node'dan test edilebilsin ve kaçış tek yerde
+// (çağıranın `esc()`i) kalsın diye.
+export function classifyNegativeProofError(e) {
+  const reason = e?.reason ?? e?.shortMessage ?? e?.message ?? String(e);
+
+  if (e?.code !== 'CALL_EXCEPTION') {
+    return { outcome: 'unavailable', reason, why: 'network' };
+  }
+
+  const hasReason = typeof e?.reason === 'string' && e.reason.length > 0;
+  const hasRevertData = typeof e?.data === 'string' && e.data !== '0x';
+  if (!hasReason && !hasRevertData) {
+    return { outcome: 'unavailable', reason, why: 'no-revert-data' };
+  }
+
+  return {
+    outcome: reason.includes(INVALID_SIGNATURE_REASON) ? 'rejected' : 'unexpected-revert',
+    reason,
+    why: 'revert',
+  };
+}
+
 // İmzalı execute() çağrısını zincire gönderir.
 //
 // DÖNÜŞ: { hash, receipt, gasLimit }. receipt.status'u ÇAĞIRAN kontrol eder —
