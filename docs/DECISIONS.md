@@ -488,9 +488,15 @@ işlem başarıyla tamamlanıyor, `migrated[oldAddress]=true`,
 **Neden:** Sprint 4 uç durum testleri kapsamında (GOREV_SINIRLARI.md Sprint 4)
 keşfedildi.
 
-**Etki:** Zararsız — self-migration state'te anlamsız ama zarar verici bir
-sonuç doğurmuyor (para taşımıyor, sadece "migrate edildi" bayrağı). Kasıtlı
-bir tasarım kararı değil, sadece bir kontrol eksikliği; kontrata ek bir
-`require(oldAddress != newAddress)` eklenip eklenmeyeceği takım kararı —
-şimdilik davranış olduğu gibi belgeleniyor.
+**Etki:** Zararsız DEĞİL — migrated[old] kalıcı olduğu için kendine migrate
+eden bir adres bir daha asla gerçek bir PQ cüzdanına geçemez
+(proveOwnership başında AlreadyMigrated ile revert eder). Ama saldırgan
+yolu da yok: tetiklemek için kurbanın kendi imzası ve newAddress'e bilerek
+kendi adresini yazması gerekiyor, üçüncü taraf zorlayamaz. Düzeltmenin
+(require(oldAddress != newAddress)) bedeli kontratın yeniden deploy
+edilmesi — yeni adres, yeni Etherscan verify, tx-hashes.md'nin yeniden
+yazılması ve mevcut canlı migration kanıtının artık deploy edilmemiş bir
+kontrata ait hale gelmesi. Finale ~3 hafta kala buna değmiyor; kasıtlı
+olarak sabitlendi. Migration.sol başka bir sebeple yeniden deploy
+edilirse require o zaman eklenir.
 — Hakan

@@ -117,3 +117,17 @@ Deployment gas maliyetleri (aynı rapor):
 
 Gerçek Sepolia deploy'unda toplam gas: **1.256.479** (bkz. yukarıdaki "Deploy
 edilmiş adresler" bölümü).
+
+### Gerçek zincir ölçümü (Sepolia)
+
+Yukarıdaki tablo Sprint 2 test suite'inden (mock verifier'lı testler dahil)
+geliyor ve execute() ortalamasını olduğundan düşük gösteriyor. Gerçek Sepolia
+işlemlerinde ölçülen rakamlar:
+
+| İşlem | Gas | Not |
+|---|---|---|
+| `Migration.proveOwnership` | 73.753 | Gerçek migration tx, `0x1ccc11f1...c75a609` |
+| `PQWallet.execute` (var olan alıcıya) | 233.429 | Gerçek transfer tx, `0xd62b812e...631ad9` |
+| `PQWallet.execute` (hiç kullanılmamış/yeni adrese) | 258.429 | 233.429 + ~25.000 hesap oluşturma maliyeti (tahmini, henüz zincirde ölçülmedi) |
+
+Detaylı analiz: `docs/evidence/gas-reports/sprint3-execute-real-gas.md`.

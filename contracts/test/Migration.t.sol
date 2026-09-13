@@ -123,6 +123,11 @@ contract MigrationTest is Test {
         migration.proveOwnership(signerAddress, fuzzedNewAddress, signature);
     }
 
+    // Kasıtlı davranış, sabitleniyor: oldAddress == newAddress engellenmiyor.
+    // Saldırgan bunu tetikleyemez (kurbanın kendi imzası + bilerek kendi adresini
+    // yazması gerekir), ama zararsız da değil — migrated[old] kalıcı olduğu için
+    // kendine migrate eden bir adres bir daha asla gerçek bir PQ cüzdanına
+    // geçemez (AlreadyMigrated ile revert eder). Bkz. DECISIONS.md 7 Eylül 2026.
     function test_ProveOwnership_SucceedsWhenOldAndNewAddressAreSame() public {
         bytes memory signature = _sign(oldPrivateKey, oldAddress, oldAddress);
 
