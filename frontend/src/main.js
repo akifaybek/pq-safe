@@ -97,11 +97,19 @@ walletDisplay.textContent = CONTRACTS.pqWallet;
 // cüzdanı bağlayın" basıyordu. Açık ama iş yapmayan bir buton, kilidin ikinci
 // ve çelişen bir kopyasıdır.
 //
-// Negatif kanıt PRENSİPTE bağlantı istemiyor — saf bir eth_call, salt-okunur
-// getSepoliaProvider() ile de yapılabilirdi. Bu seçenek Task 6 kanıt notunda
-// raporlandı, kararı kullanıcıya bırakıldı. Provider'a geçilirse BURASI
-// `!signed`e döner VE handler'daki bağlantı kontrolü tamamen kalkar — ikisi
-// birlikte değişir, tek başına değil.
+// Negatif kanıt TEKNİK OLARAK bağlantı istemiyor — saf bir eth_call, salt-okunur
+// getSepoliaProvider() ile de yapılabilirdi (~24 satır ve bir demo adımı eksilirdi).
+// Ölçüldü, raporlandı, REDDEDİLDİ (Task 6, 13 Eylül — karar Akif'in):
+//
+//   Negatif kanıtın ikna ediciliği, gerçek gönderimle AYNI YOLDAN geçmesinden
+//   geliyor. İkisi de MetaMask signer'ı üzerindeyse "bozuk imza reddedildi,
+//   doğru imza geçti" tek bir yolun iki sonucudur. Negatif kanıt uygulamanın
+//   kendi RPC'sinden gitseydi şüpheci jüri üyesinin elinde meşru bir itiraz
+//   doğardı: "reddedilmeyi bir yolda gösterdin, göndermeyi başka yolda
+//   yapıyorsun." Kazanılan satırlar o itirazın bedelini karşılamıyor.
+//
+// Bu yüzden iki buton da signer'a bağlı ve kilitleri aynı. Ayrıntılı
+// kazanç/bedel dökümü: docs/evidence/crypto-tests/sprint3-negative-proof.md § 7.
 function syncSendButtons() {
   const ready = Boolean(signed && connected);
   btnSend.disabled = !ready;
@@ -570,19 +578,47 @@ btnSend.addEventListener('click', async () => {
   // aşağıdaki syncSendButtons() çağrıları ve catch'teki.
   btnSend.disabled = true;
   btnNegativeProof.disabled = true;
+  // ÖNLEME — girdiler gönderim penceresi boyunca kilitlenir.
+  //
+  // Task 3'ün imzalama penceresindeki kilidiyle AYNI gerekçe, aynı hata sınıfı.
+  // Gönderim penceresi de uzun: üç kalkanın ağ çağrıları (2-4 sn) + MetaMask
+  // onayı (kullanıcı kadar). O pencerede `to`/`value`/`data` değişirse
+  // invalidateSignature() `signed`ı düşürür ve ekrana "imza geçersiz kılındı"
+  // yazar — ama handler elindeki `sig` fotoğrafıyla devam eder ve tx ESKİ
+  // fields ile zincire gider. Ekranda "imza geçersiz" yazarken zincire geçerli
+  // bir tx gitmesi, bu projenin savunduğu her şeyin canlı çürütülmesidir;
+  // Task 7'de bunun ekran kaydı alınacak.
+  //
+  // Kilitlenince invalidateSignature bu pencerede HİÇ çalışamaz, yani
+  // "gönderimi iptal mi edelim, devam mı" ikilemi ortadan kalkar.
+  //
+  // btnBuildSign de kilitlenir: girdiler kilitli olsa da yeniden imzalamak
+  // `signed`ı değiştirir ve aynı pencereyi başka kapıdan açar. İmzalama
+  // keygen'i kilitliyor, gönderim imzalamayı — aynı zincir.
+  const txInputs = TX_INPUT_IDS.map((id) => document.getElementById(id));
+  for (const el of txInputs) el.disabled = true;
+  btnBuildSign.disabled = true;
   chainWarn.innerHTML = '';
   sendOut.innerHTML = '<p>Kontroller yapılıyor…</p>';
 
   try {
-    const { fields, signature, digest } = signed;
+    // İMZANIN FOTOĞRAFI — `conn`un imza karşılığı. Akışın tamamı bunu kullanır,
+    // `signed`ı değil.
+    //
+    // Yukarıdaki kilit önlemeye yeter mi? Yetmemeli: kilidi aşan yollar var
+    // (tarayıcı konsolu, bir sonraki artımda eklenecek bir buton, kilidi
+    // gevşeten bir düzenleme). Önleme ile YAKALAMA ayrı katmanlardır ve bu
+    // dosyada `conn` için zaten ikisi birden var.
+    const sig = signed;
+    const { fields, signature, digest } = sig;
 
     // KALKAN 1 — nonce. En spesifik mesajı veren kalkan, bu yüzden önde.
     // Hakan da aynı cüzdana tx atıyor; nonce'un imza ile gönderim arasında
     // artması gerçekten olabilecek bir durumdur.
     const freshNonce = await readNonce();
-    if (freshNonce !== signed.nonce) {
+    if (freshNonce !== sig.nonce) {
       throw new Error(
-        `nonce değişti (imzalanan: ${signed.nonce}, zincirdeki: ${freshNonce}) — yeniden imzalayın`,
+        `nonce değişti (imzalanan: ${sig.nonce}, zincirdeki: ${freshNonce}) — yeniden imzalayın`,
       );
     }
 
@@ -610,6 +646,22 @@ btnSend.addEventListener('click', async () => {
       throw new Error(
         'bağlantı ya da ağ işlem sırasında değişti — cüzdanı yeniden bağlayıp tekrar deneyin. ' +
           'İmzanız hâlâ geçerli, yeniden imzalamanız gerekmiyor.',
+      );
+    }
+
+    // YAKALAMA — imza da gönderimden HEMEN ÖNCE kontrol edilir, aynı yerde ve
+    // aynı gerekçeyle. Kontrolün YAYINDAN ÖNCE durmasının sebebi basit: tx
+    // yayınlandıktan sonra iptal diye bir şey yok. Buradan sonrası geri
+    // alınamaz, dolayısıyla son söz burada söylenir.
+    //
+    // "Devam et" bilerek bir seçenek DEĞİL: `signed` düştüyse kullanıcı artık
+    // o işlemi istemiyor ya da başka bir şey istiyor demektir; ekranda "imza
+    // geçersiz kılındı" yazarken zincire tx göndermek onun görmediği bir karar
+    // olur.
+    if (signed !== sig) {
+      throw new Error(
+        'imza işlem sırasında değişti ya da geçersiz kılındı — gönderim iptal edildi, ' +
+          'zincire hiçbir şey gitmedi. Alanları kontrol edip yeniden imzalayın.',
       );
     }
 
@@ -680,10 +732,10 @@ btnSend.addEventListener('click', async () => {
     if (receipt.status !== 1) {
       let diagnosis;
       if (chainState) {
-        const nonceChanged = chainState.nonce !== signed.nonce;
+        const nonceChanged = chainState.nonce !== sig.nonce;
         diagnosis = `
           <label>Revert sonrası zincir durumu</label>
-          <div class="field">zincirdeki nonce: ${esc(chainState.nonce)} · imzalanan nonce: ${esc(signed.nonce)} · bakiye: ${esc(chainState.balance)} wei = ${esc(formatEther(chainState.balance))} ETH</div>
+          <div class="field">zincirdeki nonce: ${esc(chainState.nonce)} · imzalanan nonce: ${esc(sig.nonce)} · bakiye: ${esc(chainState.balance)} wei = ${esc(formatEther(chainState.balance))} ETH</div>
           <p class="warn">${
             nonceChanged
               ? 'Nonce DEĞİŞMİŞ — imzanız bu nonce\'a bağlı olduğu için artık geçmez. Yeniden imzalayın; tekrar göndermeyi denerseniz kalkan 1 zaten durduracak.'
@@ -729,8 +781,17 @@ btnSend.addEventListener('click', async () => {
       sendOut.innerHTML = `<p class="err">${headline}: ${esc(reason)}</p>${sentHtml}`;
     }
     // Kilit tek kaynaktan: imza hâlâ duruyorsa buton açılır, tüketildiyse
-    // açılmaz. Koşulsuz `= false` YOK, finally YOK.
+    // açılmaz. BUTONLAR için koşulsuz `= false` YOK.
     syncSendButtons();
+  } finally {
+    // Girdi kilidi burada açılır ve burada açılması DOĞRUDUR: butonlardan
+    // farklı olarak girdilerin state'e bağlı bir sahibi yok. Kilidin tek
+    // sebebi "bir gönderim akışı sürüyor"du; akış bitti, sebep kalktı.
+    // Task 3'ün imzalama finally'si de tam olarak bunu yapıyor.
+    //
+    // Butonlar BURAYA KONMAZ — onların sahibi state (syncSendButtons).
+    for (const el of txInputs) el.disabled = false;
+    btnBuildSign.disabled = false;
   }
 });
 
@@ -876,4 +937,5 @@ btnNegativeProof.addEventListener('click', async () => {
     syncSendButtons();
   }
 });
+
 

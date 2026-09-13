@@ -3,7 +3,8 @@
 **Tarih:** 13 Eylül 2026
 **Yazan:** Akif
 **Kapsam:** `frontend/src/main.js` (`btn-negative-proof` handler'ı, `syncSendButtons`,
-gönderim handler'ının iş-sürerken kilidi), `frontend/src/tx/sendTransaction.js`
+gönderim handler'ının iş-sürerken kilidi + girdi kilidi + imza fotoğrafı),
+`frontend/src/tx/sendTransaction.js`
 (`classifyNegativeProofError`, `INVALID_SIGNATURE_REASON`), `frontend/index.html`
 (`.finding`, `.neutral`), `frontend/src/tx/send-transaction-test.mjs` (18 yeni assertion).
 
@@ -36,7 +37,7 @@ gösteriyoruz. Gaz harcanmaz, zincire hiçbir şey yazılmaz.
 - Gördüğü her metod kaydediliyor ("cüzdan katmanına giden çağrılar" satırları
   bu kayıttan).
 - Modül-yerel `signed`/`connected` state'ine erişmek için main.js'e **geçici**
-  bir test kancası eklendi, doğrulama bitince silindi (bölüm 8).
+  bir test kancası eklendi, doğrulama bitince silindi (bölüm 10).
 
 ## 3. YEŞİL yol — kontrat bozuk imzayı reddetti
 
@@ -272,24 +273,37 @@ dokunulmadan kalır. `classifyNegativeProofError`'ın 31 assertion'ı, `pqwallet
   metni "bağlantı mı, budanmış revert verisi mi" ayrımını doğru yapar.
 
 **Bedel:**
+- **TEK YOL İLKESİ — kararı tek başına belirleyen madde.** Negatif kanıtın ikna
+  ediciliği, gerçek gönderimle **aynı yoldan** geçmesinden geliyor. İkisi de
+  MetaMask signer'ı üzerindeyse *"bozuk imza reddedildi, doğru imza geçti"* tek
+  bir yolun iki sonucudur. Negatif kanıt uygulamanın kendi RPC'sinden gitseydi
+  şüpheci jüri üyesinin elinde **meşru** bir itiraz doğardı: "reddedilmeyi bir
+  yolda gösterdin, göndermeyi başka yolda yapıyorsun." Kanıt değerini
+  kaybettiren şey tam olarak bu.
+
+  *(Bu madde ilk raporda YOKTU; kullanıcı ekledi. Rapor "bir demo adımı ve 24
+  satır" kazancını sayıyor, karşısına koyması gereken şeyi saymıyordu.)*
 - Task 5'in kanıt deseni değişir: "kalkan 3'te cüzdan katmanına giden çağrılar"
-  kaydı negatif kanıt için boş olur. Gaz harcanmadığı `eth_call` olmasından
-  zaten belli, ama kayıt artık aynı şeyi söylemiyor.
-- Jüri "bu çağrı senin cüzdanından mı gitti" derse cevap "hayır, uygulamanın
-  RPC'sinden" olur. Negatif kanıtın iddiası kontratla ilgili, cüzdanla değil —
-  ama bu açıklamayı sahnede yapmak gerekir.
+  kaydı negatif kanıt için boş olur.
 - Task 7'nin akış sırası değişir (plandaki adımlar buna göre güncellenmeli).
 
-**Şimdilik uygulanan:** kilit `!(signed && connected)` — btnSend ile aynı,
-handler'ın koşuluyla birebir. Gerekçe: kilit ile handler aynı şeyi söylemeli;
-önceki `!signed` hali cüzdan bağlı değilken butonu AÇIK bırakıp basınca kırmızı
-"Önce cüzdanı bağlayın" bastırıyordu — açık ama iş yapmayan bir buton, kilidin
-ikinci ve çelişen bir kopyasıdır. Doğrulandı: imza var + bağlantı yok → iki
-buton da kapalı.
+### KARAR: HAYIR — signer'da kalındı (Akif, 13 Eylül)
+
+Bir demo adımı ve ~24 satır, o itirazın önünü kapatmaya değmez. Değiştirilmedi.
+
+**Sprint 4 "demo cilası" kalemine not düşüldü**, Sprint 3'te dokunulmuyor.
+Gerekçe `main.js`'te `syncSendButtons`'ın üstüne de yazıldı ki bir sonraki
+okuyan "şu 24 satır fazla" diye aynı yola girmesin.
+
+**Uygulanan:** kilit `!(signed && connected)` — btnSend ile aynı, handler'ın
+koşuluyla birebir. Önceki `!signed` hali cüzdan bağlı değilken butonu AÇIK
+bırakıp basınca kırmızı "Önce cüzdanı bağlayın" bastırıyordu — açık ama iş
+yapmayan bir buton, kilidin ikinci ve çelişen bir kopyasıdır. Doğrulandı: imza
+var + bağlantı yok → iki buton da kapalı.
 
 ## 8. İki kilitleme yolu meselesi (Not 2)
 
-Gönderim handler'ındaki `btnNegativeProof.disabled = true` (`main.js:572`)
+Gönderim handler'ındaki `btnNegativeProof.disabled = true` (`main.js:580`)
 **silinmedi, gerekçesi yazıldı.** `syncSendButtons()`'ın yerine geçmiyor; onun
 İFADE EDEMEDİĞİ bir durumu kapatıyor: akış boyunca state (imza + bağlantı)
 geçerli kalıyor, tek kaynağa sorulsa iki buton da "açık" cevabını verirdi.
@@ -311,7 +325,7 @@ hash'ini ve Etherscan linkini ekrandan silerdi. **Silemez, çünkü buton o anda
 kapalıdır.**
 
 Ölçüldü: ekrana bir tx kanıtı kondu, ardından başarılı gönderimin state etkisi
-uygulandı (`signed = null` → `syncSendButtons()`, `main.js:643` ve `:658`
+uygulandı (`signed = null` → `syncSendButtons()`, `main.js:695` ve `:710`
 zincirinin aynısı), sonra butona programatik `click()` atıldı.
 
 ```
@@ -338,6 +352,16 @@ md5 (kanca silindikten sonra)    : d93d9fcb241601633c231aafd03b9b9a
 diff (kancalı hâl ↔ son hâl)     : SADECE kanca bloğu (17 satır), başka fark yok
 '__t6' / 'KASTEN' kalıntısı       : 0 / 0
 Sayfa yenilendi: window.__t6 === undefined ✓
+```
+
+Bölüm 13'ün düzeltmesi için ikinci bir kanca turu gerekti (`dropSignature` —
+`signed`ı dışarıdan düşürmeden yakalama dalı tetiklenemiyor):
+
+```
+md5 (ikinci kanca eklenmişken)   : 7606c4ce8cbe0f3009a7dbff8bc2b6cc
+md5 (kanca silindikten sonra)    : 2843d19f7f7fe63f2f0737b19728ee6d
+diff (kancalı hâl ↔ son hâl)     : SADECE kanca bloğu (13 satır)
+'__t6' / 'KASTEN' kalıntısı       : 0 / 0
 ```
 
 **Not:** kanca eklenmeden önceki md5 (`5c4c7212…`) ile son md5 birebir DEĞİL —
@@ -379,24 +403,93 @@ düzenlerken bir regex `reasonHtml`'in kapanışını da bozmuştu, sözdizimi h
 HMR'a yansıdı. Düzeltildi; sonraki `vite build` ve sayfa yüklemeleri temiz.
 Başka hata/uyarı yok.
 
-## 13. Devreden
+## 13. BULUNAN VE DÜZELTİLEN — gönderim handler'ında imza fotoğrafı yoktu
 
-- **Ön-uçuşun GEÇTİĞİ hali görülmedi** — owner anahtarı gerektiriyor → **Task 7.**
-  (Bu görevde kanıt, calldata'nın bayt bayt karşılaştırmasına dayandırıldı;
-  bölüm 4.)
-- **SAPMA 3 kararı kullanıcıda** (bölüm 7): negatif kanıt salt-okunur
-  provider'a taşınsın mı?
-- **YENİ BULGU — gönderim handler'ında imza fotoğrafı yok.** `btnSend` akışı
-  başında `const { fields, signature, digest } = signed` yapıyor ama `signed`ın
-  değişip değişmediğini sonradan hiç sormuyor (`connected !== conn`'un imza
-  karşılığı yok). İki ayrı kötü sonuç var, zamanlamaya göre:
-  - girdi kalkan 1'den ÖNCE değişirse → `signed.nonce` (`main.js:583`) `null`
-    üzerinde okunur, `TypeError` generic catch'e düşer, ekranda
-    *"Gönderilemedi: Cannot read properties of null"* yazar;
-  - girdi kalkan 2'den SONRA değişirse → tx **eski `fields` ile zincire gider**
-    (imzalanan değerlerle tutarlı, ama ekranda "imza geçersiz kılındı" yazarken),
-    revert olursa teşhis satırı yine `signed.nonce`’ta (`main.js:683`) patlar.
+Negatif kanıtın 6a'daki hatası aranırken kardeşi gönderim handler'ında
+bulundu. `btnSend` akışı başında `const { fields, signature, digest } = signed`
+yapıyor ama `signed`ın sonradan değişip değişmediğini **hiç sormuyordu** —
+`connected !== conn`'un imza karşılığı yoktu. Zamanlamaya göre iki ayrı kötü
+sonuç:
 
-  Task 6'nın kapsamı dışında (Task 5'in handler'ı) ve düzeltmesinin bir karar
-  bileşeni var: gönderimi iptal etmek mi, devam etmek mi? **Task 7'ye
-  devredildi.** Bölüm 6a'daki `showResult` deseni hazır çözüm.
+- girdi kalkan 1'den ÖNCE değişirse → `signed.nonce` `null` üzerinde okunur,
+  `TypeError` generic catch'e düşer, ekranda *"Gönderilemedi: Cannot read
+  properties of null"*;
+- girdi kalkan 2'den SONRA değişirse → tx **eski `fields` ile zincire gider**,
+  üstelik ekranda *"imza geçersiz kılındı"* yazarken.
+
+İkincisi Task 7'nin ekran kaydına girecek handler'ın ta kendisi. **Bilinen bir
+hatayla kayıt alınmaz** → Task 7'ye devredilmedi, şimdi düzeltildi.
+
+İlk raporda bunu "iptal mi, devam mı?" ikilemi diye sunmuştum. **Yanlış ikilem;
+üçüncü şık var ve bu kod tabanında emsali var** (kullanıcının düzeltmesi):
+
+### Katman 1 — ÖNLE (emsal: Task 3'ün imzalama penceresi)
+
+Task 3, ~7,5 sn'lik imzalama penceresinde `tx-to`/`tx-value`/`tx-data`'yı
+kilitliyor; gerekçesi birebir aynı — pencerede girdi değişimi sessiz sapma
+üretiyor. Gönderim penceresi de aynı özelliği taşıyor: üç kalkanın ağ çağrıları
++ MetaMask onayı. Girdiler artık gönderim boyunca kilitli, dolayısıyla
+`invalidateSignature()` o pencerede **hiç çalışamıyor** ve ikilem ortadan
+kalkıyor.
+
+`btnBuildSign` de kilitlendi: girdiler kilitli olsa bile yeniden imzalamak
+`signed`ı değiştirir ve aynı pencereyi başka kapıdan açardı. Zincir tutarlı —
+imzalama keygen'i kilitliyor, gönderim imzalamayı.
+
+Ölçüldü (gönderim akışının ortasında):
+
+```
+inputsDisabled       : [true, true, true]
+btnBuildSignDisabled : true
+btnSendDisabled      : true      btnNegDisabled: true
+akıştan sonra        : hepsi açık (finally)
+```
+
+### Katman 2 — YİNE DE YAKALA (emsal: `conn` snapshot'ı)
+
+`const sig = signed` handler başında alınıyor, akışın tamamı `sig` üzerinden
+çalışıyor (`sig.nonce`, `sig.fields` — revert teşhisi dahil), ve
+**`sendExecute`'tan hemen ÖNCE** `signed !== sig` sorgulanıyor. Kontrolün
+yayından önce durmasının sebebi basit: **tx yayınlandıktan sonra iptal diye bir
+şey yok.**
+
+"Devam et" bilerek bir seçenek değil: `signed` düştüyse kullanıcı o işlemi
+istemiyor ya da başka bir şey istiyor demektir.
+
+İptal mesajı sakin, imza düştüğü için yeniden imzalamaya yönlendiriyor:
+
+```
+Gönderilemedi: imza işlem sırasında değişti ya da geçersiz kılındı — gönderim
+iptal edildi, zincire hiçbir şey gitmedi. Alanları kontrol edip yeniden imzalayın.
+```
+
+**Ayırt edici ölçüm — assertion boş değil.** Ön-uçuş GEÇECEK şekilde ayarlandı
+(rastgele anahtarla kalkan 3 normalde `invalid signature`'da durur ve kontrole
+hiç ulaşılmaz), iki senaryo aynı akışla koşuldu; tek fark imzanın düşürülmesi:
+
+| Senaryo | Gönderim katmanına giden çağrılar | Ekran |
+|---|---|---|
+| A — imza duruyor (negatif kontrol) | `eth_estimateGas`, `eth_sendTransaction` | akış sendExecute'a ULAŞTI (düzenek reddetti) |
+| B — akış ortasında imza düştü | **hiçbiri** | `gönderim iptal edildi, zincire hiçbir şey gitmedi` |
+
+Yani kontrol gerçekten yayından önce duruyor: A'da cüzdan katmanı görülüyor,
+B'de hiç görülmüyor. Ekran görüntüsü:
+`../screenshots/sprint3-send-aborted-signature-changed.png`
+
+**Düzeneğin açık sınırı:** önleme katmanı (girdi kilidi) gerçek kullanıcıya
+karşı çalışır — `disabled` bir input'a yazılamaz. Ama testteki programatik
+`dispatchEvent(new Event('input'))` `disabled`ı umursamaz ve dinleyiciyi yine de
+tetikler. Yani **önleme katmanı tarayıcı testiyle ihlal edilemez biçimde
+ölçülemedi**; ölçülen şey kilidin kurulduğu (yukarıdaki tablo). Yakalama
+katmanı ise tam da bu boşluktan geçilerek sınandı — önleme aşılsa bile tx'in
+yayınlanmadığı gösterildi. İki katmanın ayrı olmasının sebebi de bu.
+
+## 14. Devreden
+
+- **Ön-uçuşun GEÇTİĞİ hali gerçek imzayla görülmedi** — owner anahtarı
+  gerektiriyor → **Task 7.** (Bu görevde kanıt, calldata'nın bayt bayt
+  karşılaştırmasına dayandırıldı; bölüm 4. Bölüm 13'teki A senaryosunda ön-uçuş
+  düzenekle geçirildi, gerçek imzayla değil.)
+- **SAPMA 3'ün Sprint 4 notu:** negatif kanıtı salt-okunur provider'a taşıma
+  fikri ölçüldü ve reddedildi (bölüm 7). "Demo cilası" kaleminde yeniden
+  tartışılırsa tek yol ilkesiyle birlikte tartışılmalı.
