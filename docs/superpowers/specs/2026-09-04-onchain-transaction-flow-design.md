@@ -250,16 +250,29 @@ Bakiye göstergesi bu ikisini ayıran tek şeydir.
 | `SSTORE` | **20.000** (`SSTORE_SET`, sıfırdan çıkış) | **2.900** (`SSTORE_RESET`) |
 | toplam | 22.100 | 5.000 |
 
-22.100 − 5.000 = **17.100** — ölçülen EVM farkının birebiri (kalan 108,
-calldata'daki 9 sıfır baytlık kodlama farkı).
+Kalan 108 ise calldata'daki 9 sıfır baytlık kodlama farkı (iki tx de 3.908
+bayt; 201 vs 210 sıfır → intrinsic 81.116 vs 81.008). **Defter kalansız
+kapanıyor:**
+
+```
+gözlenen −17.208 = calldata −108 + SSTORE −17.100 + verify 0 + sıcak/soğuk 0
+```
 
 **Planlamada kullanılacak sayı 216.221'dir.** 233.429 tek seferlikti; PQWallet
 bir daha asla nonce'u sıfırdan çıkarmayacak.
 
-İkincil iki terim var, birbirini büyük ölçüde götürüyor: `verify()` imzaya göre
-değişiyor (bizim imzamızla ölçüldü: **113.771**; WOTS+ zincir uzunlukları
-digest'e bağlı, varyans beklenen) ve `execute()`'un `to`'su tx göndericisiyle
-aynı olduğu için EIP-2929 uyarınca sıcak (`CALL` 2.600 yerine 100). Ayrıntı:
+**`verify()` imzaya göre DEĞİŞMİYOR.** İki gerçek imza da aynı yöntemle ölçüldü
+(imzalar tx calldata'larından çıkarıldı, digest'ler dondurulmuş formülden
+yeniden hesaplandı): ikisi de **113.771**. Bu, C13'ün tasarımının sonucu —
+WOTS+C/FORS+C'deki **C sayacı checksum'ı sabitliyor**, zincir adımlarının
+toplamı deterministik oluyor. Spec'teki 108.574 bir Foundry trace'inden ve
+başka bir fixture imzasından geliyor; farklı ölçüm bağlamı, karşılaştırma
+tabanı olarak kullanılmamalı.
+
+Sıcak/soğuk alıcı terimi de sıfır: **her iki tx de kendine gönderilmiş**
+(`from` = `execute()`'un iç `to`'su), ikisi de EIP-2929 uyarınca sıcak.
+
+Ayrıntı ve ölçüm dökümü:
 `docs/evidence/crypto-tests/sprint3-end-to-end-transaction.md` § 3.
 
 Eski tablodaki **1.130.002 rakamı `execute()`'un maliyeti değildi** — Foundry'nin

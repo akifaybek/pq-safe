@@ -97,19 +97,45 @@ güvenilmeden doğrulandı.
 ## 3. Ölçülen gas — 216.221 ve 233.429 neden farklı
 
 Beklenti 233.429 civarıydı (Hakan'ın 7 Eylül tx'i). Ölçülen **216.221**, yani
-**17.208 daha az**. Sapma "olabilir" denip geçilmedi, ayrıştırıldı:
+**17.208 daha az**. Sapma "olabilir" denip geçilmedi; defter kalansız kapatıldı.
 
-```
-Hakan  233.429 = intrinsic+calldata 81.116 + EVM içi 152.313
-BİZİM  216.221 = intrinsic+calldata 81.008 + EVM içi 135.213
-                                             EVM farkı: 17.100
-```
+> **Bu bölüm bir kez YANLIŞ yazıldı ve düzeltildi (13 Eylül, Akif'in itirazı
+> üzerine).** İlk hâli "farkın tamamı SSTORE" diyor, ama yanında +5.197'lik bir
+> `verify()` varyansı ve −2.500'lük bir "sıcak alıcı" avantajı da sayıyordu —
+> yani kendi içinde −5.305 açıklanamayan bırakıyordu. İki terim de ölçümle
+> çürütüldü (aşağıda). Defter şimdi **tam sıfırda** kapanıyor.
 
-Calldata ikisinde de 3.908 bayt; bizimkinde 210 sıfır / 3.698 sıfır-dışı bayt.
-Intrinsic farkı yalnızca **108** (9 sıfır baytlık kodlama farkı) — sapmanın
-kaynağı calldata DEĞİL.
+### Defter
 
-### Ana sebep: `nonce++`'ın depolama yazma maliyeti
+Her kalem ÖLÇÜLDÜ; hiçbiri spec'ten ya da tahminden alınmadı.
+
+| # | Kalem | Gas |
+|---|---|---|
+| | **gözlenen toplam fark** (216.221 − 233.429) | **−17.208** |
+| 1 | calldata / intrinsic | −108 |
+| 2 | `nonce++` SSTORE (22.100 → 5.000) | −17.100 |
+| 3 | `verify()` imza varyansı | **0** |
+| 4 | sıcak/soğuk alıcı | **0** |
+| | **açıklanan** | **−17.208** |
+| | **açıklanamayan kalan** | **0** |
+
+### 1) calldata — ölçüldü, ±birkaç yüz gas
+
+İki tx'in calldata'sı `eth_getTransactionByHash` ile çekilip baytları sayıldı:
+
+| | bayt | sıfır | sıfır-dışı | intrinsic = 21000 + 4×sıfır + 16×sıfır-dışı |
+|---|---|---|---|---|
+| Hakan | 3.908 | 201 | 3.707 | **81.116** |
+| Bizim | 3.908 | 210 | 3.698 | **81.008** |
+
+Fark **−108** (9 bayt sıfıra dönmüş, her biri 16 yerine 4 gas). Spec'teki 81.116
+böylece zincirden bağımsız doğrulanmış oldu.
+
+Bu, farkın **imzaya bağlı tek** kalemidir ve büyüklüğü küçüktür: 3.908 baytlık
+bir calldata'da sıfır bayt sayısı ±20 oynasa etki ≈ **±240 gas**. `execute()`
+pratikte sabit maliyetlidir; "imzaya göre birkaç bin gas salınır" DEĞİL.
+
+### 2) `nonce++`'ın depolama yazma maliyeti — baskın kalem
 
 `execute()` içinde `nonce++` var (`PQWallet.sol:48`). EVM'de sıfırdan çıkan bir
 yazma ile sıfır-dışından sıfır-dışına yazma aynı fiyatta değil:
@@ -121,28 +147,51 @@ yazma ile sıfır-dışından sıfır-dışına yazma aynı fiyatta değil:
 | `SSTORE` | **20.000** (`SSTORE_SET`) | **2.900** (`SSTORE_RESET`) |
 | **toplam** | **22.100** | **5.000** |
 
-**22.100 − 5.000 = 17.100** — ölçülen EVM farkının birebiri.
+**22.100 − 5.000 = −17.100.**
 
 Yani Hakan'ın 233.429'u **PQWallet'ın İLK `execute()`'uydu** ve tek seferlik bir
 "sıfırdan çıkış" bedeli taşıyordu. **216.221 kalıcı rejim maliyetidir**;
 bundan sonraki her `execute()` bu civarda olacak.
 
-### İkincil iki terim (birbirini büyük ölçüde götürüyor)
+### 3) `verify()` — İKİ İMZA İÇİN DE AYNI (113.771)
 
-- **`verify()` imzaya göre değişiyor.** Bizim imzamızla ölçüldü: zincirdeki
-  `SPHINCSVerifier.verify()` **113.771** (intrinsic+calldata çıkarılmış).
-  Spec'teki 108.574 bir Foundry trace'inden ve **farklı bir fixture
-  imzasından** geliyor, birebir karşılaştırılabilir bir taban değil. WOTS+
-  zincir uzunlukları digest'e bağlı olduğu için bu varyans **beklenen**
-  davranıştır. → bizim aleyhimize ~**+5.200**
-- **Alıcı sıcak.** `execute()`'un `to`'su tx'i gönderen hesabın kendisi;
-  EIP-2929 `tx.origin`'i baştan sıcak sayıyor, `CALL` 2.600 yerine 100.
-  → lehimize **−2.500**
+İlk raporda "imzaya göre değişiyor, +5.197" yazmıştım. **Yanlıştı.** Karşılaştırma
+tabanı olarak spec'teki 108.574 kullanılmıştı; o sayı bir **Foundry trace**'inden
+ve **başka bir fixture imzasından** geliyor — farklı ölçüm bağlamı, birebir
+karşılaştırılamaz.
 
-Bu ikisi net ~+2.700 bırakıyor ve 17.100'lük ana terimin yanında ikinci
-derecede kalıyor. **17.100'ün bu kadar temiz çıkması kısmen bu dengelenmenin
-sonucudur** — aritmetiği fazla sıkı yorumlamamak gerekir; sabit olan, SSTORE
-teriminin baskın ve tam hesaplanabilir olması.
+Hakan'ın **gerçek** imzası kendi tx'inin calldata'sından çıkarıldı, digest'i
+dondurulmuş formülden nonce=0 ile yeniden hesaplandı ve bizimkiyle **aynı
+yöntemle** ölçüldü:
+
+| | digest | `verify()` | `estimateGas` | intrinsic | **saf çalışma** |
+|---|---|---|---|---|---|
+| Hakan | `0x38ebc057…1db9` | `true` | 195.483 | 81.712 | **113.771** |
+| Bizim | `0xf780be02…61e6` | `true` | 195.387 | 81.616 | **113.771** |
+
+**Birebir aynı.** `estimateGas` farkı olan 96, tamamen verify çağrısının kendi
+calldata'sındaki 8 sıfır baytlık kodlama farkından geliyor (8 × 12 = 96).
+
+> Hakan'ın digest'i `0x38ebc057…` — Task 1'de canlı `readDigest()` ile okunan
+> değerin birebir aynısı (`progress.md`). Bağımsız bir çapraz kontrol.
+
+**Ve bu tesadüf değil, C13'ün tasarımının sonucu.** C13 = **WOTS+C / FORS+C**;
+buradaki **C, checksum'ı sabit bir değere zorlayan sayaç**tır. Zincir
+adımlarının toplamı deterministik olur, dolayısıyla doğrulama maliyeti imzadan
+imzaya değişmez. İlk rapordaki "WOTS+ varyansı beklenir" cümlesi şemanın kendi
+tasarımıyla çelişiyordu.
+
+### 4) Sıcak/soğuk alıcı — fark yok, ikisi de sıcak
+
+İlk raporda "bizim `to`'muz tx göndericisiyle aynı olduğu için sıcak, −2.500
+avantaj" yazmıştım. **Yanlıştı:** Hakan'ın tx'inde de `from` ile `execute()`'un
+iç `to`'su aynı adres (`0x7268a7c3…`). İkisi de EIP-2929 uyarınca sıcak, terim
+**sıfır**.
+
+| | tx `from` | `execute()` iç `to` | durum |
+|---|---|---|---|
+| Hakan | `0x7268a7c3…075b6` | `0x7268a7c3…075b6` | sıcak |
+| Bizim | `0xe0bf2d19…b7351` | `0xe0bf2d19…b7351` | sıcak |
 
 ### `estimateGas` çalıştı, fallback devreye GİRMEDİ
 
@@ -151,7 +200,7 @@ Gönderilen limit **262.924** = tahmin × 1,2 (tahmin 219.104). Ekranda
 
 Bu, `GAS_FALLBACK = 350.000` dalının hâlâ canlı görülmediği anlamına da gelir
 (bkz. bölüm 7). Public RPC'nin 3,9 KB calldata'da zorlanma riski bu tx'te
-gerçekleşmedi.
+gerçekleşmedi. (Hakan'ın tx'i 300.000'lik elle verilmiş bir limitle atılmıştı.)
 
 ## 4. Negatif kanıt (aynı oturumda, gerçek tx'ten HEMEN ÖNCE)
 
