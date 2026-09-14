@@ -104,11 +104,22 @@ gas hesabında **~88 tx'lik** pay var. Kıt kaynak **elle mnemonic oturumu** ve
 > A ölçümü.** A'nın tahmini tekrarlanabilir değilse kovaların dayandığı
 > karşılaştırma baştan anlamsızdır.
 >
-> **Bedava yan gözlem:** faz 1'in A tahmini ile faz 2'nin A tahmini
-> karşılaştırılabilir. Aynı çıkarsa imzalayıcı deterministiktir (aynı girdi →
-> aynı imza → aynı calldata); farklı çıkarsa fark ±240 gas mertebesinde
-> olmalıdır ve kaynağı imzanın sıfır bayt sayısıdır. Bu bir **gözlemdir, "bitti"
-> ölçütü değildir** — çıkmazsa kalem bloke olmaz.
+> **Bedava ölçüm (gözlem değil):** faz 1'in A tahmini ile faz 2'nin A tahmini
+> karşılaştırılır. Fark varsa **kaynağı çıkarımla atanmaz, hesaplanır** — iki
+> imzanın sıfır / sıfır-dışı baytları sayılır ve intrinsic ikisi için de § 2'nin
+> formülüyle hesaplanır. Üç sonuç mümkün:
+>
+> | Bulgu | Anlamı |
+> |---|---|
+> | Baytlar aynı | İmzalayıcı deterministik. Nokta |
+> | Baytlar farklı, tahmin farkı **hesaplanan intrinsic farkına eşit** | İmzalayıcı hedged; açıklama kapandı |
+> | Baytlar farklı, fark intrinsic farkına **eşit değil** | **Açıklanamayan kalan var.** Defterin kapanmadığı durum — sayı yuvarlanmaz, kalan yazılır ve araştırılır |
+>
+> Üçüncü ihtimal baştan dışlanmaz. B ve C satırlarına uygulanan normalizasyon
+> kuralının aynısı burada da geçerli: fark **ölçülür**, mekanizma atanmaz.
+>
+> Bu bir **"bitti" ölçütü değildir** — üçüncü dal çıkarsa kalem bloke olmaz,
+> ama kalan kanıt notuna açıkça yazılır.
 
 #### Faz 2 — KAYITLI
 
@@ -128,6 +139,13 @@ gas hesabında **~88 tx'lik** pay var. Kıt kaynak **elle mnemonic oturumu** ve
 **Faz 1 mutlaka faz 2'den önce.** Gerçek tx nonce'u 3'e çıkarınca nonce 2'ye
 atılmış bütün imzalar ölür ve **ikinci bir elle oturum** gerekir. Performans
 tercihi değil, tek yönlü kapı.
+
+> **SERT HATIRLATMA — faz 1 ile faz 2 arasında HİÇBİR tx gönderilmez.**
+> Üç imza da nonce 2'ye bağlı ve nonce 2'de kaldığı sürece yaşıyor. Araya
+> **herhangi** bir `execute()` girerse — test amaçlı, kazara, ya da "bir şeyi
+> denemek için" — üçü birden ölür ve ölçüm zinciri baştan, ikinci bir elle
+> mnemonic oturumuyla kurulur. Bu, oturumun en kırılgan varsayımı ve tek satırla
+> bozulabilir.
 
 Kullanılmayan imzaları çöpe atmanın bedeli yok: C13 stateless, leaf tüketimi
 yok (`GOREV_SINIRLARI.md` Bölüm 5). XMSS'te üç imzadan ikisini atmak güvenlik
@@ -424,37 +442,64 @@ sebebi değil.
 
 ---
 
-## 5. Sıralama — iki senaryo, kilitlenmemiş
+## 5. Sıralama — sıra anahtarı, "ortak ön ek" değil
 
 TEKNOFEST'in 30 Eylül öncesi rapor teslim tarihi olup olmadığı **belirsiz**.
 
-### Senaryo A — finalden önce teslim YOK
+**Görev içerikleri senaryodan bağımsızdır; değişen yalnızca sıradır.** Plan bu
+yüzden "ortak ön ek" diye kesilmez: görevler bir kez yazılır, başa bir **sıra
+anahtarı** konur, ve tarih gelince değişen şey anahtar olur — görevler değil.
+
+### Senaryoya bağlı olan tek şey: bir bayrak
+
+| Kalem | Senaryoya bağlı mı | Not |
+|---|---|---|
+| ÖK-2 | ❌ Hayır | Her iki senaryoda birebir aynı |
+| K1 | ❌ Hayır | İçerik aynı (sınırlandırılmış render refactor), yalnızca **konumu** değişiyor |
+| **K2 faz 1** | ❌ Hayır | **Birebir aynı** — ölçüm zinciri ölçüyor, UI'ı değil. İmzalar ve tahminler cila öncesi/sonrası aynı çıkar |
+| **K2 faz 2** | ✅ **EVET** | Senaryoya bağlı **tek bayrak**: `kayıt = evet/hayır` |
+| K3, K5, K6 | ❌ Hayır | İçerik aynı, konum değişiyor |
+| K4 | ✅ Kısmen | Diff kapısı yalnızca Senaryo A'da anlamlı (aşağıda) |
+
+### Sıra anahtarı
+
+**Senaryo A — finalden önce teslim YOK**
 
 ```
-ÖK-2  →  K1  →  K2  →  K3  →  K4  →  K5  →  K6 (ÖK-2'den itibaren paralel)
+ÖK-2  →  K1  →  K2 [kayıt=EVET]  →  K3  →  K4  →  K5  →  K6 (ÖK-2'den paralel)
 ```
 
 Risk sırasına göre: koda dokunan iş önce, video en sonda UI donduktan sonra
 kapıdan geçer.
 
-### Senaryo B — finalden önce teslim VAR
+**Senaryo B — finalden önce teslim VAR**
 
 ```
-K2 (faz 1 + KAYITSIZ gerçek tx)  →  K5  →  K6  →  K1  →  K3  →  K4 (taze çekim)
+K2 [kayıt=HAYIR]  →  K5  →  K6  →  K1  →  K3  →  K4 (taze çekim)
 ```
 
-**Senaryo B'de K2'de kayıt alınmaz.** Cila öncesi çekilen kayıt K4'te zaten
-çöpe gideceği için, kayıt kurulumu, mnemonic tarama disiplini ve ikinci bir
-video dosyasının yönetimi harcanmaz. Δ₂ ve tablo yine alınır — Δ₂ node'un
+### `kayıt = HAYIR` bayrağının gerekçesi ve iki sonucu
+
+Senaryo B'de K2 cila **öncesi** çalışır. Orada çekilen kayıt K4'te zaten çöpe
+gideceği için kayıt kurulumu, mnemonic tarama disiplini ve ikinci bir video
+dosyasının yönetimi harcanmaz. Δ₂ ve tablo yine alınır — Δ₂ node'un
 estimator'ı hakkında, bizim UI'ımızla ilgisi yok.
+
+**Sonuç 1 — K4'ün diff kapısı Senaryo B'de devre dışıdır.**
+Karşılaştırılacak bir kayıt yok; çekim en sonda ve zaten dondurulmuş UI
+üzerinde yapılıyor. Kapı yalnızca Senaryo A'da anlamlı: orada kayıt K3'ten
+**önce** alındığı için sonradan değişme riski var.
+
+**Sonuç 2 — K1'in canlı regresyon kanıtı Senaryo B'de K4'e kayar.**
+Senaryo A'da K2'nin gerçek tx'i cila **sonrası** atıldığı için aynı zamanda
+"refactor gönderim yolunu bozmadı" kanıtıdır. Senaryo B'de K2 cila öncesinde
+olduğu için bu rolü **taşımaz** — o senaryoda K1'in canlı kanıtı K4'ün taze
+çekimindeki gerçek tx olur. Bu yüzden Senaryo B'de **K4'ün "bitti" ölçütüne
+`cast` ile bağımsız doğrulama da eklenir** (nonce, bakiye, receipt), yoksa
+refactor Sprint 4 boyunca canlı kanıtsız kalır.
 
 Bedeli açık: K4'te **taze çekim zorunlu**, yani bir elle mnemonic oturumu ve
 bir tx daha. Bütçe yeterli (9 gönderim / ~88 tx payı).
-
-**Senaryo B'de K4'ün diff kapısı devre dışıdır** — karşılaştırılacak bir kayıt
-yok, çekim en sonda ve zaten dondurulmuş UI üzerinde yapılıyor. Kapı yalnızca
-Senaryo A'da anlamlı: orada kayıt K3'ten **önce** alındığı için sonradan
-değişme riski var.
 
 ---
 
