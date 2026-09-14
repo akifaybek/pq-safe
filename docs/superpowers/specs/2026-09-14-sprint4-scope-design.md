@@ -237,7 +237,15 @@ brief'te olmayan bir hata çıktı — Task 3B (keygen kilidi), Task 5 (ethers
 revert'te receipt döndürmüyor), Task 6 (bayat yeşil sonuç + imza fotoğrafı
 yokluğu) — ve **üçünde de düzeltme gönderim yolunun dosyalarına indi.**
 
-**"Bitti" ölçütü:** **tek çekim, kesme yok**, SHA-256 kanıt notunda. Kesme,
+**"Bitti" ölçütü:** **tek çekim, kesme yok**, SHA-256 kanıt notunda **ve — taze
+çekim yapıldıysa — `cast` ile bağımsız doğrulama** (nonce, bakiye, receipt).
+
+> **`cast` ölçütü senaryodan bağımsızdır.** Senaryo A'da gereksiz görünür,
+> çünkü K1'in canlı regresyon kanıtını K2'nin tx'i taşır. Ama diff kapısı
+> yeniden çekim tetiklerse o taze tx K1'in canlı kanıtını **taşımaya başlar** ve
+> aynı boşluk A'da da açılır. Ölçüt her iki senaryoda da duruyor.
+
+Kesme,
 "kesilen yerde ne oldu" itirazını davet eder ve bu videonun değeri tam olarak
 sürekliliğinden geliyor (imza → negatif kanıt reddi → *aynı* imzayla gönderim →
 receipt, aralıksız).
@@ -450,6 +458,17 @@ TEKNOFEST'in 30 Eylül öncesi rapor teslim tarihi olup olmadığı **belirsiz**
 yüzden "ortak ön ek" diye kesilmez: görevler bir kez yazılır, başa bir **sıra
 anahtarı** konur, ve tarih gelince değişen şey anahtar olur — görevler değil.
 
+> **Varsayılan sıra anahtarı: SENARYO A.** Plan bu varsayımla yazılır.
+>
+> **Senaryo B silinmez.** Şu an belgede tuttuğumuz maliyet bir tablo satırı ve
+> bir bayrak; yanlış çıkarsa silmenin maliyeti final haftasında yeniden
+> planlama. Asimetri açık, o yüzden B duruyor.
+>
+> **Teyit nerede aranacak:** yarışma şartnamesinin takvim bölümü ve yarışma
+> sayfasındaki duyurular — "rapor", "teslim", "değerlendirme" kelimeleri.
+> Tahminî on dakika. "Olmayabilir" ile "yok" arasındaki fark finalden iki hafta
+> önce keşfedilirse pahalıdır.
+
 ### Senaryoya bağlı olan tek şey: bir bayrak
 
 | Kalem | Senaryoya bağlı mı | Not |
@@ -494,9 +513,12 @@ Karşılaştırılacak bir kayıt yok; çekim en sonda ve zaten dondurulmuş UI
 Senaryo A'da K2'nin gerçek tx'i cila **sonrası** atıldığı için aynı zamanda
 "refactor gönderim yolunu bozmadı" kanıtıdır. Senaryo B'de K2 cila öncesinde
 olduğu için bu rolü **taşımaz** — o senaryoda K1'in canlı kanıtı K4'ün taze
-çekimindeki gerçek tx olur. Bu yüzden Senaryo B'de **K4'ün "bitti" ölçütüne
-`cast` ile bağımsız doğrulama da eklenir** (nonce, bakiye, receipt), yoksa
-refactor Sprint 4 boyunca canlı kanıtsız kalır.
+çekimindeki gerçek tx olur.
+
+Bu yüzden K4'ün "bitti" ölçütü taze çekimde `cast` doğrulaması istiyor ve
+**bu ölçüt her iki senaryoda da duruyor**: Senaryo A'da da diff kapısı yeniden
+çekim tetiklerse aynı devir gerçekleşir. Ölçütü senaryoya bağlamak, boşluğu
+yalnızca daha nadir hale getirirdi.
 
 Bedeli açık: K4'te **taze çekim zorunlu**, yani bir elle mnemonic oturumu ve
 bir tx daha. Bütçe yeterli (9 gönderim / ~88 tx payı).
