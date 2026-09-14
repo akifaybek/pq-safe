@@ -6,16 +6,18 @@
 > sözdizimi kullanıyor.
 
 **Hedef:** Sprint 3'te canlı kanıtlanan uçtan uca akışı jüriye gösterilebilir
-hale getirmek — render yolunu tek noktaya toplamak, gas tablosunu üç alıcı
-durumu için ölçmek, sınanmamış iki dalı kapatmak, kesintisiz demo videosunu
-çekmek ve raporun Akif bölümlerini yazmak.
+hale getirmek — ekranın kendisiyle çeliştiği iki yeri düzeltmek, gas tablosunu
+üç alıcı durumu için ölçmek, sınanmamış iki dalı kapatmak, kesintisiz demo
+videosunu çekmek ve raporun Akif bölümlerini yazmak.
 
-**Mimari:** Kod değişikliği tek bir yere sınırlı: `main.js`'teki 56 DOM yazma
-noktası yeni bir `src/ui/render.js` modülünün üç fonksiyonuna yönlendirilir.
-Geri kalan işler ölçüm, sınama ve belge — kontrat kodu, imza yolu ve gönderim
-mantığı **değişmez**. Ölçümler tarayıcı içinde, geçici ve md5 ile sabitlenmiş
-bir kanca üzerinden yapılır; owner mnemonic'i hiçbir komuta, hiçbir script'e
-verilmez.
+**Mimari:** Kod değişikliği **kasıtlı olarak asgari**: `main.js`'te iki küçük
+düzeltme (bayat imza bloğu + mnemonic'in DOM'a yazılması), toplam ~10 satır.
+`render.js` tesisat refactor'ü **bilerek Sprint 5'e ertelendi** (Task 3–4,
+gerekçesiyle) — kayıt penceresinin hemen önünde 56 yazma noktasına dokunmanın
+regresyon riski, kazancının karşılığı değil. Geri kalan işler ölçüm, sınama ve
+belge; kontrat kodu, imza yolu ve gönderim mantığı **değişmez**. Ölçümler
+tarayıcı içinde, geçici ve md5 ile sabitlenmiş bir kanca üzerinden yapılır;
+owner mnemonic'i hiçbir komuta, hiçbir script'e verilmez.
 
 **Tech Stack:** Vite 8 · ethers 6.17 · bip39 · Rust/WASM C13 signer
 (`sphincs_c13_signer`) · Playwright (tarayıcı oracle'ı) · Foundry `cast`
@@ -68,19 +70,20 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 
 | Dosya | Sorumluluk | Durum |
 |---|---|---|
-| `frontend/src/ui/render.js` | **YENİ.** DOM'a yazan tek yol: `render()`, `append()`, `setText()`. Bölge kimliğini parametre alır, bölgeleri birleştirmez | Task 2 |
-| `frontend/src/ui/render-test.mjs` | **YENİ.** `render.js`'in birim testleri, sahte element kayıt defteriyle (DOM gerektirmez) | Task 2 |
-| `frontend/src/main.js` | 56 yazma noktası modüle yönlendirilir. **Mantık değişmez** | Task 3, 4 |
-| `docs/evidence/crypto-tests/sprint4-render-refactor.md` | **YENİ.** Envanter (önce/sonra) + Playwright doğrulaması | Task 1, 3 |
+| `frontend/src/main.js` | İki küçük düzeltme: `invalidateSignature` + gönderim başarı yolu `txOut`'u güncelliyor; mnemonic DOM'a yazılmıyor. **~10 satır, mantık değişmez** | Task 1, 2 |
+| `docs/evidence/crypto-tests/sprint4-screen-consistency.md` | **YENİ.** Ölçülen kusur, kırmızı→yeşil Playwright, kanarya testi | Task 1, 2 |
+| ~~`frontend/src/ui/render.js`~~ | **ERTELENDİ → Sprint 5.** Gerekçe Task 3–4'te | — |
 | `docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md` | **YENİ.** Faz 1/2 ölçümleri, tablo, Δ₂, karar ağacı sonucu | Task 5, 6, 7 |
 | `docs/evidence/crypto-tests/sprint4-untested-branches.md` | **YENİ.** Erişilebilirlik analizi + iki dalın sonucu | Task 8, 9 |
 | `docs/RAPOR.md` | **YENİ.** Rapor iskeleti + bölüm→kanıt haritası + Akif bölümleri | Task 11, 12 |
 
-**`render.js` neden bölgeleri birleştirmiyor:** sekiz çıktı bölgesi semantik
-olarak ayrı. `chain-warn`'ın `send-out`'tan ayrı olması SAPMA 3'ün kararı
-(sessiz tazeleme tx kanıtını ezmesin); `main.js:752`'deki `insertAdjacentHTML`
-A3'ün teşhis satırını **ekleyerek** yazıyor, ezerek değil. İkisi de kanıt
-davranışı. Birleştirilen şey **yazma yolu**, bölge sayısı değil.
+**Bölgeler neden birleştirilemez (ve refactor'ün neden cila olmadığı):** sekiz
+çıktı bölgesi semantik olarak ayrı. `chain-warn`'ın `send-out`'tan ayrı olması
+SAPMA 3'ün kararı (sessiz tazeleme tx kanıtını ezmesin); `main.js:752`'deki
+`insertAdjacentHTML` A3'ün teşhis satırını **ekleyerek** yazıyor, ezerek değil.
+İkisi de kanıt davranışı, dokunulmaz. Dolayısıyla bir `render()` modülü
+**ekranda hiçbir şeyi değiştirmezdi** — tesisat işi, demo cilası değil. Sprint
+4'te düzeltilen şey bölge sayısı değil, **bölgelerin birbiriyle çelişmesi**.
 
 ---
 
@@ -123,368 +126,223 @@ Beklenen: `eef1f889a46c77d45dca013d321e9648fd3eaa7e` başında `-` veya `+`
 
 ---
 
-## Task 1: Render envanteri — refactor ÖNCESİ taban
+## Task 1: Ekran tutarlılığı — bayat imza bloğu
 
-Envanter refactor'den **önce** alınır ve commit'lenir. Sonradan çıkarılan
-envanter kendine referanslıdır: kaybolan nokta envantere de girmez, liste
-kendini doğrular.
+**Ölçülmüş kusur.** `main.js`'te `innerHTML = ''` yalnızca **3 kez** geçiyor,
+üçü de `chainWarn` (satır 147, 601, 824). Diğer yedi çıktı bölgesi
+(`sendOut`, `txOut`, `signOut`, `keygenOut`, `walletOut`, `connectionOut` ve
+göstergeler) **hiç temizlenmiyor** — yalnızca kendi handler'ları yazınca
+değişiyorlar.
 
-**Files:**
-- Create: `docs/evidence/crypto-tests/sprint4-render-refactor.md`
+Sonucu ekranda görünür bir çelişki:
 
-**Interfaces:**
-- Produces: `TABAN_ENVANTER` — bölge başına yazma sayısı tablosu. Task 3 bunu
-  birebir karşılaştırma tabanı olarak kullanır.
+- `invalidateSignature()` (`main.js:124-129`) `signed = null` yapıyor ve
+  `sendOut`'a *"imza geçersiz kılındı"* yazıyor — ama **`txOut`'a dokunmuyor.**
+  `txOut` imza bloğunu tutuyor (`main.js:351`, `:376`) ve orada duruyor.
+- Aynısı başarılı gönderimde: `txOut`'a yazan tüm satırlar 272–376 arasında,
+  yani build-sign handler'ının içinde. Gönderim handler'ı (813+) `txOut`'a
+  **hiç** dokunmuyor.
 
-- [ ] **Adım 1: Yazma noktalarını say**
+Yani aynı karede `txOut` "imza üretildi, 3688 bayt" derken `sendOut`
+"gönderildi" ya da "imza geçersiz kılındı" diyor. **Ekran kendi kendisiyle
+çelişiyor** ve bu kare kayda giriyor.
 
-```bash
-cd /Users/akif/pq-safe/frontend
-grep -cE "innerHTML|textContent|insertAdjacentHTML" src/main.js
-```
-Beklenen (plan yazıldığı an): `56`
-
-- [ ] **Adım 2: Bölge başına dökümü çıkar**
-
-```bash
-cd /Users/akif/pq-safe/frontend
-grep -oE '[A-Za-z0-9_$.]+\.(innerHTML|textContent)\s*(\+?=)' src/main.js \
-  | sort | uniq -c | sort -rn
-grep -n "insertAdjacentHTML" src/main.js
-```
-Beklenen döküm:
-
-| Bölge | Yazma sayısı |
-|---|---|
-| `sendOut.innerHTML` | 16 |
-| `keygenOut.innerHTML` | 8 |
-| `txOut.innerHTML` | 6 |
-| `chainWarn.innerHTML` | 5 |
-| `walletOut.innerHTML` | 4 |
-| `signOut.innerHTML` | 4 |
-| `connectionOut.innerHTML` | 3 |
-| `nonceDisplay.textContent` | 3 |
-| `balanceDisplay.textContent` | 3 |
-| `walletDisplay.textContent` | 1 |
-| `sendOut.insertAdjacentHTML` (satır 752) | 1 |
-
-- [ ] **Adım 3: Nadir dalları tetikleme yoluyla etiketle**
-
-Her bölge için, metnin ekrana **hangi yolla** geldiği yazılır:
-
-| Etiket | Anlamı |
-|---|---|
-| `DOĞAL` | Playwright ile normal kullanıcı akışından tetiklenebilir |
-| `KANCA` | Yalnızca geçici test kancasıyla tetiklenebilir (ör. `receipt.status === 0`, ağ hatası sınıfları) |
-
-Etiketlenmezse envanter "hepsi doğrulandı" izlenimi verir. `KANCA` etiketli her
-nokta Task 3'te kanca ile tetiklenir ve md5 artık-sıfır kuralı uygulanır.
-
-- [ ] **Adım 4: main.js'in taban md5'ini sabitle**
-
-```bash
-cd /Users/akif/pq-safe/frontend && md5 -q src/main.js
-```
-Sonuç kanıt notuna yazılır (`TABAN_MD5`).
-
-- [ ] **Adım 5: Kanıt notunu yaz**
-
-`docs/evidence/crypto-tests/sprint4-render-refactor.md` — bölüm 1 "Refactor
-öncesi envanter": yukarıdaki üç tablo, `TABAN_MD5`, ve şu cümle:
-
-> Bu envanter refactor'den **önce** alındı. Refactor sonrası doğrulama buna
-> karşı yapılacak; sonradan çıkarılan bir envanter kaybolan noktayı da
-> kaybederdi.
-
-- [ ] **Adım 6: Commit (komut Akif'e verilir)**
-
-```bash
-git add docs/evidence/crypto-tests/sprint4-render-refactor.md
-git commit -m "docs(evidence): render envanteri — refactor öncesi taban, 56 yazma noktası"
-git push
-```
-
----
-
-## Task 2: `render.js` modülü (TDD)
+Bu, Task 6'nın "bayat yeşil sonuç" ve Task 3'ün "ekranda yeni `to`, calldata'da
+eski `to`" hatalarıyla aynı aile: durum ile ekranın ayrışması.
 
 **Files:**
-- Create: `frontend/src/ui/render.js`
-- Test: `frontend/src/ui/render-test.mjs`
+- Modify: `frontend/src/main.js` (`invalidateSignature` + gönderim başarı yolu)
+- Create: `docs/evidence/crypto-tests/sprint4-screen-consistency.md`
 
 **Interfaces:**
-- Produces:
-  - `render(el, html)` — `el.innerHTML = html`, tek yazma yolu
-  - `append(el, html)` — `el.insertAdjacentHTML('beforeend', html)`
-  - `setText(el, text)` — `el.textContent = text`
-  - `getWriteLog()` / `resetWriteLog()` — test ve envanter doğrulaması için
-    yazma kaydı (bölge kimliği + çağrı sayısı)
+- Consumes: mevcut `invalidateSignature()`, `syncSendButtons()`, `txOut`
+- Produces: yok (iç düzeltme)
 
-- [ ] **Adım 1: Başarısız testi yaz**
+- [ ] **Adım 1: Kusuru Playwright ile KIRMIZI olarak göster**
 
-`frontend/src/ui/render-test.mjs`:
+Önce hata kanıtlanır, sonra düzeltilir. İki senaryo, ikisi de rastgele
+anahtarla (owner mnemonic'i **kullanılmaz**):
+
 ```javascript
-import { render, append, setText, getWriteLog, resetWriteLog } from './render.js';
-
-let fails = 0;
-const ok = (cond, msg) => {
-  console.log(`${cond ? '✓' : '✗'} ${msg}`);
-  if (!cond) fails++;
-};
-
-// Sahte element — DOM gerekmiyor
-const fakeEl = (id) => ({ id, innerHTML: '', textContent: '' });
-
-resetWriteLog();
-
-const a = fakeEl('send-out');
-render(a, '<p>bir</p>');
-ok(a.innerHTML === '<p>bir</p>', 'render innerHTML yazıyor');
-
-render(a, '<p>iki</p>');
-ok(a.innerHTML === '<p>iki</p>', 'render EZİYOR (append değil)');
-
-const b = fakeEl('chain-warn');
-setText(b, 'uyarı');
-ok(b.textContent === 'uyarı', 'setText textContent yazıyor');
-ok(b.innerHTML === '', 'setText innerHTML\'e DOKUNMUYOR');
-
-// append: gerçek DOM API'si yok, sahte elemana insertAdjacentHTML eklenir
-const c = { id: 'send-out', innerHTML: '<p>tx</p>',
-            insertAdjacentHTML(pos, html) { this.innerHTML += html; } };
-append(c, '<p>teşhis</p>');
-ok(c.innerHTML === '<p>tx</p><p>teşhis</p>', 'append EKLİYOR, ezmiyor');
-
-const log = getWriteLog();
-ok(log['send-out'] === 3, `send-out 3 yazma kaydedildi (görülen: ${log['send-out']})`);
-ok(log['chain-warn'] === 1, `chain-warn 1 yazma kaydedildi (görülen: ${log['chain-warn']})`);
-
-console.log(fails === 0 ? '\nTÜM TESTLER GEÇTİ' : `\n${fails} TEST BAŞARISIZ`);
-process.exit(fails === 0 ? 0 : 1);
+// Senaryo A — imza düşürme
+// keygen → alanları doldur → imzala → txOut'ta imza bloğu var
+// sonra `to` alanını değiştir → invalidateSignature koşar
+const txOutText  = await page.locator('#tx-out').innerText();
+const sendOutText = await page.locator('#send-out').innerText();
+// BUGÜNKÜ DAVRANIŞ (beklenen KIRMIZI):
+//   sendOutText  "imza geçersiz kılındı" içeriyor
+//   txOutText    HÂLÂ imza bloğunu içeriyor  ← çelişki
 ```
 
-- [ ] **Adım 2: Testi çalıştır, başarısız olduğunu gör**
+Beklenen: assertion **KIRMIZI** — `txOut` bayat imza bloğunu gösteriyor.
 
-```bash
-cd /Users/akif/pq-safe/frontend && node src/ui/render-test.mjs
-```
-Beklenen: `ERR_MODULE_NOT_FOUND` — `src/ui/render.js` yok.
+- [ ] **Adım 2: Testi çalıştır, kırmızı olduğunu gör**
 
-- [ ] **Adım 3: Minimal implementasyonu yaz**
+Playwright çalıştırılır. Beklenen: `txOut` metni imza bloğunu içeriyor →
+assertion başarısız. **Kırmızı görülmeden düzeltmeye geçilmez** — yoksa
+düzeltmenin bir şeyi düzelttiği kanıtlanmamış olur.
 
-`frontend/src/ui/render.js`:
+- [ ] **Adım 3: Minimal düzeltme**
+
+`invalidateSignature()` (`main.js:124`):
 ```javascript
-// DOM'a yazan TEK yol. Bölgeleri birleştirmez — bölge kimliği parametredir.
-//
-// Neden bölgeler ayrı kalıyor: #chain-warn'ın #send-out'tan ayrı olması
-// SAPMA 3'ün kararı (sessiz tazeleme tx kanıtını ezmesin); teşhis satırı
-// append ile yazılır (A3), ezerek değil. İkisi de kanıt davranışıdır.
-
-const writeLog = Object.create(null);
-
-function note(el) {
-  const id = el && el.id ? el.id : '(id yok)';
-  writeLog[id] = (writeLog[id] || 0) + 1;
-}
-
-export function render(el, html) {
-  note(el);
-  el.innerHTML = html;
-}
-
-export function append(el, html) {
-  note(el);
-  el.insertAdjacentHTML('beforeend', html);
-}
-
-export function setText(el, text) {
-  note(el);
-  el.textContent = text;
-}
-
-export function getWriteLog() {
-  return { ...writeLog };
-}
-
-export function resetWriteLog() {
-  for (const k of Object.keys(writeLog)) delete writeLog[k];
+function invalidateSignature() {
+  if (!signed) return;
+  signed = null;
+  syncSendButtons();
+  txOut.innerHTML = '<p class="warn">İmza geçersiz kılındı — yeniden imzalayın.</p>';
+  sendOut.innerHTML = '<p class="warn">Değerler değişti — imza geçersiz kılındı, yeniden imzalayın.</p>';
 }
 ```
 
-- [ ] **Adım 4: Testi çalıştır, geçtiğini gör**
-
-```bash
-cd /Users/akif/pq-safe/frontend && node src/ui/render-test.mjs
-```
-Beklenen: `TÜM TESTLER GEÇTİ`, çıkış kodu 0.
-
-- [ ] **Adım 5: Commit (komut Akif'e verilir)**
-
-```bash
-git add frontend/src/ui/render.js frontend/src/ui/render-test.mjs
-git commit -m "feat(frontend): render.js — DOM yazmanın tek yolu, 7 birim testi"
-git push
-```
-
----
-
-## Task 3: `main.js`'i `render.js`'e geçir + envanteri doğrula
-
-**Files:**
-- Modify: `frontend/src/main.js` (56 yazma noktası)
-- Modify: `docs/evidence/crypto-tests/sprint4-render-refactor.md`
-
-**Interfaces:**
-- Consumes: Task 2'nin `render()`, `append()`, `setText()`, `getWriteLog()`;
-  Task 1'in `TABAN_ENVANTER` ve `TABAN_MD5`
-
-- [ ] **Adım 1: Import ekle**
-
-`frontend/src/main.js` başına:
+Gönderim başarı yolunda, `signed = null` yapılan yerin **hemen yanına**:
 ```javascript
-import { render, append, setText, getWriteLog } from './ui/render.js';
+txOut.innerHTML = '<p>İmza bu işlemde kullanıldı — yeni işlem için yeniden imzalayın.</p>';
 ```
 
-- [ ] **Adım 2: Yazma noktalarını mekanik olarak çevir**
+**DEĞİŞTİRİLMEYECEKLER:** `syncSendButtons`'ın kendisi, kalkan sırası, `sig`
+fotoğrafı, `sendExecute` yolu, `sendOut`'un mevcut metinleri. Yalnızca `txOut`
+güncelleniyor.
 
-Kural — **mantık değişmez, yalnızca yazma yolu değişir**:
+> **Neden `sendOut` temizlenmiyor:** başarılı gönderimden sonra `sendOut`'ta
+> tx hash'i, Etherscan linki ve ölçülen gas duruyor — **kanıtın kendisi.**
+> Onu temizlemek SAPMA 3'ün ve A3'ün korumaya çalıştığı şeyi yok ederdi.
+> Düzeltilen, kanıtı taşımayan bayat bölge.
 
-| Önce | Sonra |
-|---|---|
-| `sendOut.innerHTML = X;` | `render(sendOut, X);` |
-| `nonceDisplay.textContent = X;` | `setText(nonceDisplay, X);` |
-| `sendOut.insertAdjacentHTML('beforeend', diagnosis);` | `append(sendOut, diagnosis);` |
+- [ ] **Adım 4: Testi tekrar çalıştır — YEŞİL**
 
-**DEĞİŞTİRİLMEYECEKLER:** koşullar, sıra, `syncSendButtons` çağrıları, kalkan
-mantığı, `sig` fotoğrafı, `sendExecute` yolu. Bir `if` bile taşınmaz.
+Beklenen: her iki senaryoda `txOut` artık bayat imza bloğunu göstermiyor.
 
-- [ ] **Adım 3: Kalan doğrudan yazma olmadığını doğrula**
+**Pozitif kontrol (assertion boş değil):** aynı akışta, imza **geçerliyken**
+`txOut`'un imza bloğunu **gösterdiği** doğrulanır. Yoksa test "`txOut` hep boş
+olduğu için" geçmiş olur.
+
+- [ ] **Adım 5: Mevcut testler + build**
 
 ```bash
 cd /Users/akif/pq-safe/frontend
-grep -nE "\.(innerHTML|textContent)\s*\+?=" src/main.js
-grep -n "insertAdjacentHTML" src/main.js
-```
-Beklenen: **her ikisi de boş** (yalnızca `render.js` içinde kalmalı).
-Boş değilse geçirilmemiş nokta var — devam edilmez.
-
-- [ ] **Adım 4: Mevcut testler + build**
-
-```bash
-cd /Users/akif/pq-safe/frontend
-node src/ui/render-test.mjs
 node src/tx/send-transaction-test.mjs
 node src/tx/build-transaction-test.mjs
 node src/contracts/pqwallet-test.mjs
 npx vite build
 ```
-Beklenen: sırasıyla `TÜM TESTLER GEÇTİ` · 75 test · 21 test · 9 test (cast
-oracle dahil) · build geçer.
+Beklenen: 75 · 21 · 9 (cast oracle dahil) · build geçer. Console: yalnızca
+favicon 404.
 
-> **Bu adım "bitti" ölçütü DEĞİLDİR.** Bu üç paket saf fonksiyon testidir ve
-> DOM çıktısına hiç assertion koymaz; yeşil kalmaları "bozmadım" demez,
-> "oraya bakmıyordum" der. Ölçüt Adım 5.
+- [ ] **Adım 6: Kanıt notunu yaz**
 
-- [ ] **Adım 5: Envanteri Playwright ile doğrula — ASIL ÖLÇÜT**
+`sprint4-screen-consistency.md`: ölçülen kusur (3 temizlik / 7 bölge sayımı,
+satır numaralarıyla), kırmızı ekran görüntüsü, düzeltme, yeşil ekran görüntüsü,
+pozitif kontrol.
 
-Task 1'in `DOĞAL` etiketli her noktası tarayıcıda tetiklenir ve metni okunur.
-`KANCA` etiketli noktalar geçici kanca ile tetiklenir.
-
-Playwright doğrulaması `getWriteLog()`'a dayanır:
-```javascript
-// Akış sonunda, sayfa bağlamında:
-const log = await page.evaluate(() => window.__renderLog());
-// Beklenen: Task 1'in TABAN_ENVANTER'indeki her bölge kimliği log'da VAR
-```
-Bunun için `main.js`'e **geçici** bir kanca konur:
-```javascript
-// GEÇİCİ — Task 3 doğrulaması, adım 7'de SİLİNECEK
-window.__renderLog = getWriteLog;
-```
-
-Beklenen: `TABAN_ENVANTER`'deki **on bölgenin onu da** log'da görünür.
-Görünmeyen bölge = refactor'de düşmüş render noktası.
-
-- [ ] **Adım 6: Kanıt notunu tamamla**
-
-`sprint4-render-refactor.md` bölüm 2 "Refactor sonrası doğrulama": hangi
-bölgenin hangi yolla tetiklendiği, `DOĞAL`/`KANCA` etiketleri, Playwright
-çıktısı, düşen nokta sayısı (beklenen: 0).
-
-- [ ] **Adım 7: Kancayı sil ve artık-sıfırı md5 ile kanıtla**
+- [ ] **Adım 7: Commit (komut Akif'e verilir)**
 
 ```bash
-cd /Users/akif/pq-safe/frontend
-md5 -q src/main.js                          # kancalıyken
-# kanca satırı silinir
-md5 -q src/main.js                          # kancasız — kanıt notuna yazılır
-grep -c "__renderLog" src/main.js           # beklenen: 0
-```
-Sayfa yenilenir, tarayıcı konsolunda `window.__renderLog` → `undefined`.
-
-- [ ] **Adım 8: Commit (komut Akif'e verilir)**
-
-```bash
-git add frontend/src/main.js docs/evidence/crypto-tests/sprint4-render-refactor.md
-git commit -m "refactor(frontend): 56 DOM yazma noktası render.js'e alındı — envanterle doğrulandı"
+git add frontend/src/main.js docs/evidence/crypto-tests/sprint4-screen-consistency.md
+git commit -m "fix(frontend): bayat imza bloğu — txOut, imza düşünce ve gönderim sonrası güncelleniyor"
 git push
 ```
 
 ---
 
-## Task 4: Mnemonic'in DOM'a yazılmasının kaldırılması
+## Task 2: Mnemonic'in DOM'a yazılmasının kaldırılması
 
 **Files:**
 - Modify: `frontend/src/main.js` (bölüm 1, `btn-keygen` yolu — `main.js:195`
   civarı, kanıt notlarına göre mnemonic'in DOM'a yazıldığı **tek** yer)
-- Modify: `docs/evidence/crypto-tests/sprint4-render-refactor.md`
+- Modify: `docs/evidence/crypto-tests/sprint4-screen-consistency.md`
 
-- [ ] **Adım 1: Yazılan yeri bul ve doğrula**
+- [ ] **Adım 1: Yazılan yeri bul ve tekliğini doğrula**
 
 ```bash
 cd /Users/akif/pq-safe/frontend
 grep -n "currentMnemonic" src/main.js
 ```
-Mnemonic'in `render()`/`setText()` ile ekrana gittiği satır(lar) tespit edilir.
-Başka hiçbir yerde DOM'a gitmediği aynı çıktıyla doğrulanır.
+Mnemonic'in DOM'a gittiği satır(lar) tespit edilir ve başka hiçbir yerde
+gitmediği **aynı çıktıyla** doğrulanır.
 
-- [ ] **Adım 2: Başarısız testi yaz — kanarya**
+- [ ] **Adım 2: Kanarya testini yaz — KIRMIZI olmalı**
 
 Playwright: `btn-keygen`'e basılır, sonra sayfanın **tüm** metninde üretilen
 mnemonic'in ilk kelimesi aranır.
-Beklenen (düzeltmeden önce): **bulunur** → test KIRMIZI.
 
-> Gerçek owner mnemonic'i **kullanılmaz**. `btn-keygen` rastgele üretir;
-> aranan o rastgele değerdir.
+Beklenen (düzeltmeden önce): **bulunur** → KIRMIZI.
 
-- [ ] **Adım 3: Yazmayı kaldır**
+> Gerçek owner mnemonic'i **kullanılmaz.** `btn-keygen` rastgele üretir;
+> aranan o rastgele değerdir. `.env.pqwallet-owner-key` açılmaz.
 
-Mnemonic ekrana basılmaz. Yerine ne yazılacağı: üretildiği bilgisi ve kelime
-sayısı **değil** — yalnızca "anahtar çifti üretildi" ve türetilen **açık**
-anahtar (zincirde zaten herkese açık).
+- [ ] **Adım 3: Testi çalıştır, kırmızı olduğunu gör**
 
-- [ ] **Adım 4: Testi tekrar çalıştır**
+- [ ] **Adım 4: Yazmayı kaldır**
 
-Beklenen: mnemonic kelimesi sayfada **0 kez** → YEŞİL.
-Pozitif kontrol: aynı akışta açık anahtarın ekranda **görüldüğü** doğrulanır —
-yoksa test "sayfa boş olduğu için" geçmiş olur.
+Mnemonic ekrana basılmaz. Yerine yazılacak olan: "anahtar çifti üretildi" ve
+türetilen **açık** anahtar (zincirde zaten herkese açık). Kelime sayısı, nokta
+maskesi, kısaltma — hiçbiri yazılmaz.
 
-- [ ] **Adım 5: Mevcut testler + build**
+- [ ] **Adım 5: Testi tekrar çalıştır — YEŞİL**
+
+Beklenen: mnemonic kelimesi sayfada **0 kez**.
+
+**Pozitif kontrol:** aynı akışta açık anahtarın ekranda **görüldüğü**
+doğrulanır — yoksa test "sayfa boş olduğu için" geçmiş olur.
+
+- [ ] **Adım 6: Mevcut testler + build**
 
 ```bash
 cd /Users/akif/pq-safe/frontend
 node src/tx/send-transaction-test.mjs && node src/contracts/pqwallet-test.mjs && npx vite build
 ```
 
-- [ ] **Adım 6: Commit (komut Akif'e verilir)**
+- [ ] **Adım 7: Commit (komut Akif'e verilir)**
 
 ```bash
-git add frontend/src/main.js docs/evidence/crypto-tests/sprint4-render-refactor.md
+git add frontend/src/main.js docs/evidence/crypto-tests/sprint4-screen-consistency.md
 git commit -m "fix(frontend): mnemonic artık DOM'a yazılmıyor — kanarya testiyle doğrulandı"
 git push
 ```
 
 ---
+
+## Task 3–4: `render.js` tesisatı ve envanter — **ERTELENDİ → Sprint 5**
+
+**Bu görevler Sprint 4'te YAPILMAZ.** Silinmiyorlar; kararın gerekçesi burada
+duruyor ki sonraki okuyan aynı yola baştan girmesin (SAPMA 3'ün `main.js`'e
+yazılmış gerekçesiyle aynı refleks).
+
+**Ne olacaktı:** `src/ui/render.js` modülü (`render` / `append` / `setText` +
+`getWriteLog`), `main.js`'teki **56** DOM yazma noktasının bu modüle
+yönlendirilmesi, ve refactor öncesi/sonrası envanter doğrulaması.
+
+**Neden ertelendi:**
+
+1. **Bölgeler birleşmiyor, birleşemez.** Sekiz çıktı bölgesi semantik olarak
+   ayrı: `chainWarn`'ın `sendOut`'tan ayrı olması SAPMA 3'ün kararı (sessiz
+   tazeleme tx kanıtını ezmesin), `main.js:752`'deki `insertAdjacentHTML`
+   A3'ün teşhis satırını **ekleyerek** yazıyor. İkisi de kanıt davranışı.
+   Dolayısıyla refactor **ekranda hiçbir şeyi değiştirmiyor** — tesisat işi,
+   cila değil.
+2. **Tek dışsal kazanç "bundan sonraki değişiklikler test edilebilir olur."**
+   Finale 16 gün var ve bundan sonraki değişiklik sayısı az.
+3. **Envanter doğrulaması kendi kendini gerekçelendiriyordu:** refactor
+   yapılmazsa doğrulanacak refactor da yok.
+4. **Kayıt penceresi hemen önde.** 56 yazma noktasına dokunmanın regresyon
+   riski, (2)'deki kazancın karşılığı değil. Task 10'un diff kapısı da bu
+   değişiklikten tetiklenip yeniden çekim istetirdi.
+
+**Sprint 5'te yapılırsa uyulacak kural** (şimdiden yazılı, çünkü asıl tuzak
+burada):
+
+> `getWriteLog()` **yazma çağrısının yapıldığını** kanıtlar, metnin DOM'a doğru
+> düştüğünü **değil.** Tek oracle olarak bırakılırsa kendi kaydınla kendini
+> sınamak olur. Doğrulama iki satır olmalı:
+> - **Envanter kapsamı:** log'dan, **%100** — hiçbir bölge düşmemiş
+> - **Metin doğruluğu:** DOM'dan, **örneklem** — nadir dalların metni
+>   Playwright ile okunarak
+>
+> Ayrıca her render noktası `DOĞAL` (Playwright ile normal akıştan
+> tetiklenebilir) / `KANCA` (yalnızca geçici test kancasıyla) diye
+> etiketlenmeli; etiketlenmezse envanter "hepsi doğrulandı" izlenimi verir.
+> `KANCA` kullanılan yerlerde md5 artık-sıfır kuralı işler.
 
 ## Task 5: K2 Faz 1 — kayıtsız ölçüm (AKİF sürüyor, ajan hazırlar)
 
@@ -551,6 +409,32 @@ window.__m4 = {
 >
 > `chainNonce` ve `currentMnemonic` `main.js`'in modül kapsamındaki mevcut
 > değişkenleri; kanca onları yalnızca **okuyor**.
+
+> ### `from` SABİT KALMALI — tablonun ön koşulu
+>
+> **Ölçülmüş olgu:** `signer.estimateGas()` çağrıyı sağlayıcıya vermeden önce
+> `populateCall` → `populate`'tan geçiriyor ve `from` boşsa **signer'ın
+> adresiyle dolduruyor** (`node_modules/ethers/lib.commonjs/providers/
+> abstract-signer.js:36-38` ve `:187-188`). Yani sıfır adresi varsayımı bu
+> yolda oluşmuyor; Δ₁ de aynı yoldan geldiği için tabanı sağlam.
+>
+> **Ama `signer.getAddress()` MetaMask'in O AN AKTİF olan hesabını
+> döndürüyor.** Akif ölçümler arasında hesap değiştirirse `from` sessizce
+> değişir — ve sonuç tam olarak şu olur:
+>
+> A satırı "sıcak alıcı"dır ve sıcak olmasının **tek** sebebi `execute()`'un iç
+> `to`'sunun tx göndericisiyle aynı adres olmasıdır (EIP-2929 `tx.origin`'i
+> baştan sıcak listeye koyuyor). `from` değişirse iç alıcı soğur, A'nın
+> tahminine **+2.500** girer, **B − A ≈ 0** çıkar ve "hipotez çürüdü" yazılır.
+> Çürüyen hipotez değil, **ölçümün ön koşulu** olur.
+>
+> **Kural:** üç çağrının üçü de `from` = gerçek tx'i atacak MetaMask adresiyle
+> koşulur. Satırlar arasındaki **tek değişken** `execute()`'un iç `to`'sudur:
+> A'nınki `from`'un kendisi, B'ninki başka ama **var olan** bir adres,
+> C'ninki **boş** adres.
+>
+> **Bu bir "bitti" ölçütüdür:** her çağrının `from`'u kanıt notuna yazılır ve
+> üçünün **aynı olduğu** gösterilir. Örtük davranışa güvenilmez, ölçülür.
 
 - [ ] **Adım 2: Kancalı md5'i sabitle**
 
@@ -841,6 +725,12 @@ Soru: **ön-uçuş (`eth_call`) ile `estimateGas` arasında, tahmini patlatıp
 > 3. Dalın kendi yorumu amacını yazıyor: *"Public RPC bu calldata boyutunda
 >    (3,9 KB) `eth_estimateGas`'ta zorlanabilir."*
 >
+> **UYARI — 3. madde kanıt DEĞİLDİR.** Yorum yazarın **niyetini** gösteriyor,
+> dalın **koşabilirliğini** değil. Analizde yorum bağlam olarak okunur, delil
+> olarak sayılmaz; hüküm 1. ve 2. maddelerin üstüne kurulur. (Bu ayrım
+> yapılmazsa "kod öyle diyor" ile "kod öyle çalışıyor" karışır — bu kod
+> tabanında `e.txHash` ölü kod sanılıp sonradan çalıştırılabilir çıkmıştı, A2.)
+>
 > Yani `ÖLÜ_KOD` sonucu **olası görünmüyor** — ama bu bir ön izlenimdir, hüküm
 > değildir. Analizin kapatması gereken soru hâlâ açık: taşıma katmanı ortak
 > olduğu için pratikte `eth_call` de **her zaman** birlikte mi düşüyor? Cevap
@@ -917,7 +807,7 @@ Ekran görüntüsü alınır.
 
 ```bash
 cd /Users/akif/pq-safe/frontend
-node src/tx/send-transaction-test.mjs && node src/ui/render-test.mjs && npx vite build
+node src/tx/send-transaction-test.mjs && node src/contracts/pqwallet-test.mjs && npx vite build
 ```
 
 - [ ] **Adım 5: Commit (komut Akif'e verilir)**
@@ -1100,6 +990,8 @@ git push
 - Raporun birleştirilmesi, redaksiyonu, görsel düzeni
 - Sunum + soru-cevap listesi + en az 3 tam prova
 - Farklı makinede demo (Task 0 Adım 2 kısmen karşılar)
+- **`render.js` tesisatı + 56 yazma noktası + envanter doğrulaması** — Task 3–4,
+  gerekçesi ve `getWriteLog` kapsam kuralı orada yazılı
 - **Sunum için kurgulu kısa video** — kanıt olan ham ve kesintisiz olan
 - **C'ye gerçek tx** — yalnızca Task 7'nin üçüncü kovası çıkarsa. Gönderimden
   **hemen önce** üçlü boşluk kontrolü tekrarlanır: faz 1'de boş olması haftaya
