@@ -33,44 +33,79 @@ yerse temiz klon kırılır ve **kıran şey bizim makinemizde hiç görünmez**
 tekrar üretmeye kalkarsa aynı risk. Test ağdan taze çekerek yapılmalı, yerel
 önbellekten değil. Azaltma seçenekleri (fork / vendor) Sprint 5 kararı.
 
+**ÖK-2 İKİ TARAFI birden kapsar, biri değil:**
+
+1. **Kurulum çalışıyor mu** — klon, `npm i`, WASM build, `.env`, `vite build`.
+2. **Kanıt yeniden doğrulanabiliyor mu** — `docs/evidence/`'daki tx hash'leri
+   temiz klonun `.env`'iyle gerçekten okunabiliyor mu.
+
+**İkincisi ARŞİV ERİŞİMİ OLAN bir endpoint gerektiriyor** ve **bu şart nota
+yazılır.** Ölçüldü: mevcut public sağlayıcı receipt geçmişini ~8.000–10.000 blok
+sonra buduyor, `0x320e03d9…`'un receipt'i orada `null` dönüyor. Jüri tekrar
+üretmeye kalkarsa tam olarak bu duvara çarpar. Nota hangi endpoint kullanıldığı,
+arşiv olup olmadığı ve hangi kanıtların okunabildiği yazılır. (K2'nin repoya
+yazdığı ham JSON tutanakları bu duvarı **azaltır, kaldırmaz.**)
+
 ---
 
 ## 1. NE VAR
 
-### K1 — UI cilası (sınırlandırılmış)
+### K1 — Ekran tutarlılığı — bayat imza bloğu
 
-**Kapsam:** çıktı render'ının birleştirilmesi — "her handler kendi div'ine
-yazıyor" deseni yerine tek `render()`. Aynı kalemde bölüm 1'deki mnemonic'in
-DOM'a yazılmasının kaldırılması.
+> **REVİZYON (plan `f508296` ile eşitlendi).** K1 başlangıçta "çıktı render'ının
+> birleştirilmesi — tek `render()`" idi ve "bitti" ölçütü beş maddelik bir
+> envanterdi. Plan revizyonu K1'i **ekran tutarlılığına indirdi** ve render
+> refactor'ünü Sprint 5'e erteledi; bu bölüm o revizyonun spec karşılığıdır.
+> Gerekçeler aşağıda, silinmedi.
+
+**Kapsam:** ekranın kendi kendisiyle çeliştiği tek yerin kapatılması — **bayat
+imza bloğu**. `main.js`'te `innerHTML = ''` yalnızca **3 kez** geçiyor, üçü de
+`chainWarn` (satır **147**, **601**, **824**); diğer yedi çıktı bölgesi hiç
+temizlenmiyor. Sonucu görünür bir çelişki: `invalidateSignature` ve gönderim
+başarı yolu `txOut`'a **dokunmuyor**, `txOut` imza bloğunu tutuyor
+(`main.js:351`, `:376`) ve orada duruyor. Aynı karede `txOut` *"imza üretildi"*
+derken `sendOut` *"gönderildi"* ya da *"imza geçersiz kılındı"* diyor.
+
+**Toplam ~10 satır.** Aynı kalemde bölüm 1'deki mnemonic'in DOM'a yazılmasının
+kaldırılması (plan Task 1 + Task 2).
 
 **AÇILMAZ:** kalkan sırası · `syncSendButtons` · `sig` fotoğrafı ·
-`sendExecute` yolu · SAPMA 3.
+`sendExecute` yolu · SAPMA 3 · `sendOut`'un mevcut metinleri (tx hash, Etherscan
+linki, ölçülen gas — **kanıtın kendisi**).
 
-**"Bitti" ölçütü — envanter tabanlı, test tabanlı değil:**
+**"Bitti" ölçütü:**
 
-Mevcut testler (`send-transaction` 75, `build-transaction` 21, `pqwallet` 9)
-bu refactor için **kör**: üçü de saf fonksiyon testi
-(`classifyNegativeProofError`, `buildDigest`, `encodeExecute`, cast oracle) ve
-hiçbiri DOM çıktısına assertion koymuyor. Yeşil kalmaları "bozmadım" demez,
-"oraya bakmıyordum" der. Ölçüt bu yüzden envanterdir:
+1. Kusur **önce KIRMIZI** Playwright assertion'ıyla gösterilir → düzeltme →
+   **YEŞİL**, ve **pozitif kontrol**: imza geçerliyken `txOut`'un imza bloğunu
+   **gösterdiği** doğrulanır (yoksa test "`txOut` hep boş olduğu için" geçer).
+2. **Kanarya testi** (mnemonic): üretilen mnemonic'in ilk kelimesi sayfanın tüm
+   metninde **0 kez** — kendi pozitif kontrolüyle (açık anahtar ekranda görülüyor).
+3. Üç test paketi yeşil · `vite build` geçer · console **yalnızca** favicon 404.
 
-1. **Refactor'den ÖNCE** render noktalarının tam envanteri çıkarılır ve kanıt
-   notuna **sayıyla** yazılır. Sonradan çıkarılan envanter kendine referanslıdır:
-   kaybolan nokta envantere de girmez, liste kendini doğrular.
-2. Tarama `showResult` çağrılarıyla sınırlı değil — DOM'a yazan **her yol**:
-   `innerHTML`, `textContent`, `insertAdjacentHTML`, `.value =`. (Bilinen
-   örnekler: `showResult`'tan geçen beş nokta, `#chain-warn`, A3'ün
-   `insertAdjacentHTML` teşhis satırı, "imza düştü → gönderim iptal" metni.)
-3. Refactor sonrası her noktanın metninin **hâlâ üretildiği** gösterilir,
-   tercihen Playwright ile tetikleyip okuyarak.
-4. Her nokta **doğal tetikleme** / **enjeksiyon** diye etiketlenir. Bazı dallar
-   (`receipt.status === 0`, ağ hatası sınıfları) doğal yoldan tetiklenemiyor;
-   etiketlenmezse envanter "hepsi doğrulandı" izlenimi verir. Kanca kullanılan
-   yerlerde md5 ile artık-sıfır kuralı işler.
-5. Ek olarak: üç test paketi yeşil · `vite build` geçer · console yalnızca
-   favicon 404.
+**Kanıt:** `docs/evidence/crypto-tests/sprint4-screen-consistency.md`
 
-**Kanıt:** `docs/evidence/crypto-tests/sprint4-render-refactor.md`
+#### `render.js` tesisat refactor'ü — **ERTELENDİ → Sprint 5**
+
+Silinmedi; gerekçesi görünür kalıyor ki sonraki okuyan aynı yola baştan
+girmesin. Ne olacaktı: `src/ui/render.js` modülü (`render` / `append` /
+`setText` + `getWriteLog`), `main.js`'teki **56** DOM yazma noktasının bu
+modüle yönlendirilmesi, ve refactor öncesi/sonrası envanter doğrulaması.
+Ayrıntı ve `getWriteLog` kapsam kuralı: **plan Task 3–4**.
+
+Dört gerekçe:
+
+1. **Bölgeler birleşmiyor, birleşemez.** `chainWarn`'ın `sendOut`'tan ayrı
+   olması SAPMA 3'ün kararı (sessiz tazeleme tx kanıtını ezmesin);
+   `main.js:752`'deki `insertAdjacentHTML` A3'ün teşhis satırını **ekleyerek**
+   yazıyor. İkisi de kanıt davranışı. Refactor **ekranda hiçbir şeyi
+   değiştirmezdi** — tesisat işi, demo cilası değil.
+2. **Tek dışsal kazanç "bundan sonraki değişiklikler test edilebilir olur."**
+   Finale 16 gün var ve bundan sonraki değişiklik sayısı az.
+3. **Envanter doğrulaması kendi kendini gerekçelendiriyordu:** refactor
+   yapılmazsa doğrulanacak refactor da yok.
+4. **Kayıt penceresi hemen önde.** 56 yazma noktasına dokunmanın regresyon
+   riski (2)'deki kazancın karşılığı değil — üstelik K4'ün diff kapısını
+   tetikleyip yeniden çekim istetirdi.
 
 ---
 
@@ -154,10 +189,38 @@ geliyor** — rapora girebilecek bir yan gözlem.
 
 **"Bitti" ölçütü:** tx status 1 · `cast` ile bağımsız doğrulama tamam · tekrar
 testi sonucu karar ağacındaki bir dala yerleşti · dört satırlık tablo (§ 2)
-dolduruldu · kayıt alındı ve md5'ler not edildi.
+dolduruldu · kayıt alındı ve md5'ler not edildi ·
+**`eth_getTransactionByHash` ve `eth_getTransactionReceipt` çıktılarının TAM
+JSON'ı repoya yazıldı** (aşağıda).
+
+#### Ham tx/receipt JSON'ı repoya alınır
+
+**Ölçülmüş sebep:** `.env`'deki public RPC sağlayıcı **receipt geçmişini
+buduyor** — sınır ~8.000–10.000 blok (≈ 30 saat). Bu Sprint 3'ün kanıt
+zincirini de vuruyor: `0x320e03d9…`'un *"`cast receipt` → status 1 ·
+gasUsed 216221"* satırı **artık o endpoint'ten tekrar üretilemiyor olabilir.**
+Sprint 4'ün kendi tx'i de günler içinde aynı duruma düşer.
+
+- **Yer:** `docs/evidence/chain/<txhash>.json`. **Dosya sahipliği: Akif'in
+  alanı** (yeni dizin). `docs/evidence/tx-hashes.md`'ye **DOKUNULMAZ** —
+  Hakan'ın dosyası, append-only.
+- **Geriye dönük:** aynısı Sprint 3'ün `0x320e03d9…`'u için de yapılır. Mevcut
+  public endpoint vermiyorsa **arşiv erişimi olan bir endpoint** kullanılır
+  (§ 8, açık soru 4).
+- **Her JSON dosyasının başına:** hangi endpoint'ten, hangi tarihte çekildiği.
+
+> **KAPSAM — raporda fazla iddia edilmez.** Ham JSON **kriptografik kanıt
+> değil, tutanaktır**; kendi kendini doğrulamaz. Rapor cümlesi **tam olarak**
+> şudur:
+>
+> > tx hash ve blok numarası **herhangi bir ARŞİV düğümüyle yeniden
+> > doğrulanabilir**; aşağıdaki JSON kolaylık kopyasıdır.
+>
+> **"Zincirden yeniden üretilebilir" yazılmaz** — budayan bir endpoint'te
+> üretilemiyor, cümle olduğu gibi yanlış olur.
 
 **Kanıt:** `docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md`
-+ kayıt dosyası (repo dışı, kimliği SHA-256).
++ `docs/evidence/chain/*.json` + kayıt dosyası (repo dışı, kimliği SHA-256).
 
 **Sert kural:** C adresine aradan ETH girmez. Kalibrasyon çöker ve C'ye gerçek
 tx gerekirse (Sprint 5), gönderimden hemen önce üçlü boşluk kontrolü
@@ -474,7 +537,7 @@ anahtarı** konur, ve tarih gelince değişen şey anahtar olur — görevler de
 | Kalem | Senaryoya bağlı mı | Not |
 |---|---|---|
 | ÖK-2 | ❌ Hayır | Her iki senaryoda birebir aynı |
-| K1 | ❌ Hayır | İçerik aynı (sınırlandırılmış render refactor), yalnızca **konumu** değişiyor |
+| K1 | ❌ Hayır | İçerik aynı (**ekran tutarlılığı, ~10 satır**), yalnızca **konumu** değişiyor |
 | **K2 faz 1** | ❌ Hayır | **Birebir aynı** — ölçüm zinciri ölçüyor, UI'ı değil. İmzalar ve tahminler cila öncesi/sonrası aynı çıkar |
 | **K2 faz 2** | ✅ **EVET** | Senaryoya bağlı **tek bayrak**: `kayıt = evet/hayır` |
 | K3, K5, K6 | ❌ Hayır | İçerik aynı, konum değişiyor |
@@ -575,7 +638,15 @@ Plan bu dosyalara **iş yazmaz**, mesaj yazar.
 - `.env.pqwallet-owner-key` **açılmaz, okunmaz, hiçbir komuta verilmez**.
   Mnemonic'i tarayıcıya Akif elle girer
 - Yalnızca `frontend/**`, `docs/evidence/**`, `docs/superpowers/**`,
-  `.superpowers/**` değiştirilir
+  `docs/*.md`, `.superpowers/**` değiştirilir. (`docs/*.md` **eklendi**: K6
+  `docs/RAPOR.md`'yi oluşturuyor — plan Task 11 — ve spec bu yazma iznini
+  göstermiyordu. Devir notunun listesinde vardı, spec'ten düşmüştü.)
+- **PLAN–SPEC EŞ GÜNCELLEME:** bir plan revizyonu bir spec kalemini
+  değiştiriyorsa **AYNI commit spec'i de günceller.** Güncellemiyorsa commit
+  mesajı **nedenini yazar.** Gerekçe: `f508296` (K1'in "ekran tutarlılığı"na
+  indirilmesi + render refactor'ün Sprint 5'e ertelenmesi) plan-only kaldı ve
+  spec'in son revizyonu `ee31f3e`'de donup planla çelişti — tam olarak bu
+  kuralın yokluğundan
 - `contracts/src/PQWallet.sol`, `contracts/src/Migration.sol`,
   `contracts/test/`, `contracts/script/`, `docs/evidence/tx-hashes.md`,
   `README.md` → **Hakan'ın, dokunulmaz**

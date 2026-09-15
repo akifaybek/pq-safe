@@ -1,9 +1,27 @@
 # Sprint 4 — Demo Cilası, Ölçüm ve Rapor: Uygulama Planı
 
-> **Ajan çalışanlar için:** ZORUNLU ALT BECERİ: Bu planı görev görev uygulamak
-> için `superpowers:subagent-driven-development` (önerilen) veya
-> `superpowers:executing-plans` kullanın. Adımlar takip için checkbox (`- [ ]`)
-> sözdizimi kullanıyor.
+> **Ajan çalışanlar için — UYGULAMA BİÇİMİ. Bu karar burada verilmiştir, her
+> görevde yeniden açılmaz.** Ölçüt **"kod mu belge mi" DEĞİL, ETKİ ALANI:**
+>
+> - **Gönderim yoluna dokunanlar** (`sendExecute`, kalkan sırası,
+>   `syncSendButtons`, `sig` fotoğrafı), **kayıt penceresinden önce** →
+>   `superpowers:subagent-driven-development` **+ review turu.**
+>   **Gerekçe ampirik:** bu projede SDD'nin review turu **her seferinde**
+>   brief'te olmayan bir hata buldu — Task 3B keygen kilidi, Task 5 ethers
+>   revert'te receipt döndürmüyor, Task 6 gönderim handler'ında imza fotoğrafı
+>   yok.
+> - **Dar ve görünür etki alanı** (tek bölge render'ı, mnemonic'in DOM'dan
+>   kalkması, test dosyası düzeltmesi) → `superpowers:executing-plans`,
+>   **inline**, checkpoint'li.
+>
+> **Inline bir görev ~90 dakikayı aşarsa DURDURULUR ve yeniden kapsamlanır.**
+> Gerekçe: 15 gün kala bir günü "biraz daha uğraşayım" ile kaybetmemek.
+>
+> **NOT:** Task 1'in bir saati uygulama biçiminden değil **ortam hatasından**
+> gitti; o veri biçim tartışmasına girdi sağlamıyor ve bu ayrıma dayanak olarak
+> kullanılmaz.
+>
+> Adımlar takip için checkbox (`- [ ]`) sözdizimi kullanıyor.
 
 **Hedef:** Sprint 3'te canlı kanıtlanan uçtan uca akışı jüriye gösterilebilir
 hale getirmek — ekranın kendisiyle çeliştiği iki yeri düzeltmek, gas tablosunu
@@ -36,6 +54,11 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
   içerikleri değişmez**, yalnızca sıra ve K2 faz 2'nin `kayıt` bayrağı değişir.
 - **Claude `git commit` / `git push` ÇALIŞTIRMAZ.** Her commit adımı komutu
   metin olarak verir; Akif çalıştırır.
+- **PLAN–SPEC EŞ GÜNCELLEME:** bir plan revizyonu bir spec kalemini
+  değiştiriyorsa **AYNI commit spec'i de günceller.** Güncellemiyorsa commit
+  mesajı **nedenini yazar.** Gerekçe: `f508296` (K1'in "ekran tutarlılığı"na
+  indirilmesi + render refactor'ün Sprint 5'e ertelenmesi) plan-only kaldı ve
+  spec bir sprint boyunca planla çelişti — tam olarak bu kuralın yokluğundan.
 - **`.env.pqwallet-owner-key` açılmaz, okunmaz, hiçbir komuta verilmez.**
   Mnemonic'i tarayıcıya Akif elle girer.
 - **Dokunulmaz dosyalar (Hakan'ın):** `contracts/src/PQWallet.sol`,
@@ -74,6 +97,7 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 | `docs/evidence/crypto-tests/sprint4-screen-consistency.md` | **YENİ.** Ölçülen kusur, kırmızı→yeşil Playwright, kanarya testi | Task 1, 2 |
 | ~~`frontend/src/ui/render.js`~~ | **ERTELENDİ → Sprint 5.** Gerekçe Task 3–4'te | — |
 | `docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md` | **YENİ.** Faz 1/2 ölçümleri, tablo, Δ₂, karar ağacı sonucu | Task 5, 6, 7 |
+| `docs/evidence/chain/<txhash>.json` | **YENİ DİZİN, Akif'in alanı.** Ham `eth_getTransactionByHash` + `eth_getTransactionReceipt` tutanakları (Sprint 4'ün tx'i + geriye dönük `0x320e03d9…`). `tx-hashes.md` **Hakan'ın, dokunulmaz** | Task 6 |
 | `docs/evidence/crypto-tests/sprint4-untested-branches.md` | **YENİ.** Erişilebilirlik analizi + iki dalın sonucu | Task 8, 9 |
 | `docs/RAPOR.md` | **YENİ.** Rapor iskeleti + bölüm→kanıt haritası + Akif bölümleri | Task 11, 12 |
 
@@ -110,6 +134,22 @@ npx vite build
 ```
 Beklenen: build geçer ve `npm run dev` ile açılan sayfada bir imza üretilebilir.
 **Takılan her adım not edilir** — bunlar raporun kurulum bölümü olacak.
+
+> **[D1] Bu adım İKİ TARAFI birden kapsar, biri değil:**
+>
+> 1. **Kurulum çalışıyor mu** — klon, `npm i`, WASM build, `.env`, `vite build`.
+> 2. **Kanıt yeniden doğrulanabiliyor mu** — `docs/evidence/`'daki tx hash'leri
+>    temiz klonun `.env`'iyle gerçekten okunabiliyor mu.
+>
+> **İkincisi ARŞİV ERİŞİMİ OLAN bir endpoint gerektiriyor.** Ölçüldü: mevcut
+> public sağlayıcı receipt geçmişini ~8.000–10.000 blok sonra buduyor, yani
+> `0x320e03d9…`'un receipt'i o endpoint'te `null` dönüyor. Jüri tekrar üretmeye
+> kalkarsa **tam olarak bu duvara çarpar.**
+>
+> **Bu şart nota açıkça yazılır:** hangi endpoint kullanıldı, arşiv mi değil mi,
+> hangi kanıtlar okunabildi. `.env.example`'ın arşiv endpoint'i gerektirdiği
+> not düşülür. (Repoya yazılan ham JSON tutanakları — Task 6 Adım 9 — bu
+> duvarı **azaltır, kaldırmaz**: tutanak kendi kendini doğrulamaz.)
 
 - [ ] **Adım 3: Submodule pin dayanıklılığı** — `contracts/lib/sphincs-minus`
       üçüncü taraf deponun yan dalındaki `eef1f889…` commit'ine sabitli.
@@ -355,7 +395,7 @@ burada):
 **Interfaces:**
 - Produces: `EST_A_F1`, `EST_B`, `EST_C` (ham tahminler) · her biri için
   sıfır/sıfır-dışı bayt sayısı · `TEKRAR_A`, `TEKRAR_B`, `TEKRAR_C` (n ≥ 5
-  dizileri) · `C_BOS` (üçlü boşluk kanıtı)
+  dizileri) · `C_BOS` (üçlü boşluk kanıtı) · **üç çağrının `from`'u**
 
 > **Ölçüm neden tarayıcıda:** B ve C tahminleri owner imzası gerektiriyor
 > (`execute()` önce imzayı doğruluyor, geçersiz imzada tahmin hiç alınamaz) ve
@@ -389,11 +429,13 @@ window.__m4 = {
       mnemonic: currentMnemonic,
     });
     const calldata = encodeExecute({ ...signed.fields, signature: signed.signature });
+    // `from` ÖLÇÜLÜR, örtük davranışa güvenilmez — aşağıdaki kutu neden.
+    const from = await connected.signer.getAddress();
     const est = await connected.signer.estimateGas({
       to: CONTRACTS.pqWallet,
       data: calldata,
     });
-    return { to, est, calldataBytes: (calldata.length - 2) / 2, calldata };
+    return { from, to, est, calldataBytes: (calldata.length - 2) / 2, calldata };
   },
 };
 ```
@@ -405,6 +447,9 @@ window.__m4 = {
 >   `main.js:639`'daki çağrının aynısı
 > - `signer.estimateGas({ to: CONTRACTS.pqWallet, data: calldata })` —
 >   `src/tx/sendTransaction.js:201`, `sendExecute`'un içindeki satırın birebiri
+> - `signer.getAddress()` — ethers'ın kendi API'si; `estimateGas`'ın **zaten**
+>   çağırdığı şey (bkz. aşağıdaki kutu). Kanca onu bir kez daha çağırıp dönen
+>   nesneye koyuyor ki ölçülebilsin
 > - `CONTRACTS.pqWallet` = `0x2EafA294C14b6752128bfd4f5873D1EA39f000BB`
 >
 > `chainNonce` ve `currentMnemonic` `main.js`'in modül kapsamındaki mevcut
@@ -434,7 +479,9 @@ window.__m4 = {
 > C'ninki **boş** adres.
 >
 > **Bu bir "bitti" ölçütüdür:** her çağrının `from`'u kanıt notuna yazılır ve
-> üçünün **aynı olduğu** gösterilir. Örtük davranışa güvenilmez, ölçülür.
+> üçünün **aynı olduğu** gösterilir. Örtük davranışa güvenilmez, ölçülür —
+> bu yüzden kanca `from: await connected.signer.getAddress()` alanını **döndürür**
+> (Adım 1'deki koda bak). Alan olmadan ölçüt karşılanamaz.
 
 - [ ] **Adım 2: Kancalı md5'i sabitle**
 
@@ -517,25 +564,136 @@ değerler, tekrar testi dizileri, intrinsic tablosu, iki endpoint karşılaştı
 > Δ'yı değil. Δ ancak gerçek receipt'in olduğu yerde hesaplanır, o da
 > **yalnızca A**. Yazılmazsa "C'nin Δ'sını ölçtük" diye okunur.
 
-**Commit YOK** — faz 2 aynı oturumda devam ediyor, kanca hâlâ yerinde.
+**Commit burada DEĞİL, Task 5B Adım 3'te** — önce kanca silinir, sonra commit
+atılır, kayıt **temiz ve commit'li ağaçtan** alınır. (Eski plan burada "Commit
+YOK" diyordu; o satır düştü, gerekçesi Task 5B'nin başında.)
+
+---
+
+## Task 5B: Faz 1'in kapatılması — kanıt yazımı → kanca silme → COMMIT
+
+**Bu görev Task 5 ile Task 6 arasında, aynı oturumda, KAYIT BAŞLAMADAN önce
+koşar. Atlanamaz.**
+
+**Neden var — iki ayrı sorun, ikisi de eski akışta garantiydi:**
+
+1. **Kapı kendi kendini tetikliyordu.** Eski akış: kanca Task 5 Adım 1'de
+   eklenir → `KAYIT_MD5` Task 6 Adım 4'te `main.js` **KANCALIYKEN** alınır →
+   kayıt → Adım 9'da kanca silinir → Task 10'un kapısı eşitsizlik görür →
+   *"video YENİDEN ÇEKİLİR"*. **K3 hiçbir şeye dokunmasa bile yeniden çekim
+   garantiliydi.** Bedeli tam olarak spec'in "kıt kaynak" dediği şey: ikinci
+   bir elle mnemonic oturumu + fazladan bir gerçek tx.
+2. **Daha ağırı: kayıt, içinde `window.__m4` test kancası duran kodla
+   alınıyordu.** Sprint 3'te kancaların iz bırakmadığı md5'lerle kanıtlandı ve
+   sayfa yenilenip `window.__t6 === undefined` gösterildi. **Jüriye gösterilen
+   sürümün gönderilen sürüm olmaması o disiplinin tam karşıtıdır.**
+
+**Files:**
+- Modify: `docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md`
+- Modify: `frontend/src/main.js` (kanca **silinir**)
+
+**Interfaces:**
+- Consumes: Task 5'in `EST_A_F1`, `EST_B`, `EST_C`, `TEKRAR_*`, `C_BOS`,
+  `KANCALI_MD5`
+- Produces: `TASK5B_COMMIT` (Task 6'nın kaydının atılacağı temiz taban)
+
+> ### SIRA NEDEN BÖYLE — kanca, mnemonic'ten ÖNCE silinir
+>
+> Kanca silmek `main.js`'i değiştirir, **Vite HMR sayfayı yeniden yükletir** ve
+> yükleme owner anahtarını düşürür. Mnemonic önce girilirse anahtar düşer ve
+> **ikinci kez elle girilir** — kıt kaynağın boşa harcanması. Bu yüzden:
+> kanıt yazımı → kanca silme → commit → **sonra** yenileme + mnemonic + kayıt.
+
+- [ ] **Adım 1: [D3] Faz 1'in TÜM ölçümleri kanıt notuna yazılır ve DOSYADAN
+      OKUNARAK doğrulanır**
+
+**GEREKÇE — geri dönüşü olmayan kapı:** bir sonraki adım sayfayı yeniliyor ve
+kancayı siliyor. **Sayfa belleği gidiyor, kanca gidiyor.** O anda dosyaya
+yazılmamış hiçbir faz 1 ölçümü geri getirilemez; getirmenin tek yolu ikinci bir
+elle mnemonic oturumudur.
+
+Yazılacakların tamamı — her biri ayrı ayrı işaretlenir:
+
+- [ ] `EST_A_F1`, `EST_B`, `EST_C` (ham tahminler)
+- [ ] `TEKRAR_A`, `TEKRAR_B`, `TEKRAR_C` — **dizilerin tamamı**, özet değil
+- [ ] **Her imzanın sıfır ve sıfır-dışı bayt sayısı** (A, B, C ayrı ayrı)
+- [ ] Intrinsic tablosu (dört sütun: ham tahmin · bayt · intrinsic · yürütme)
+- [ ] `C_BOS` — üçlü boşluk kanıtı (`balance` / `nonce` / `code` çıktıları)
+- [ ] İkinci endpoint tekrarının dizileri
+- [ ] **Üç çağrının `from`'u** ve üçünün aynı olduğu (Task 5'in "bitti" ölçütü)
+
+> **Bayt sayıları özellikle kritik:** Task 6 Adım 9'un `EST_A_F1` ↔ `EST_A_F2`
+> intrinsic karşılaştırması **bunlara dayanıyor** ve faz 1 tarafı yenilemeden
+> sonra **yok**. Yazılmazsa o karşılaştırma bir daha hiç yapılamaz.
+
+**Doğrulama biçimi:** yukarıdakiler ekrandan/konsoldan değil, **kaydedilmiş
+dosyadan geri okunarak** onaylanır:
+
+```bash
+cd /Users/akif/pq-safe
+cat docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md
+```
+
+Listedeki yedi kalemin yedisi de çıktıda görünmüyorsa **Adım 2'ye geçilmez.**
+
+- [ ] **Adım 2: Kancayı sil, artık-sıfırı kanıtla**
+
+```bash
+cd /Users/akif/pq-safe/frontend
+md5 -q src/main.js                  # kancasız — KANCALI_MD5 ile FARKLI olmalı
+grep -c "__m4" src/main.js          # beklenen: 0
+diff <(git show <TASK2_COMMIT>:frontend/src/main.js) src/main.js   # beklenen: BOŞ
+cd /Users/akif/pq-safe && git status --porcelain                   # SADECE kanıt notu
+```
+
+**Diff'in tabanı `HEAD` DEĞİL, Task 2'nin commit'i** (`<TASK2_COMMIT>`):
+`main.js`'e en son yazan görev Task 2'dir ve `HEAD` o günden beri kanıt notu
+commit'leriyle ilerlemiş olabilir.
+
+**`git status --porcelain` md5'ten güçlü bir oracle:** kanca temiz silinmişse
+`main.js` **git'in gözünde hiç değişmemiştir** ve listede hiç görünmez. Listede
+yalnızca kanıt notu duruyorsa artık sıfırdır.
+
+Sayfa yenilenir (HMR zaten yeniler), konsolda `window.__m4` → `undefined`.
+
+- [ ] **Adım 3: COMMIT (komut Akif'e verilir)**
+
+**Gerekçe:** kayıt **temiz ağaçtan** alınacak; kanıt notu ise bir **repo
+dosyası** ve commit'siz kalamaz. İkisi aynı adımda çözülür.
+
+```bash
+git add docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md
+git commit -m "docs(evidence): faz 1 ölçümleri — üç alıcı durumu, tekrar dizileri, intrinsic tablosu; kanca artığı sıfır"
+git push
+git rev-parse HEAD   # TASK5B_COMMIT — Task 6 Adım 4 bunu KAYIT_COMMIT olarak görecek
+```
+
+`git status --porcelain` bu komuttan sonra **BOŞ** olmalı. Boş değilse Task 6'ya
+geçilmez.
 
 ---
 
 ## Task 6: K2 Faz 2 — kayıtlı gerçek tx (AKİF sürüyor)
 
+**ÖN KOŞUL: Task 5B kapanmış olmalı** — kanca silinmiş, kanıt notu commit'li,
+`git status --porcelain` boş. **Kancalı ya da commit'siz ağaçta kayıt alınmaz.**
+
 **Files:**
-- Modify: `frontend/src/main.js` (kanca silinir)
 - Modify: `docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md`
+- Create: `docs/evidence/chain/<TX2_HASH>.json` (Adım 9)
+- Create: `docs/evidence/chain/0x320e03d9…e50da.json` (Adım 9, geriye dönük)
 
 **Interfaces:**
-- Consumes: Task 5'in `KANCALI_MD5`
+- Consumes: Task 5'in `EST_A_F1` + faz 1 bayt sayıları (Task 5B Adım 1'de
+  dosyaya yazıldı), Task 5B'nin `TASK5B_COMMIT`
 - Produces: `TX2_HASH`, `GAS_USED_2`, `LIMIT_2`, `EST_A_F2`, `Δ₂`,
-  `KAYIT_MD5` (dört dosyanın hash'i), `KAYIT_SHA256`
+  `KAYIT_MD5` (beş dosyanın hash'i), `KAYIT_COMMIT`, `KAYIT_SHA256`
 
 - [ ] **Adım 1: Sayfayı yenile**
 
 Faz 1'in çıktısı ekranda birikti; temiz demo kaydı onun üstüne çekilemez.
-Yenileme owner anahtarını düşürür — beklenen davranış.
+Yenileme owner anahtarını düşürür — beklenen davranış. (Task 5B'nin kanca
+silmesi HMR ile sayfayı zaten yeniden yüklemiş olabilir; bu adım onu garantiler.)
 
 - [ ] **Adım 2: Mnemonic'i tekrar içe aktar — KAYIT BAŞLAMADAN**
 
@@ -544,20 +702,38 @@ kalıyor, yani kayda yine giriyor.
 
 - [ ] **Adım 3: Mnemonic taraması (Sprint 3 prosedürü)**
 
-- `btn-keygen`'e **hiç basılmaz** (Task 4 sonrası zaten DOM'a yazmıyor, ama
+- `btn-keygen`'e **hiç basılmaz** (**Task 2** sonrası zaten DOM'a yazmıyor, ama
   prosedür korunur)
 - `import-mnemonic` alanı boş
 - `Cmd+F` ile mnemonic'ten bir kelime → **0 sonuç**
 - DevTools kapalı, başka pencere/bildirim yok
 
-- [ ] **Adım 4: Kayıt anındaki md5'leri not et**
+- [ ] **Adım 4: Kayıt anındaki md5'leri VE commit'i not et**
 
 ```bash
 cd /Users/akif/pq-safe/frontend
 md5 -q index.html src/main.js src/tx/sendTransaction.js src/crypto/digest.js src/tx/buildTransaction.js
+cd /Users/akif/pq-safe
+git rev-parse HEAD      # KAYIT_COMMIT
+git status --porcelain  # BOŞ olmalı — değilse kayıt başlatılmaz
 ```
-Beş hash `KAYIT_MD5` olarak nota yazılır. (CSS ayrı dosyada değilse
-`index.html` onu zaten kapsıyor.) Task 10'un kapısı bunları karşılaştıracak.
+
+Beş hash `KAYIT_MD5` olarak nota yazılır. **CSS ayrı dosya değil** — `frontend/`
+altında hiç `.css` dosyası yok ve `index.html`'de `.css` linki yok, stiller
+inline; yani `index.html`'in hash'i stilleri de kapsıyor. Task 10'un kapısı bu
+beş hash'i karşılaştıracak.
+
+> **[D2] `KAYIT_COMMIT` neden alınıyor — kapının ötesinde bir iş için:**
+> kayıt **temiz ve commit'li** bir ağaçtan alınmışsa *"videodaki sürüm repodaki
+> `<KAYIT_COMMIT>` sürümüdür"* **doğrulanabilir bir iddia** olur; okuyan o
+> commit'i çekip kendi gözüyle bakabilir. Kancalı ya da commit'siz bir ağaçta
+> o cümle **hiç kurulamaz** — gösterilen kod hiçbir yerde durmuyordur.
+>
+> **md5 seti KALIR, `KAYIT_COMMIT` onun yerine geçmez:** commit sonrası yapılmış
+> yerel bir düzenlemeyi (commit'e girmemiş, `HEAD` değişmemiş) **yalnızca md5**
+> yakalar. İkisi farklı şeyleri ölçüyor.
+>
+> **`KAYIT_COMMIT` Task 10'un kapısına GİRMEZ** — gerekçesi Task 10 Adım 1'de.
 
 - [ ] **Adım 5: KAYIT BAŞLAT**
 
@@ -589,22 +765,55 @@ cast balance <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 0,0009 − 0,0001 E
 cast receipt <TX2_HASH> --rpc-url $SEPOLIA_RPC   # status 1, gasUsed
 ```
 
-- [ ] **Adım 9: Kancayı sil, artık-sıfırı kanıtla**
+> **Kanca silme burada DEĞİL.** Task 5B Adım 2'de, kayıttan **önce** yapıldı.
 
-```bash
-cd /Users/akif/pq-safe/frontend
-md5 -q src/main.js                  # kancasız — KANCALI_MD5 ile FARKLI olmalı
-grep -c "__m4" src/main.js          # beklenen: 0
-diff <(git show HEAD:frontend/src/main.js) src/main.js   # beklenen: BOŞ
-```
-Son diff kritik: kanca dışında hiçbir şey değişmediğini gösterir.
-Sayfa yenilenir, konsolda `window.__m4` → `undefined`.
+- [ ] **Adım 9: [D1] Ham tx/receipt JSON'ı repoya al — K2'nin "bitti" ölçütü**
+
+**Neden:** `.env`'deki public RPC sağlayıcı **receipt geçmişini buduyor** —
+ölçüldü, sınır ~8.000–10.000 blok (≈ 30 saat). Bu Sprint 3'ün kanıt zincirini de
+vuruyor: `0x320e03d9…`'un *"`cast receipt` → status 1 · gasUsed 216221"* satırı
+**artık o endpoint'ten tekrar üretilemiyor olabilir.** Sprint 4'ün kendi tx'i de
+günler içinde aynı duruma düşer. Ölçüm anında alınıp repoya yazılmazsa kanıt
+sessizce buharlaşır.
+
+- [ ] **G1 — Sprint 4'ün tx'i.** `eth_getTransactionByHash` **ve**
+      `eth_getTransactionReceipt` çıktılarının **TAM JSON'ı** yazılır:
+      `docs/evidence/chain/<TX2_HASH>.json`
+- [ ] **G2 — Sprint 3'ün tx'i, geriye dönük:**
+      `docs/evidence/chain/0x320e03d98cec857bbae8ecb49bcb0736c960287d76a19f2fad39b471b09e50da.json`.
+      Mevcut public endpoint vermiyorsa **arşiv erişimi olan bir endpoint**
+      kullanılır (açık sorular § 4'teki ikinci endpoint adayı).
+- [ ] **G3 — Her JSON dosyasının başına** hangi **endpoint**'ten, hangi
+      **tarihte** çekildiği yazılır.
+
+> **DOSYA SAHİPLİĞİ:** `docs/evidence/chain/` **Akif'in alanıdır**, yeni dizin.
+> `docs/evidence/tx-hashes.md`'ye **DOKUNULMAZ** — o Hakan'ın dosyası,
+> append-only, hash oraya mesajla iletilir.
+
+> ### G4 — KAPSAM: raporda fazla iddia edilmesin
+>
+> **Ham JSON kriptografik kanıt DEĞİL, tutanaktır; kendi kendini doğrulamaz.**
+> Bir JSON dosyası elle de yazılabilir. Kanıt değeri, zincirdeki tx'e işaret
+> etmesinden gelir.
+>
+> Rapora girecek cümle **tam olarak** budur:
+>
+> > tx hash ve blok numarası **herhangi bir ARŞİV düğümüyle yeniden
+> > doğrulanabilir**; aşağıdaki JSON kolaylık kopyasıdır.
+>
+> **"Zincirden yeniden üretilebilir" diye YAZILMAZ** — budayan bir endpoint'te
+> üretilemiyor, cümle olduğu gibi yanlış olur.
 
 - [ ] **Adım 10: Faz 1'in A tahmini ile faz 2'ninkini karşılaştır — ölçüm, çıkarım değil**
 
 `EST_A_F1` ile `EST_A_F2` karşılaştırılır. Fark varsa kaynağı **hesaplanır**,
 atanmaz: iki imzanın sıfır/sıfır-dışı baytları sayılır, intrinsic ikisi için
 de hesaplanır.
+
+> **Faz 1 tarafı ekranda değil, DOSYADA.** Sayfa Adım 1'de yenilendi, kanca
+> Task 5B'de silindi; `EST_A_F1` ve A'nın faz 1 bayt sayıları **yalnızca**
+> Task 5B Adım 1'de kanıt notuna yazıldıkları için erişilebilir. Orada
+> yazılmadılarsa bu adım yapılamaz.
 
 | Bulgu | Anlamı |
 |---|---|
@@ -616,9 +825,12 @@ de hesaplanır.
 
 - [ ] **Adım 11: Commit (komut Akif'e verilir)**
 
+`frontend/src/main.js` bu commit'te **YOK** — kanca Task 5B'de silindi ve
+`main.js` o commit'ten beri hiç değişmedi.
+
 ```bash
-git add frontend/src/main.js docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md
-git commit -m "docs(evidence): ikinci gerçek tx + üç alıcı durumu ölçümü, kanca artığı sıfır"
+git add docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md docs/evidence/chain/
+git commit -m "docs(evidence): ikinci gerçek tx + faz 2 ölçümü + ham zincir tutanakları (tx/receipt JSON)"
 git push
 ```
 
@@ -841,6 +1053,24 @@ eşit      →  mevcut çekim FİNAL
 eşit değil →  video YENİDEN ÇEKİLİR
 ```
 
+> ### KAPI `KAYIT_COMMIT` ile HEAD EŞİTLİĞİNE BAĞLANMAZ
+>
+> Bu bir md5 karşılaştırmasıdır ve **öyle kalır.** `KAYIT_COMMIT` (Task 6
+> Adım 4) buraya **girmez.**
+>
+> **Neden:** Task 8 ve Task 9 kanıt notu commit'liyor, yani `HEAD` kayıttan
+> sonra **zorunlu olarak** ilerliyor. Kapıyı `KAYIT_COMMIT == HEAD`'e bağlarsak
+> beş dosyanın tek baytı değişmese bile kapı **yanlış tetiklenir** ve yeniden
+> çekim ister — bedeli ikinci bir elle mnemonic oturumu artı bir gerçek tx.
+> Kapının ölçtüğü şey **kaydedilen UI'ın değişip değişmediğidir**, reponun
+> ilerleyip ilerlemediği değil.
+>
+> `KAYIT_COMMIT` yalnızca Task 6 Adım 4'teki **provenans cümlesi** için var:
+> *"videodaki sürüm repodaki `<KAYIT_COMMIT>` sürümüdür."*
+>
+> Bu ayrım burada yazılı ki sonraki okuyan *"madem commit'imiz var, hash'i de
+> karşılaştıralım"* diye aynı tuzağa girmesin.
+
 `index.html`'in dahil olması şart: **kamera DOM'u görüyor, mantığı değil.**
 Task 9'da bir uyarı satırı veya yeni `.class` eklendiyse mantık dosyaları hiç
 değişmeden kayıt ile gönderilen UI ayrışır.
@@ -938,6 +1168,12 @@ negatif kanıt ve **tek yol ilkesi** · gas defteri (216.221 vs 233.429, kalans�
 kapanış) · Task 7'nin dört satırlık tablosu.
 
 Kaynaklar: `docs/ARCHITECTURE.md` (§1-5) ve 16 kanıt notu.
+
+> **[D1] Zincir kanıtlarının rapordaki ifadesi — Task 6 Adım 9'un G4 kuralı
+> burada uygulanır.** Ham JSON tutanaktır, kriptografik kanıt değil. Rapor
+> cümlesi: *"tx hash ve blok numarası herhangi bir ARŞİV düğümüyle yeniden
+> doğrulanabilir; aşağıdaki JSON kolaylık kopyasıdır."*
+> **"Zincirden yeniden üretilebilir" yazılmaz.**
 
 - [ ] **Adım 2: "Sınanmamış yollar" bölümünü DÜRÜSTÇE yaz**
 
