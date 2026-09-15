@@ -633,6 +633,18 @@ Plan bu dosyalara **iş yazmaz**, mesaj yazar.
    Anahtarsız çalıştığı ölçüldü: `https://sepolia.gateway.tenderly.co`
    (üç sabit hash'in de tx + receipt'i tam dönüyor; `1rpc.io/sepolia` birinde
    null verdi, publicnode üçünde de receipt budamış)
+
+   > **İKİ AYRI GEREKSİNİM, karıştırılmasın.** K2'nin ikinci endpoint
+   > tekrarında aranan şey **ARŞİV OLMASI DEĞİL, FARKLI OLMASI** — ölçtüğü şey
+   > sağlayıcı bağımlılığı (§ 3: *"iki sağlayıcı farklı Δ veriyorsa ofset
+   > EVM'in değil node'un özelliğidir"*). Arşiv gereksinimi ayrı bir kalemdir:
+   > canlı oracle ve kanıt tutanakları için. Tenderly ikisini birden
+   > karşıladığı için tek değişken yetiyor.
+   >
+   > **Sonuç:** arşiv ihtiyacı bir gün ortadan kalksa bile (ör. hash'ler
+   > tazelenirse) `VITE_SEPOLIA_ARCHIVE_RPC_URL` **kaldırılmaz** — tekrar testi
+   > o zaman sessizce tek sağlayıcıya düşer ve § 3'ün ayırt edici deneyi
+   > ölçtüğünü ölçmeyi bırakır.
 5. **Kovaların eşikleri** (≲100 / 100–500 / >500) başlangıç değeri; deneyin
    sonucu eşikleri değiştirebilir
 

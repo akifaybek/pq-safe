@@ -138,16 +138,27 @@ node src/tx/send-transaction-test.mjs   # arşiv değişkeni yoksa KIRMIZI
 >
 > - `VITE_SEPOLIA_RPC_URL` — uygulamanın normal yolu (publicnode yeter)
 > - **`VITE_SEPOLIA_ARCHIVE_RPC_URL`** — `send-transaction-test.mjs`'in canlı
->   Sepolia oracle'ı ve `docs/evidence/` tx kanıtlarının yeniden doğrulanması.
->   Anahtarsız çalışan ölçülmüş değer: `https://sepolia.gateway.tenderly.co`
+>   Sepolia oracle'ı, K2'nin ikinci-endpoint tekrarı ve `docs/evidence/` tx
+>   kanıtlarının yeniden doğrulanması.
 >
-> **Taze klonda arşiv endpoint'i konmadan paket KIRMIZI yanar** — ve mesaj eksik
-> değişkenin adını yazar, zaman aşımına düşmez.
->
-> **Bu tam olarak jürinin makinesinde yaşanacak senaryodur.** Public endpoint
-> Sepolia receipt'lerini ~30 saat sonra buduyor; jüri `.env`'ye yalnızca public
-> URL koyarsa kanıt tx'lerini doğrulayamaz. Bu yüzden **kurulum adımlarının
-> parçası**, dipnot değil.
+> **Arşiv endpoint'i konmadan paket KIRMIZI yanar** — mesaj eksik değişkenin
+> adını yazar, zaman aşımına düşmez (0,14 sn'de). Public endpoint Sepolia
+> receipt'lerini ~30 saat sonra buduyor; yalnızca public URL'yle kanıt tx'leri
+> doğrulanamaz.
+
+**"Bitti" ölçütü — JÜRİ SIFIR KAYITLA ÇALIŞTIRABİLİR:**
+
+> **Taze klonda `cp .env.example .env` sonrası, HİÇBİR EL DÜZENLEMESİ OLMADAN
+> test paketi yeşil.**
+
+`.env.example`'daki iki değer de **birebir yazılı ve anahtarsızdır**
+(publicnode + tenderly) — API anahtarı, kayıt, ücretli plan gerekmiyor.
+**Doğrulandı 15 Eylül 2026:** `.env.example` olduğu gibi `.env`'ye kopyalandı ve
+`83 · 21 · 9` + `vite build` yeşil geldi.
+
+Bu ÖK-2'nin en değerli çıktısıdır: jürinin kurulum sürtünmesi sıfır. **Bu ölçüt
+korunmalı** — `.env.example`'a placeholder (`VITE_...=`) geri konursa sessizce
+kaybolur ve kimse fark etmez.
 Beklenen: build geçer ve `npm run dev` ile açılan sayfada bir imza üretilebilir.
 **Takılan her adım not edilir** — bunlar raporun kurulum bölümü olacak.
 
@@ -276,14 +287,34 @@ olduğu için" geçmiş olur.
 - [ ] **Adım 5: Mevcut testler + build**
 
 ```bash
-cd /Users/akif/pq-safe/frontend
+cd /Users/akif/pq-safe/contracts
+EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
+  0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
+cd ../frontend
 node src/tx/send-transaction-test.mjs
 node src/tx/build-transaction-test.mjs
-node src/contracts/pqwallet-test.mjs
+CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
 npx vite build
 ```
-Beklenen: 75 · 21 · 9 (cast oracle dahil) · build geçer. Console: yalnızca
-favicon 404.
+Beklenen: **83 · 21 · 9** (cast oracle dahil) · build geçer. Console: yalnızca
+favicon 404. **Ölçüldü 15 Eylül 2026.**
+
+> **`pqwallet-test.mjs` `CAST_EXPECTED` OLMADAN BİLEREK BAŞARISIZ OLUR.** `cast`
+> bu paketin ethers'tan bağımsız tek oracle'ı; koşullu atlanan kontrol
+> yapılmamış kontroldür. Komut yukarıdaki gibi verilir
+> (`docs/superpowers/plans/2026-09-04-onchain-transaction-flow.md` Step 4).
+
+> ### 75 → 83 — fark nereden geldi (ölçüldü, atanmadı)
+>
+> - **+8 yeni assertion**, D5 ve arşiv çalışmasında eklendi: arşiv değişkeninin
+>   varlığı · iki RECEIPT okunabilirlik kontrolü · `wait()` asılmadı kontrolü ·
+>   kırmızı-mesaj sınıflandırıcısının dört öz-testi.
+> - **Eski 75'in 30'u asılma yüzünden KOŞAMIYORDU** (12'si canlı oracle'ın
+>   `wait()` sonrası, 18'i `classifyNegativeProofError` bölümü). Bunlar yeni
+>   değil; paket 15 Eylül'de 45'te asıldığı için o gün hiç çalışmamışlardı.
+>   Arşiv endpoint'iyle yeniden koşuyorlar.
+>
+> `75 + 8 = 83` — aritmetik kapanıyor, yani eski 75'in hiçbiri kaybolmadı.
 
 - [ ] **Adım 6: Kanıt notunu yaz**
 
@@ -345,9 +376,18 @@ doğrulanır — yoksa test "sayfa boş olduğu için" geçmiş olur.
 - [ ] **Adım 6: Mevcut testler + build**
 
 ```bash
-cd /Users/akif/pq-safe/frontend
-node src/tx/send-transaction-test.mjs && node src/contracts/pqwallet-test.mjs && npx vite build
+cd /Users/akif/pq-safe/contracts
+EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
+  0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
+cd ../frontend
+node src/tx/send-transaction-test.mjs
+node src/tx/build-transaction-test.mjs
+CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
+npx vite build
 ```
+Beklenen: **83 · 21 · 9** · build geçer. Console: yalnızca favicon 404.
+(`CAST_EXPECTED` olmadan `pqwallet-test.mjs` bilerek başarısız olur — Task 1
+Adım 5'teki kutu.)
 
 - [ ] **Adım 7: Commit (komut Akif'e verilir)**
 
@@ -1043,9 +1083,18 @@ Ekran görüntüsü alınır.
 - [ ] **Adım 4: Mevcut testler + build**
 
 ```bash
-cd /Users/akif/pq-safe/frontend
-node src/tx/send-transaction-test.mjs && node src/contracts/pqwallet-test.mjs && npx vite build
+cd /Users/akif/pq-safe/contracts
+EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
+  0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
+cd ../frontend
+node src/tx/send-transaction-test.mjs
+node src/tx/build-transaction-test.mjs
+CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
+npx vite build
 ```
+Beklenen: **83 · 21 · 9** · build geçer. Console: yalnızca favicon 404.
+(`CAST_EXPECTED` olmadan `pqwallet-test.mjs` bilerek başarısız olur — Task 1
+Adım 5'teki kutu.)
 
 - [ ] **Adım 5: Commit (komut Akif'e verilir)**
 

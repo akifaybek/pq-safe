@@ -275,6 +275,29 @@ md5 (bozmadan önce ve geri aldıktan sonra): 08e688c1b0dd057d28bb92a546891096
 kullansaydı bunu Task 7'de, sahnede öğrenirdik. (Aynı bulgu sınıfı progress.md'de
 iki kez geçiyor: Task 2'nin boş assertion'ı, devreden Minor (c).)
 
+> ### ⚠️ ÇÜRÜME NOTU (15 Eylül 2026'da eklendi)
+>
+> **Aşağıdaki değerler 12 Eylül 2026'da `VITE_SEPOLIA_RPC_URL`'deki public
+> endpoint'ten (publicnode) doğrulandı.** Public endpoint'ler bugün Sepolia
+> receipt'lerini ~8.000–10.000 blok (≈30 saat) sonra **buduyor**; bu iki hash'in
+> receipt'i o endpoint'ten artık `null` dönüyor. **Yeniden doğrulama bir ARŞİV
+> düğümü ister** (`VITE_SEPOLIA_ARCHIVE_RPC_URL`). 15 Eylül 2026'da
+> `https://sepolia.gateway.tenderly.co` üzerinden **yeniden koşuldu ve aynı
+> değerler alındı** — aşağıdaki sözleşme hâlâ geçerli.
+>
+> **Bu kayıt yazıldığı gün DÜRÜSTTÜ, sonradan çürüdü — koşmamış bir doğrulama
+> koşmuş gibi yazılmadı.** Ayırt edici iki kanıt, bu belgenin kendi içinde:
+> 1. Bölüm 9 `send-transaction-test.mjs → 57 assertion, TÜMÜ GEÇTİ` diyor.
+>    **Asılan bir paket toplam sayı da "TÜMÜ GEÇTİ" satırı da üretmez** —
+>    paket o gün sonuna kadar koştu.
+> 2. Hemen aşağıda kasıtlı bir çürütme deneyi kayıtlı: *"revert kurtarması
+>    KASTEN kapatıldı → gerçek oracle bölümündeki 4 assertion KIRMIZI; geri
+>    alındı → YEŞİL."* **Koşmayan bir assertion kırmızıdan yeşile dönerken
+>    gözlenemez.** Ayrıca `gasUsed 63730` yalnızca gerçek bir receipt'ten çıkar.
+>
+> İhtimal (b) — "hiç koşmadılar" — bu iki kanıtla **dışlandı**. Ölçüm:
+> `sprint4-screen-consistency.md` § 7.1; tutanaklar `docs/evidence/chain/`.
+
 **Düzeltme:** `send-transaction-test.mjs`'e "GERÇEK ETHERS — canlı Sepolia
 oracle" bölümü eklendi. Taklit yok:
 
