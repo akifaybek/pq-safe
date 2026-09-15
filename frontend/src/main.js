@@ -125,6 +125,15 @@ function invalidateSignature() {
   if (!signed) return;
   signed = null;
   syncSendButtons();
+  // txOut de güncellenir. Güncellenmezse orada imza bloğu ("İmza (3688 bayt)",
+  // digest, DOMAIN_SEPARATOR) DURMAYA DEVAM EDER ve ekran kendi kendisiyle
+  // çelişir: aynı karede txOut "imza üretildi", sendOut "imza geçersiz kılındı"
+  // der. Bu kare demo kaydına giriyor.
+  //
+  // sendOut'a KIYASLA fark: sendOut'ta tx hash'i, Etherscan linki ve ölçülen
+  // gas — yani KANITIN KENDİSİ — durabilir; onu ezmek SAPMA 3 ve A3'ün
+  // koruduğu şeyi yok ederdi. txOut kanıt taşımıyor, yalnızca bayatlıyor.
+  txOut.innerHTML = '<p class="warn">İmza geçersiz kılındı — yeniden imzalayın.</p>';
   sendOut.innerHTML = '<p class="warn">Değerler değişti — imza geçersiz kılındı, yeniden imzalayın.</p>';
 }
 
@@ -693,6 +702,12 @@ btnSend.addEventListener('click', async () => {
       // İmza TÜKETİLDİ: execute() geçtiğine göre kontratın nonce'u arttı
       // (PQWallet.sol:48) ve aynı imza artık hiçbir digest'e uymaz.
       signed = null;
+      // …ve txOut bunu SÖYLER. Söylemezse imza bloğu ekranda kalır ve aynı
+      // karede "imza üretildi, 3688 bayt" ile "gönderildi ve onaylandı"
+      // birlikte görünür — tüketilmiş bir imza hâlâ kullanılabilirmiş gibi.
+      // REVERT dalında bu satır BİLEREK yok: orada `signed` KORUNUYOR, imza
+      // gerçekten hâlâ geçerli ve blok yeniden kullanılacak.
+      txOut.innerHTML = '<p>İmza bu işlemde kullanıldı — yeni işlem için yeniden imzalayın.</p>';
     } else {
       // Ön-uçuş geçtiği hâlde gönderim arasında state değişirse (Hakan aynı
       // cüzdana tx atar, nonce artar, imza geçersizleşir) tx zincirde revert
