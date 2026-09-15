@@ -17,6 +17,37 @@ import {
 } from './sendTransaction.js';
 import { CONTRACTS } from '../config/contracts.js';
 
+// ── SÜRE SINIRI ─────────────────────────────────────────────────────────────
+//
+// NEDEN VAR: 15 Eylül 2026'da bu test 45 assertion'dan sonra ASILDI — kırmızı
+// yanmadı, %0 CPU'da süresiz bekledi. Sebep ölçüldü: aşağıdaki canlı Sepolia
+// oracle'ının sabitlenmiş hash'leri için RPC sağlayıcı
+// `eth_getTransactionReceipt` çağrısına `null` döndürüyor (publicnode receipt
+// saklama süresi ~8.000-10.000 blok ≈ 30 saat) ve ethers'ın `wait()`'i null
+// receipt'te süresiz yokluyor.
+//
+// ASILAN TEST, BAŞARISIZ TESTTEN DAHA KÖTÜDÜR: "testler geçti mi" sorusunun
+// cevabı yoktur ve bir sonraki oturumda kimse sebebini bulamaz. Bu blok
+// asılmayı KIRMIZIYA çeviriyor — teşhis etmiyor, görünür kılıyor.
+//
+// Zamanlayıcı `unref()`li: süreci AYAKTA TUTMAZ, testler normal biterse süreç
+// normal çıkar (clearTimeout gerekmez). Ama süreç başka bir sebeple — asılı bir
+// RPC yoklaması — ayakta kalırsa yine de ateşler. Aranan davranış bu.
+//
+// Ayrıntı: docs/evidence/crypto-tests/sprint4-screen-consistency.md § 7.1
+const TIMEOUT_MS = Number(process.env.TEST_TIMEOUT_MS ?? 180_000);
+const startedAt = Date.now();
+setTimeout(() => {
+  const secs = ((Date.now() - startedAt) / 1000).toFixed(0);
+  console.error(`\n✗ SÜRE SINIRI AŞILDI — test ${secs} sn sonra ASILDI, GEÇMEDİ.`);
+  console.error('  En son tamamlanan bölüm yukarıdaki çıktının sonunda.');
+  console.error('  İlk bakılacak yer: canlı Sepolia oracle\'ının hash\'leri hâlâ');
+  console.error('  receipt döndürüyor mu? (eth_getTransactionReceipt → null ise sebep budur.)');
+  console.error('  Ayrıntı ve ölçüm: docs/evidence/crypto-tests/sprint4-screen-consistency.md § 7.1');
+  console.error(`  Sınır TEST_TIMEOUT_MS ile değiştirilebilir (şu an ${TIMEOUT_MS} ms).`);
+  process.exit(1);
+}, TIMEOUT_MS).unref();
+
 let failures = 0;
 
 function check(name, cond, detail = '') {
@@ -270,63 +301,168 @@ const envText = readFileSync(new URL('../../.env', import.meta.url), 'utf8');
 const rpcUrl = envText.match(/^VITE_SEPOLIA_RPC_URL=(.*)$/m)?.[1]?.trim();
 check('frontend/.env içinde VITE_SEPOLIA_RPC_URL var', Boolean(rpcUrl));
 
+// ── CANLI ORACLE'IN SÜRE SINIRI ─────────────────────────────────────────────
+//
+// TEŞHİS (15 Eylül 2026, ölçüldü — tahmin değil): paket `revertedTx.wait()`
+// satırında asılıyordu. Her canlı await'in önüne bir iz satırı basılıp
+// çalıştırıldı; çıktı `getTransaction` ikisinde de DÖNDÜ (null değil), sonra
+// `wait()` çağrıldı ve bir daha dönmedi.
+//
+// KÖK SEBEP: `eth_getTransactionByHash` tx'i veriyor ama
+// `eth_getTransactionReceipt` **null** dönüyor — sağlayıcı receipt geçmişini
+// buduyor (~8.000-10.000 blok ≈ 30 saat). Aşağıdaki koruma (eski hâli)
+// `getTransaction`'ın null olup olmadığına bakıyordu; **budanan receipt'ti,
+// tx değil.** Koruma yanlış şeyi ölçtüğü için kırmızı yerine ASILMA çıkıyordu.
+//
+// ÜÇ KATMANLI SINIR (her katman ethers kaynağından TEYİT EDİLDİ):
+//
+//   1. `wait(confirms, timeout)` — ethers'ın KENDİ süre parametresi.
+//      `lib.commonjs/providers/provider.js:1048` imza; `:1051` varsayılan 0
+//      (= sınırsız, bugünkü asılmanın sebebi); `:1177-1182` timeout > 0 ise
+//      `setTimeout` → `cancel()` + `reject(TIMEOUT)`. `cancel()` yoklamayı
+//      GERÇEKTEN durduruyor: `stopScanning = true` ve
+//      `provider.off(this.hash, txListener)`. Promise.race bunu yapamaz —
+//      assertion'ı kırmızı yapar ama alttaki poll'ü iptal etmez, süreç yine
+//      çıkmaz ve dışarıdan bugünkü asılmanın AYNISI görünür.
+//   2. `provider.destroy()` — `finally`'de. Poller'ları söküyor:
+//      `provider-jsonrpc.js:823` (drain timer + bekleyen istekler iptal) →
+//      `super.destroy()` → `abstract-provider.js:1218`
+//      (`removeAllListeners()` + tüm `#timers` temizleniyor). Süreç doğal
+//      yoldan çıkıyor, çıkış kodu korunuyor.
+//   3. Paket sonundaki açık `process.exit(kod)` — 1 ve 2 yetse bile yedek.
+//
+// Paket seviyesindeki genel sınır (dosyanın başı) dördüncü ağdır: BU testin
+// değil, HERHANGİ bir asılmanın kırmızıya dönmesi için.
+const WAIT_TIMEOUT_MS = Number(process.env.TEST_WAIT_TIMEOUT_MS ?? 20_000);
+
+// Hangi hatayı yakaladığımızı AYRI AYRI yazar. Aksi hâlde bir sonraki kişi
+// aynı teşhisi sıfırdan çıkarır — 15 Eylül'de olan tam olarak buydu.
+function liveFailure(e, secs) {
+  if (e == null) return 'bilinmeyen';
+  // ÖLÇÜLDÜ: iki alan AYNI DEĞİL. `shortMessage` çıplak metni tutuyor,
+  // `message` ise "(code=TIMEOUT, version=6.17.0)" ekini alıyor. Eşitlik
+  // `message` üzerinden kurulursa wait-zaman-aşımı sessizce HTTP zaman
+  // aşımı diye sınıflanır — kontrol edilmeden yazılmış bir eşitlik tam olarak
+  // bu hatayı yapmıştı.
+  const short = String(e.shortMessage ?? e.message ?? '');
+  if (e.code === 'TIMEOUT' && short.startsWith('wait for transaction timeout')) {
+    // provider.js:1180 — ethers'ın wait() sınırı doldu, receipt hiç gelmedi.
+    return `receipt gelmedi, ${secs} sn (eth_getTransactionReceipt → null; sağlayıcı budamış olabilir)`;
+  }
+  if (e.code === 'TIMEOUT') {
+    // utils/fetch.js:428 — HTTP isteğinin kendisi zaman aşımına uğradı.
+    return `istek zaman aşımı (HTTP katmanı, ${secs} sn)`;
+  }
+  if (e.code === 'NETWORK_ERROR' || e.code === 'SERVER_ERROR') {
+    return `ağ/sunucu hatası: ${e.code} — ${e.shortMessage ?? e.message}`;
+  }
+  return `${e.code ?? e.name} — ${e.shortMessage ?? e.message}`;
+}
+
+// liveFailure()'ın kendisi sınanır: kırmızı mesaj yanlış kategoriyi yazarsa
+// bir sonraki kişi yanlış yeri kazar. Girdiler ethers 6.17'den ÖLÇÜLEN gerçek
+// şekiller (yukarıdaki kaynak satırları).
+{
+  const waitTimeout = { code: 'TIMEOUT', shortMessage: 'wait for transaction timeout', message: 'wait for transaction timeout (code=TIMEOUT, version=6.17.0)' };
+  const httpTimeout = { code: 'TIMEOUT', shortMessage: 'timeout', message: 'timeout (code=TIMEOUT, version=6.17.0)' };
+  const netErr = { code: 'NETWORK_ERROR', shortMessage: 'could not detect network' };
+  check('kırmızı mesaj: wait zaman aşımı → "receipt gelmedi"',
+    liveFailure(waitTimeout, '20').startsWith('receipt gelmedi, 20 sn'), `gelen: ${liveFailure(waitTimeout, '20')}`);
+  check('kırmızı mesaj: HTTP zaman aşımı → "istek zaman aşımı" (wait ile KARIŞMIYOR)',
+    liveFailure(httpTimeout, '20').startsWith('istek zaman aşımı'), `gelen: ${liveFailure(httpTimeout, '20')}`);
+  check('kırmızı mesaj: ağ hatası ayrı kategoriye düşüyor',
+    liveFailure(netErr, '20').startsWith('ağ/sunucu hatası'), `gelen: ${liveFailure(netErr, '20')}`);
+  check('kırmızı mesaj: tx null ve receipt null AYRI metinler',
+    liveFailure(waitTimeout, '20') !== liveFailure(httpTimeout, '20'));
+}
+
 const provider = new JsonRpcProvider(rpcUrl);
-const revertedTx = await provider.getTransaction(REVERTED_TX);
-const successTx = await provider.getTransaction(SUCCESS_TX);
 
-// Zincirden gelmediyse sessizce atlama YOK — atlanan kontrol, yapılmamış
-// kontroldür. (RPC bu tx'leri budadıysa test kırmızı yanar ve yeni bir hash
-// seçilir; sessiz yeşilden iyidir.)
-check('revert eden tx zincirden okunabildi', revertedTx !== null, `hash: ${REVERTED_TX}`);
-check('başarılı tx zincirden okunabildi', successTx !== null, `hash: ${SUCCESS_TX}`);
+try {
+  const revertedTx = await provider.getTransaction(REVERTED_TX);
+  const successTx = await provider.getTransaction(SUCCESS_TX);
 
-if (revertedTx && successTx) {
-  // 1) ethers'ın KENDİ wait()'i revert karşısında ne yapıyor?
-  let realErr = null;
-  let realReceipt = null;
-  try {
-    realReceipt = await revertedTx.wait();
-  } catch (e) {
-    realErr = e;
+  // Zincirden gelmediyse sessizce atlama YOK — atlanan kontrol, yapılmamış
+  // kontroldür. (RPC bu tx'leri budadıysa test kırmızı yanar ve yeni bir hash
+  // seçilir; sessiz yeşilden iyidir.)
+  check('revert eden tx zincirden okunabildi', revertedTx !== null, `tx null — hash: ${REVERTED_TX}`);
+  check('başarılı tx zincirden okunabildi', successTx !== null, `tx null — hash: ${SUCCESS_TX}`);
+
+  // KORUMA ARTIK DOĞRU ŞEYE BAKIYOR: budanan receipt'ti, tx değil. Receipt
+  // yoksa aşağıdaki `wait()` çağrılarının hepsi süresiz yoklardı — ve
+  // `sendExecute` içindeki `wait()` bizim dokunmadığımız dosyada (kapsam dışı:
+  // gönderim yolu), yani oraya hiç girmemek tek doğru koruma.
+  const revertedReceipt = revertedTx && await provider.getTransactionReceipt(REVERTED_TX);
+  const successReceipt = successTx && await provider.getTransactionReceipt(SUCCESS_TX);
+
+  check("revert eden tx'in RECEIPT'i zincirden okunabildi", revertedReceipt != null,
+    `receipt null — sağlayıcı budamış. hash: ${REVERTED_TX}`);
+  check("başarılı tx'in RECEIPT'i zincirden okunabildi", successReceipt != null,
+    `receipt null — sağlayıcı budamış. hash: ${SUCCESS_TX}`);
+
+  if (revertedTx && successTx && revertedReceipt && successReceipt) {
+    // 1) ethers'ın KENDİ wait()'i revert karşısında ne yapıyor?
+    let realErr = null;
+    let realReceipt = null;
+    let waitTimedOut = false;
+    const t0 = Date.now();
+    try {
+      realReceipt = await revertedTx.wait(1, WAIT_TIMEOUT_MS);
+    } catch (e) {
+      realErr = e;
+      waitTimedOut = e?.code === 'TIMEOUT';
+    }
+    const waitSecs = ((Date.now() - t0) / 1000).toFixed(0);
+
+    // Süre dolması KIRMIZI'dır, "skipped" değil.
+    check('GERÇEK ethers: wait() bir sonuca vardı (asılmadı)', !waitTimedOut,
+      liveFailure(realErr, waitSecs));
+
+    check('GERÇEK ethers: revert eden tx için wait() FIRLATIYOR (receipt döndürmüyor)',
+      realErr !== null && realReceipt === null,
+      `dönen receipt: ${realReceipt?.status}`);
+    check('GERÇEK ethers: code === CALL_EXCEPTION', realErr?.code === 'CALL_EXCEPTION', `gelen: ${liveFailure(realErr, waitSecs)}`);
+    check('GERÇEK ethers: receipt `e.receipt` alanında (e.info.receipt DEĞİL)',
+      realErr?.receipt != null,
+      `e.receipt: ${realErr?.receipt}, e.info?.receipt: ${realErr?.info?.receipt}`);
+    check('GERÇEK ethers: e.receipt.status === 0', realErr?.receipt?.status === 0, `gelen: ${realErr?.receipt?.status}`);
+    check('GERÇEK ethers: e.receipt.gasUsed zincirdeki değer (63730)', realErr?.receipt?.gasUsed === 63730n, `gelen: ${realErr?.receipt?.gasUsed}`);
+
+    // 2) sendExecute bu GERÇEK hatadan receipt'i kurtarabiliyor mu?
+    //    signer stub'ı yalnızca "tx gönderildi" numarası yapıyor; wait()'i
+    //    yürüten ethers'ın kendi TransactionResponse'u.
+    const realSigner = {
+      async estimateGas() { return 200000n; },
+      async sendTransaction() { return revertedTx; },
+    };
+    let rr = null;
+    let rrThrown = null;
+    try {
+      rr = await sendExecute({ signer: realSigner, calldata: CALLDATA });
+    } catch (e) {
+      rrThrown = e;
+    }
+    check('sendExecute GERÇEK ethers hatasından receipt kurtarıyor', rrThrown === null && rr?.receipt != null, `fırlayan: ${rrThrown?.code}`);
+    check('sendExecute → gerçek status 0 çağırana ulaşıyor', rr?.receipt?.status === 0, `gelen: ${rr?.receipt?.status}`);
+    check('sendExecute → gerçek hash korunuyor', rr?.hash === REVERTED_TX);
+    check('sendExecute → gerçek gasUsed korunuyor (63730)', rr?.receipt?.gasUsed === 63730n);
+
+    // 3) Başarılı yol: gerçek wait() receipt döndürüyor, status 1.
+    const okSigner = {
+      async estimateGas() { return 200000n; },
+      async sendTransaction() { return successTx; },
+    };
+    const okRes = await sendExecute({ signer: okSigner, calldata: CALLDATA });
+    check('GERÇEK ethers: başarılı tx için wait() receipt DÖNDÜRÜYOR', okRes.receipt != null);
+    check('sendExecute → gerçek status 1', okRes.receipt.status === 1, `gelen: ${okRes.receipt.status}`);
+    check('sendExecute → status 1 ve status 0 AYIRT EDİLİYOR', okRes.receipt.status !== rr?.receipt?.status);
   }
-  check('GERÇEK ethers: revert eden tx için wait() FIRLATIYOR (receipt döndürmüyor)',
-    realErr !== null && realReceipt === null,
-    `dönen receipt: ${realReceipt?.status}`);
-  check('GERÇEK ethers: code === CALL_EXCEPTION', realErr?.code === 'CALL_EXCEPTION', `gelen: ${realErr?.code}`);
-  check('GERÇEK ethers: receipt `e.receipt` alanında (e.info.receipt DEĞİL)',
-    realErr?.receipt != null,
-    `e.receipt: ${realErr?.receipt}, e.info?.receipt: ${realErr?.info?.receipt}`);
-  check('GERÇEK ethers: e.receipt.status === 0', realErr?.receipt?.status === 0, `gelen: ${realErr?.receipt?.status}`);
-  check('GERÇEK ethers: e.receipt.gasUsed zincirdeki değer (63730)', realErr?.receipt?.gasUsed === 63730n, `gelen: ${realErr?.receipt?.gasUsed}`);
-
-  // 2) sendExecute bu GERÇEK hatadan receipt'i kurtarabiliyor mu?
-  //    signer stub'ı yalnızca "tx gönderildi" numarası yapıyor; wait()'i
-  //    yürüten ethers'ın kendi TransactionResponse'u.
-  const realSigner = {
-    async estimateGas() { return 200000n; },
-    async sendTransaction() { return revertedTx; },
-  };
-  let rr = null;
-  let rrThrown = null;
-  try {
-    rr = await sendExecute({ signer: realSigner, calldata: CALLDATA });
-  } catch (e) {
-    rrThrown = e;
-  }
-  check('sendExecute GERÇEK ethers hatasından receipt kurtarıyor', rrThrown === null && rr?.receipt != null, `fırlayan: ${rrThrown?.code}`);
-  check('sendExecute → gerçek status 0 çağırana ulaşıyor', rr?.receipt?.status === 0, `gelen: ${rr?.receipt?.status}`);
-  check('sendExecute → gerçek hash korunuyor', rr?.hash === REVERTED_TX);
-  check('sendExecute → gerçek gasUsed korunuyor (63730)', rr?.receipt?.gasUsed === 63730n);
-
-  // 3) Başarılı yol: gerçek wait() receipt döndürüyor, status 1.
-  const okSigner = {
-    async estimateGas() { return 200000n; },
-    async sendTransaction() { return successTx; },
-  };
-  const okRes = await sendExecute({ signer: okSigner, calldata: CALLDATA });
-  check('GERÇEK ethers: başarılı tx için wait() receipt DÖNDÜRÜYOR', okRes.receipt != null);
-  check('sendExecute → gerçek status 1', okRes.receipt.status === 1, `gelen: ${okRes.receipt.status}`);
-  check('sendExecute → status 1 ve status 0 AYIRT EDİLİYOR', okRes.receipt.status !== rr?.receipt?.status);
+} catch (e) {
+  // Canlı oracle'ın kendisi patladıysa da KIRMIZI — sessizce yutulmaz.
+  check('canlı Sepolia oracle bölümü hatasız koştu', false, liveFailure(e, '?'));
+} finally {
+  // KATMAN 2: poller'ları sök, süreç doğal yoldan çıksın (çıkış kodu korunur).
+  provider.destroy();
 }
 
 console.log('\n=== classifyNegativeProofError() — ÜÇ YOL ===\n');
