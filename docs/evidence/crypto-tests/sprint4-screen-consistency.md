@@ -289,6 +289,51 @@ yerine asılma çıkıyor.
 
 ---
 
+### 7.2 Canlı oracle dosyanın SONUNA taşındı — saf testler ağa rehin kalmasın
+
+**Bulgu (§ 7.1'in sayılarından çıktı):** paket asıldığında koşamayan **30**
+assertion'ın **18'i** `classifyNegativeProofError` bölümüydü — saf fonksiyon
+testleri, canlı oracle'la hiçbir ilgisi yok. Koşmama sebepleri tek: dosyada
+**asılma noktasının altında** duruyorlardı.
+
+Canlı oracle anahtarsız, ücretsiz bir gateway'e bağlı; düşmesi öngörülebilir.
+O olduğunda bedeli yalnızca ağ assertion'ları ödemeli.
+
+**Düzeltme:** "GERÇEK ETHERS — canlı Sepolia oracle" bölümü dosyanın sonuna
+alındı. Yeni sıra: `disconnectMessage` → `sendExecute` → **`classify…` (18)** →
+canlı oracle. Sıra değişti, **sayı değişmedi: 83**.
+
+#### Kasten bozma — üç arıza biçimi ölçüldü
+
+| Senaryo | toplam ✓ | classify ✓ | çıkış |
+|---|---|---|---|
+| Sağlam (taban) | 83 | 18 | 0 |
+| Arşiv değişkeni **YOK** | 65 | **18** | 1 |
+| Endpoint **ölü** (ECONNREFUSED) | 66 | **18** | 1 |
+| Endpoint **ASILIYOR** (kabul ediyor, cevap vermiyor) | 66 | **18** | 1 |
+
+Üç arızada da kırmızı **tek satır** ve saf fonksiyon sayısı **18'de sabit**.
+
+#### Taşımanın değeri: yalnızca ASILMA durumunda — ölçüldü, iddia edilmedi
+
+İlk iki arıza biçiminde (eksik değişken, ECONNREFUSED) **eski sıralama da
+18'i koşturuyordu** — D5'in `try/catch`'i hatayı hızlıca yakalayıp devam
+ediyor. Taşımanın farkı yalnızca **gerçek asılmada** ortaya çıkıyor, çünkü
+orada paket seviyesindeki süre sınırı `process.exit(1)` ile her şeyi kesiyor:
+
+| Gerçek asılma (paket sınırı 20 sn) | toplam ✓ | classify ✓ |
+|---|---|---|
+| **ESKİ sıralama** | 48 | **0** ← 18 assertion sessizce düştü |
+| **YENİ sıralama** | 66 | **18** ← korundu |
+
+Bu, 15 Eylül'de gerçekten yaşanan arıza biçiminin ta kendisi (45'te asılma).
+**Taşıma o senaryoyu kapatıyor; diğer ikisini zaten D5 kapatmıştı.**
+
+Bozma geri alındı, `.env` yedekten restore edildi, geçici blackhole sunucusu ve
+kopya dosya silindi.
+
+---
+
 ## 7b. Task 2 — mnemonic'in DOM'dan kaldırılması
 
 ### Ölçülen kusur ve TEKLİĞİ (satır numaraları Task 1 sonrası YENİDEN doğrulandı)

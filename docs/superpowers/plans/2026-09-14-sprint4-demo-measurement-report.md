@@ -159,8 +159,33 @@ node src/tx/send-transaction-test.mjs   # arşiv değişkeni yoksa KIRMIZI
 Bu ÖK-2'nin en değerli çıktısıdır: jürinin kurulum sürtünmesi sıfır. **Bu ölçüt
 korunmalı** — `.env.example`'a placeholder (`VITE_...=`) geri konursa sessizce
 kaybolur ve kimse fark etmez.
-Beklenen: build geçer ve `npm run dev` ile açılan sayfada bir imza üretilebilir.
+Sayfayı açmak için (imza üretimini elle görmek üzere):
+
+```bash
+npx vite        # NOT: `npm run dev` YOK — package.json'da hiç script tanımlı değil
+```
+
+Beklenen: build geçer ve `npx vite` ile açılan sayfada bir imza üretilebilir.
 **Takılan her adım not edilir** — bunlar raporun kurulum bölümü olacak.
+
+> **Bu adımdaki her satır çalışan bir komut olmalı** — taze klon testinin
+> anlamı bu. 15 Eylül 2026'da altı satırın altısı tek tek denetlendi:
+>
+> | Satır | Durum |
+> |---|---|
+> | `git clone --recursive …/pq-safe.git` | ✅ `origin` URL'si birebir bu |
+> | `npm i` | ✅ |
+> | `bash scripts/build-wasm.sh` | ✅ dosya var (`frontend/scripts/build-wasm.sh`), cwd `frontend` iken yol doğru |
+> | `cp .env.example .env` | ✅ dosya var, iki değer de birebir yazılı |
+> | `npx vite build` | ✅ |
+> | ~~`npm run dev`~~ → `npx vite` | 🔴 **DÜZELTİLDİ** — `package.json`'da `scripts` alanı **hiç yok** (`scripts: null`), `npm run dev` "Missing script: dev" ile patlıyordu |
+>
+> Belge kendi içinde çelişiyordu: Global Constraints zaten *"Testler npm
+> script'i yok, doğrudan çalıştırılır"* diyor, ama Task 0 `npm run dev`
+> çağırıyordu. Taze klonda jüri bu satıra **ilk dakikada** çarpardı.
+>
+> Submodule'ler de teyit edildi: `contracts/lib/forge-std` ve
+> `contracts/lib/sphincs-minus` — Adım 3'ün beklediği ikisi de `.gitmodules`'te.
 
 > **[D1] Bu adım İKİ TARAFI birden kapsar, biri değil:**
 >
@@ -465,6 +490,33 @@ burada):
 > hatasının aynısını üretir — farklı bağlamdan iki sayıyı çıkarıp "fark" demek.
 > İkinci endpoint tekrarı bu kuralın **bilinçli istisnasıdır**: orada ölçülen
 > şey zaten sağlayıcı bağımlılığının kendisidir.
+
+- [ ] **Adım 0: NONCE KAPISI — mnemonic içe aktarmadan ÖNCE**
+
+```bash
+cast nonce <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 2
+```
+
+**2 değilse DUR.** İmza atılmaz, mnemonic girilmez, Akif'e bildirilir. Yeni
+nonce'a göre plan güncellenir, sonra devam edilir.
+
+> **Neden ayrı bir adım:** plan C adresine şüpheci davranıyor — *"faz 1'de boş
+> olması haftaya boş olduğunu göstermez"* deyip üçlü boşluk kontrolünü
+> gönderimden hemen önce **tekrarlatıyor**. Aynı şüphe cüzdanın **kendi
+> nonce'una** uygulanmamıştı: Task 5 ve 6 boyunca nonce 2 varsayılıyor ve
+> **üç imzanın üçü de ona bağlı**.
+>
+> Bugün 2 olması, elle oturum gününde 2 olacağını göstermez — C adresi için
+> yazılmış cümlenin birebir aynısı. Araya giren herhangi bir `execute()`
+> (test, kaza, "bir şeyi denemek için") nonce'u 3 yapar.
+>
+> **Sonradan fark edilirse bedeli:** üç imza birden çöp ve ölçüm zinciri
+> **ikinci bir elle mnemonic oturumuyla** baştan kurulur — spec'in "kıt kaynak"
+> dediği şeyin ta kendisi. Bu kontrol otuz saniye sürüyor.
+>
+> **Ölçüm (15 Eylül 2026):** nonce hâlâ **2**, bakiye **0,0009 ETH** —
+> `pqwallet-test.mjs`'in canlı okumasıyla doğrulandı. Bu kayıt o günü
+> belgeliyor; **adımın koruduğu şey oturum günü.**
 
 - [ ] **Adım 1: Ölçüm kancasını ekle**
 
