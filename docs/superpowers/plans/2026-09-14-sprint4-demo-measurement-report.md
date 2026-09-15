@@ -129,9 +129,25 @@ Bu görev ajan tarafından yapılmaz. Task 5'ten önce ikisi de kapanmalı.
 git clone --recursive https://github.com/akifaybek/pq-safe.git pq-safe-clean
 cd pq-safe-clean/frontend && npm i
 bash scripts/build-wasm.sh
-cp .env.example .env   # VITE_SEPOLIA_RPC_URL doldurulur
+cp .env.example .env   # İKİ değişken de doldurulur (aşağıdaki kutu)
 npx vite build
+node src/tx/send-transaction-test.mjs   # arşiv değişkeni yoksa KIRMIZI
 ```
+
+> ### `.env`'de İKİ değişken var, biri yetmiyor
+>
+> - `VITE_SEPOLIA_RPC_URL` — uygulamanın normal yolu (publicnode yeter)
+> - **`VITE_SEPOLIA_ARCHIVE_RPC_URL`** — `send-transaction-test.mjs`'in canlı
+>   Sepolia oracle'ı ve `docs/evidence/` tx kanıtlarının yeniden doğrulanması.
+>   Anahtarsız çalışan ölçülmüş değer: `https://sepolia.gateway.tenderly.co`
+>
+> **Taze klonda arşiv endpoint'i konmadan paket KIRMIZI yanar** — ve mesaj eksik
+> değişkenin adını yazar, zaman aşımına düşmez.
+>
+> **Bu tam olarak jürinin makinesinde yaşanacak senaryodur.** Public endpoint
+> Sepolia receipt'lerini ~30 saat sonra buduyor; jüri `.env`'ye yalnızca public
+> URL koyarsa kanıt tx'lerini doğrulayamaz. Bu yüzden **kurulum adımlarının
+> parçası**, dipnot değil.
 Beklenen: build geçer ve `npm run dev` ile açılan sayfada bir imza üretilebilir.
 **Takılan her adım not edilir** — bunlar raporun kurulum bölümü olacak.
 
@@ -526,9 +542,13 @@ console.log(JSON.stringify(out));
 
 - [ ] **Adım 7: İkinci RPC endpoint'inde tekrarla**
 
-Farklı bir public sağlayıcıya geçilip Adım 6 tekrarlanır.
-İki sağlayıcı **farklı** Δ veriyorsa "ofset" EVM'in değil **node'un**
-özelliğidir ve tabloya hiç giremez.
+**İkinci endpoint belli: `VITE_SEPOLIA_ARCHIVE_RPC_URL`** (spec § 8, açık
+soru 4 — 15 Eylül 2026'da kapandı). Anahtarsız çalıştığı ölçülen değer
+`https://sepolia.gateway.tenderly.co`. Aynı değişken canlı test oracle'ını ve
+`docs/evidence/chain/` tutanaklarını da besliyor; ayrıca bir sağlayıcı aranmaz.
+
+Bu endpoint'e geçilip Adım 6 tekrarlanır. İki sağlayıcı **farklı** Δ veriyorsa
+"ofset" EVM'in değil **node'un** özelliğidir ve tabloya hiç giremez.
 
 - [ ] **Adım 8: Intrinsic ayrıştırması**
 
@@ -764,6 +784,11 @@ cast nonce   <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 3
 cast balance <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 0,0009 − 0,0001 ETH
 cast receipt <TX2_HASH> --rpc-url $SEPOLIA_RPC   # status 1, gasUsed
 ```
+
+> **`cast receipt` için `$SEPOLIA_RPC` ARŞİV endpoint'i olmalı.** Gönderim
+> anında taze receipt her endpoint'ten gelir; **sonradan** her yeniden
+> doğrulama public endpoint'te `null` döner (~30 saat sınırı). Adım 9'un
+> tutanağı da bu yüzden aynı gün alınıyor.
 
 > **Kanca silme burada DEĞİL.** Task 5B Adım 2'de, kayıttan **önce** yapıldı.
 
@@ -1174,6 +1199,19 @@ Kaynaklar: `docs/ARCHITECTURE.md` (§1-5) ve 16 kanıt notu.
 > cümlesi: *"tx hash ve blok numarası herhangi bir ARŞİV düğümüyle yeniden
 > doğrulanabilir; aşağıdaki JSON kolaylık kopyasıdır."*
 > **"Zincirden yeniden üretilebilir" yazılmaz.**
+>
+> **Rapora giren `cast` komutlarının yanına ŞU NOT konur:**
+>
+> > `cast receipt <hash>` bir **ARŞİV** düğümü gerektirir. Ücretsiz public
+> > Sepolia endpoint'leri (publicnode dahil) receipt'leri ~8.000–10.000 blok
+> > (≈30 saat) sonra buduyor: `eth_getTransactionByHash` tx'i vermeye devam
+> > ederken `eth_getTransactionReceipt` `null` döner. **Bu bir kusur değil, ağ
+> > gerçeğidir** — arşiv geçmişi tutmak pahalıdır ve ücretsiz düğümler tutmaz.
+> > `--rpc-url` bir arşiv endpoint'ine verilmelidir.
+>
+> **Bu not yazılmazsa jüri komutu koşar, `null` alır ve kanıt çürük görünür.**
+> Ölçüm: `docs/evidence/crypto-tests/sprint4-screen-consistency.md` § 7.1;
+> tutanaklar `docs/evidence/chain/`.
 
 - [ ] **Adım 2: "Sınanmamış yollar" bölümünü DÜRÜSTÇE yaz**
 

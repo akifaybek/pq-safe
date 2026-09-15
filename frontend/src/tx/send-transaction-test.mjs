@@ -301,6 +301,26 @@ const envText = readFileSync(new URL('../../.env', import.meta.url), 'utf8');
 const rpcUrl = envText.match(/^VITE_SEPOLIA_RPC_URL=(.*)$/m)?.[1]?.trim();
 check('frontend/.env içinde VITE_SEPOLIA_RPC_URL var', Boolean(rpcUrl));
 
+// ── BU BÖLÜM ARŞİV DÜĞÜMÜ İSTER ─────────────────────────────────────────────
+//
+// Paketin geri kalanı `VITE_SEPOLIA_RPC_URL`de kalıyor; YALNIZCA bu canlı
+// oracle arşiv endpoint'ini kullanıyor. Sebep ölçüldü (15 Eylül 2026): public
+// sağlayıcılar Sepolia receipt'lerini ~8.000-10.000 blok (≈30 saat) sonra
+// buduyor. `eth_getTransactionByHash` tx'i vermeye devam ederken
+// `eth_getTransactionReceipt` null dönüyor — yani bu bölümün sabitlenmiş
+// hash'leri public endpoint'ten DOĞRULANAMIYOR.
+//
+// Bu bir kusur değil, ağ gerçeği: arşiv geçmişi tutmak pahalı ve ücretsiz
+// public düğümler bunu yapmıyor.
+const archiveRpcUrl = envText.match(/^VITE_SEPOLIA_ARCHIVE_RPC_URL=(.*)$/m)?.[1]?.trim();
+
+// Değişken yoksa NET KIRMIZI — eksik değişkenin ADIYLA. Zaman aşımına düşüp
+// "acaba ağ mı bozuk" diye düşündürmesi yasak; sessiz atlama da yok.
+check('frontend/.env içinde VITE_SEPOLIA_ARCHIVE_RPC_URL var', Boolean(archiveRpcUrl),
+  'EKSİK DEĞİŞKEN: VITE_SEPOLIA_ARCHIVE_RPC_URL — bu bölüm ARŞİV düğümü ister; '
+  + 'public endpoint Sepolia receipt\'lerini buduyor. Anahtarsız çalışan: '
+  + 'https://sepolia.gateway.tenderly.co (bkz. .env.example)');
+
 // ── CANLI ORACLE'IN SÜRE SINIRI ─────────────────────────────────────────────
 //
 // TEŞHİS (15 Eylül 2026, ölçüldü — tahmin değil): paket `revertedTx.wait()`
@@ -376,7 +396,11 @@ function liveFailure(e, secs) {
     liveFailure(waitTimeout, '20') !== liveFailure(httpTimeout, '20'));
 }
 
-const provider = new JsonRpcProvider(rpcUrl);
+// Değişken yoksa bölüm HİÇ koşmaz: yukarıdaki check zaten KIRMIZI yandı ve
+// paket kırmızı bitecek. Yine de koşturmak, gerçek sebebi (eksik değişken)
+// yirmi saniyelik bir zaman aşımının altına gömerdi.
+if (archiveRpcUrl) {
+const provider = new JsonRpcProvider(archiveRpcUrl);
 
 try {
   const revertedTx = await provider.getTransaction(REVERTED_TX);
@@ -464,6 +488,7 @@ try {
   // KATMAN 2: poller'ları sök, süreç doğal yoldan çıksın (çıkış kodu korunur).
   provider.destroy();
 }
+} // if (archiveRpcUrl)
 
 console.log('\n=== classifyNegativeProofError() — ÜÇ YOL ===\n');
 

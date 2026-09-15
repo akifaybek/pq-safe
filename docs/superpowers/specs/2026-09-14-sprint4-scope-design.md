@@ -625,8 +625,14 @@ Plan bu dosyalara **iş yazmaz**, mesaj yazar.
 2. **Hakan'ın 4. maddesi** — cevaplanmadan K6'nın uzlaştırma notu yazılamaz
 3. **`GAS_FALLBACK` analizinin sonucu** — K3'ün maliyetini ve kanıt notunun
    içeriğini belirler; analiz yapılmadan bilinmiyor
-4. **Tekrar testinin ikinci endpoint'i hangisi olacak** — birinci endpoint
-   `VITE_SEPOLIA_RPC_URL`; ikincisi için ayrı bir public sağlayıcı gerekiyor
+4. ~~**Tekrar testinin ikinci endpoint'i hangisi olacak**~~ — **KAPANDI
+   (15 Eylül 2026).** Cevap: **`VITE_SEPOLIA_ARCHIVE_RPC_URL`**. Birinci
+   endpoint `VITE_SEPOLIA_RPC_URL` (publicnode), ikincisi bu. Tek değişken üç
+   kalemi birden kapatıyor: tekrar testinin ikinci endpoint'i · canlı
+   oracle'ın receipt'leri · `docs/evidence/chain/` tutanaklarının çekildiği yer.
+   Anahtarsız çalıştığı ölçüldü: `https://sepolia.gateway.tenderly.co`
+   (üç sabit hash'in de tx + receipt'i tam dönüyor; `1rpc.io/sepolia` birinde
+   null verdi, publicnode üçünde de receipt budamış)
 5. **Kovaların eşikleri** (≲100 / 100–500 / >500) başlangıç değeri; deneyin
    sonucu eşikleri değiştirebilir
 
