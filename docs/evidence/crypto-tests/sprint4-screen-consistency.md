@@ -289,12 +289,160 @@ yerine asılma çıkıyor.
 
 ---
 
+## 7b. Task 2 — mnemonic'in DOM'dan kaldırılması
+
+### Ölçülen kusur ve TEKLİĞİ (satır numaraları Task 1 sonrası YENİDEN doğrulandı)
+
+```
+$ grep -n "currentMnemonic" frontend/src/main.js
+30:  let currentMnemonic = null;
+199: currentMnemonic = generateNewMnemonic();
+200: currentKeys = await keygen(currentMnemonic);
+204:   <div class="field">${esc(currentMnemonic)}</div>   ← DOM'a giden TEK yer
+221,229,240,280,355,376: bellekte okuma (imzalama yolu) — DOM'a gitmiyor
+425:  currentMnemonic = phrase;   ← içe aktarma: ATAR, EKRANA BASMAZ
+457,480: null'a çekme
+```
+
+**Devir notundaki `:195` artık `:204`** — Task 1'in düzeltmesi dosyayı kaydırdı.
+Bilgi doğru varsayılmadı, `grep` ile yeniden ölçüldü.
+
+**Teklik iki ek kontrolle kapatıldı** — tek bir yolu kapatıp ikincisini
+kaçırmamak için:
+
+1. `keygen()` dönüşünde mnemonic **yok**: `{ pkSeed, pkRoot, ecdsaAddress,
+   publicKey }` (`src/crypto/signer.js:38-48`). Yani `currentKeys` üzerinden
+   dolaylı bir sızıntı yolu yok.
+2. İçe aktarma yolu alanı **hemen temizliyor** (`input.value = ''`,
+   `main.js:424`) ve ifadeyi hiçbir yere basmıyor.
+
+### Test: önce KIRMIZI
+
+Kanarya betiği geçici (repoda tutulmuyor), Playwright + kurulu Chrome.
+**Gerçek owner mnemonic'i KULLANILMADI:** `btn-keygen` rastgele üretiyor,
+aranan o rastgele değer. `.env.pqwallet-owner-key` açılmadı.
+
+Oracle: düzeltmeden **sonra** mnemonic sayfada hiç görünmeyeceği için
+"aranacak değer" DOM'dan okunamaz. Bu yüzden Sprint 3 / Task 1 desenindeki
+**geçici kanca** kondu — modül kapsamından yalnızca okuyor:
+
+```javascript
+window.__s4t2 = { mnemonic: () => currentMnemonic };
+```
+
+```
+KANARYA — mnemonic DOM'a yazılıyor mu?
+  (üretilen rastgele mnemonic 12 kelime; aranan ilk kelime: "caution")
+  ✓ POZİTİF KONTROL: türetilen AÇIK anahtar ekranda görülüyor
+  ✓ POZİTİF KONTROL: "anahtar çifti üretildi" bildirimi ekranda
+  ✗ mnemonic'in ilk kelimesi sayfada 0 kez geçiyor      → bulundu: 1 kez
+  ✗ mnemonic'in TAMAMI sayfada hiç geçmiyor             → tam ifade DOM'da
+  ✗ kelime sayısı / nokta maskesi / kısaltma yazılmıyor  → "Mnemonic (12 kelime)"
+  ✗ console: favicon 404 dışında hata yok
+4 KALDI (KIRMIZI)
+```
+
+Ekran görüntüsü: `docs/evidence/screenshots/sprint4-mnemonic-canary-red.png`
+
+> **Dördüncü kırmızı testin KENDİ hatasıydı, ürünün değil:** console filtresi
+> mesaj METNİNDE "favicon" arıyordu, ama metin *"Failed to load resource: …404"*
+> ve favicon yalnızca **URL'de** geçiyor. Filtre `m.location().url`'e bakacak
+> şekilde düzeltildi. Üründe değişen bir şey yok.
+
+### Düzeltme
+
+`main.js:203-208`. Mnemonic etiketi ve `<div class="field">` satırı kalktı;
+yerine "Anahtar çifti üretildi." + gizli anahtarın **neden** yazılmadığını
+söyleyen bir satır geldi. **Kelime sayısı, nokta maskesi, kısaltma — hiçbiri
+yazılmıyor** (maskenin uzunluğu bile bilgi sızdırır).
+
+`esc()`'in başındaki gerekçe yorumu da güncellendi: eski hâli *"sayfa aynı
+zamanda mnemonic'i DOM'a yazdığı için"* diyordu ve bu cümle artık yanlıştı.
+Kaçış hâlâ gerekli — kullanıcı girdisi `innerHTML`'e gidiyor.
+
+### Test: sonra YEŞİL
+
+```
+  ✓ POZİTİF KONTROL: türetilen AÇIK anahtar ekranda görülüyor
+  ✓ POZİTİF KONTROL: "anahtar çifti üretildi" bildirimi ekranda
+  ✓ mnemonic'in ilk kelimesi sayfada 0 kez geçiyor
+  ✓ mnemonic'in TAMAMI sayfada hiç geçmiyor
+  ✓ kelime sayısı / nokta maskesi / kısaltma da yazılmıyor
+  ✓ console: favicon 404 dışında hata yok
+KANARYA YEŞİL
+```
+
+**Pozitif kontrol iki koşuda da YEŞİL.** Yani assertion boş değil: sayfa
+gerçekten içerik basıyor, değişen tek şey mnemonic'in orada olmaması.
+
+### Regresyon: anahtar ekrandan kalktı, BELLEKTEN kalkmadı
+
+Keygen çıktısının template'i değiştirildi; asıl risk imzalama yolunu
+bozmaktı. Ayrı koşu:
+
+```
+  ✓ keygen sonrası mnemonic BELLEKTE duruyor (ekranda değil)
+  ✓ bellekteki anahtarla İMZA ÜRETİLDİ (imza yolu bozulmadı)
+  ✓ imza 3688 bayt (C13 beklenen boyut)
+  ✓ imzadan SONRA da mnemonic sayfada yok
+REGRESYON YEŞİL
+```
+
+### Kanca kaldırıldı, artık 0
+
+| | md5 |
+|---|---|
+| `main.js` — kanca ÖNCESİ, düzeltme ÖNCESİ (commit `900a4f3`) | `4c48e426f292cfbf0856cde4c97dfb23` |
+| `main.js` — KANCALI | `8420164ba632094f8cdf7cee2777458d` |
+| `main.js` — düzeltme + kanca SİLİNMİŞ | `10e02c8bfa36531d55d581747a9a7ee9` |
+
+```
+$ grep -c "__s4t2" frontend/src/main.js
+0
+$ git diff --stat
+ frontend/src/main.js | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+```
+
+Diff **yalnızca düzeltme** (keygen çıktısı + `esc()` yorumu). Kanca izi yok.
+
+### Kancasız SON doğrulama — oracle'a bağımlı olmayan kontrol
+
+Kanca silindikten sonra test bir kez daha koşuldu, bu sefer **kancasız** ve
+bağımsız bir yöntemle: ekrandaki metinde **ardışık BIP-39 sözlük kelimesi**
+dizisi aranıyor. İfadeyi bilmeyi gerektirmediği için kanca oracle'ından
+daha güçlü bir kontrol.
+
+```
+  ✓ kanca GERÇEKTEN yok: window.__s4t2 === undefined
+  ✓ ekranda ardışık BIP-39 kelime dizisi YOK (en uzun dizi < 4)
+  ✓ POZİTİF KONTROL: açık anahtar (128 hex) ekranda
+  ✓ POZİTİF KONTROL: "Anahtar çifti üretildi" ekranda
+  ✓ "12 kelime" etiketi kalkmış
+SON DOĞRULAMA YEŞİL
+```
+
+Ekran görüntüsü: `docs/evidence/screenshots/sprint4-mnemonic-canary-green.png`
+
+### Testler ve build (Task 2 sonrası)
+
+```
+node src/tx/send-transaction-test.mjs                          → 83 ✓ TÜMÜ GEÇTİ
+node src/tx/build-transaction-test.mjs                         → 21 ✓
+CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs  → 9 ✓
+npx vite build                                                  → ✓ built in 191ms
+```
+
+Console: yalnızca `favicon.ico` 404.
+
+---
+
 ## 8. Sınırlar ve devredenler
 
 - Senaryo B/C'nin `receipt`'i sahte — § 6'daki kapsam sınırı.
-- Kusurun kalan tarafı **Task 2**: yukarıdaki yeşil ekran görüntüsünde
-  mnemonic hâlâ 1. bölümde açıkça yazılı ("Mnemonic (12 kelime)"). Bu Task
-  1'in kapsamı değil; Task 2'de kanarya testiyle kapatılacak.
+- ~~Kusurun kalan tarafı **Task 2**: mnemonic 1. bölümde açıkça yazılı~~ —
+  **KAPANDI**, bkz. § 7b. Task 1'in yeşil ekran görüntüsünde mnemonic hâlâ
+  görünüyor; o kare Task 2 öncesine aittir ve öyle okunmalıdır.
 - `render.js` tesisat refactor'ü ve yazma noktası envanteri **Sprint 5'e
   ertelendi** (plan Task 3–4, dört gerekçesiyle). Bu belge sekiz bölgeyi
   birleştirmiyor; yalnızca ikisinin çeliştiği yeri kapatıyor.

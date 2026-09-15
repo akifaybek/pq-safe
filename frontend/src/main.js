@@ -22,8 +22,9 @@ import {
 } from './tx/sendTransaction.js';
 
 // Hata mesajları kullanıcının girdiği ham değeri içeriyor (hangi alanın
-// hatalı olduğunu söylemek için) ve innerHTML ile basılıyor. Sayfa aynı
-// zamanda mnemonic'i DOM'a yazdığı için kaçış şart.
+// hatalı olduğunu söylemek için) ve innerHTML ile basılıyor; kaçış bu yüzden
+// şart. (Eski gerekçe "sayfa mnemonic'i de DOM'a yazıyor" diyordu — Task 2
+// o yazmayı kaldırdı, ama kullanıcı girdisi hâlâ innerHTML'e gidiyor.)
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -199,9 +200,16 @@ document.getElementById('btn-keygen').addEventListener('click', async () => {
     currentMnemonic = generateNewMnemonic();
     currentKeys = await keygen(currentMnemonic);
     const ms = (performance.now() - t0).toFixed(1);
+    // Mnemonic EKRANA YAZILMAZ. Yazılırsa demo kaydına, ekran görüntülerine ve
+    // omuz üstünden bakan herkese düşer; üretilen anahtar da gerçek bir anahtar.
+    // Kelime sayısı / nokta maskesi / kısaltma da yazılmaz: maskenin uzunluğu
+    // bile bilgi sızdırır. Anahtar bellekte (`currentMnemonic`) duruyor ve
+    // imzalama yolu onu oradan okuyor — kanarya testi: Task 2.
     keygenOut.innerHTML = `
-      <label>Mnemonic (12 kelime)</label>
-      <div class="field">${esc(currentMnemonic)}</div>
+      <p class="ok">Anahtar çifti üretildi.</p>
+      <p>Gizli anahtar ekrana yazılmıyor; yalnızca bu sekmenin belleğinde
+      tutuluyor ve sayfa yenilenince düşer. Aşağıdakiler <strong>açık</strong>
+      anahtar bileşenleri — zincirde zaten herkese açık.</p>
       <label>pkSeed</label>
       <div class="field">${currentKeys.pkSeed}</div>
       <label>pkRoot</label>
