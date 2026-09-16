@@ -334,6 +334,45 @@ kopya dosya silindi.
 
 ---
 
+### 7.3 İki süre sınırı arasındaki pay — ölçüldü
+
+**Risk:** ölçüm gününde (Task 5/6, elle mnemonic oturumu) yavaş bir arşiv
+endpoint'i paket sınırını tetikleyip **yanlış kırmızı** üretirse, teşhis için
+zaman yoktur. O yüzden iki sayı da burada yazılı.
+
+| Sınır | Değer | Yer |
+|---|---|---|
+| Paket seviyesi (genel) | **180.000 ms** | `send-transaction-test.mjs:38`, `TEST_TIMEOUT_MS` ile değişir |
+| Oracle `wait()` sınırı | **20.000 ms** | `:468`, `TEST_WAIT_TIMEOUT_MS` ile değişir |
+| ethers tek HTTP isteği (varsayılan) | **300.000 ms** | `node_modules/ethers/lib.commonjs/utils/fetch.js:402` |
+
+**Ölçülen gerçek süreler** (15 Eylül 2026, 3'er koşu):
+
+```
+tam paket (oracle dahil) : 1,39 / 1,17 / 1,16 sn
+oracle YOK (değişken çıkarıldı) : 0,13 / 0,13 / 0,13 sn
+=> canlı oracle bölümü  : ~1,0-1,26 sn   (7 canlı çağrı, ~0,16 sn/çağrı)
+```
+
+**PAY: 180 sn / 1,26 sn ≈ 143×.** Bölümün sınırı tetiklemesi için her çağrının
+bugünkünden ~140 kat yavaşlaması gerekir (~23 sn/çağrı) — bu "yavaş endpoint"
+değil, bozuk endpoint'tir. **Pay rahat; paket sınırı büyütülmedi.**
+
+#### Yapısal boşluk — bilinerek bırakıldı
+
+Bölümdeki 7 canlı çağrının **ikisi bizim sınırımızla korunmuyor**:
+`sendExecute(...)` içeride `tx.wait()`'i **süre parametresiz** çağırıyor
+(`src/tx/sendTransaction.js:227`) ve o dosya **kapsam dışı** (gönderim yolu,
+Global Constraints). Receipt guard'ı geçtikten sonra receipt kaybolursa o iki
+çağrı süresiz yoklar ve **yalnızca paket sınırı** onları keser.
+
+Sonuç sıralamayla birlikte kabul edilebilir: o durumda paket 180 sn'de
+**kırmızı** biter (asılmaz), ve § 7.2'nin taşıması sayesinde 18 saf fonksiyon
+assertion'ı **o kesintiden önce çoktan koşmuş** olur. Kalıcı çözüm
+`sendTransaction.js`'e süre parametresi eklemek; Sprint 5 kalemi.
+
+---
+
 ## 7b. Task 2 — mnemonic'in DOM'dan kaldırılması
 
 ### Ölçülen kusur ve TEKLİĞİ (satır numaraları Task 1 sonrası YENİDEN doğrulandı)
