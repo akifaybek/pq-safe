@@ -15,7 +15,9 @@ anahtarı kullanılmadı, MetaMask açılmadı, RPC çağrısı yapılmadı. Tek
 
 **Sonuç: `FALLBACK_SONUC = DENETİMLİ_AĞ`**
 
-Gereği: Task 9'da proxy yolu denenir (30–45 dakika), doğal tetikleme beklenmez.
+Gereği: Task 9'da proxy yolu denenir, doğal tetikleme beklenmez.
+**Maliyet 60–90 dakika** ve **Task 9 Task 10'dan SONRA koşuyor** — ikisinin de
+gerekçesi § 1.6 ve § 1.8'de.
 
 ### 1.1 Yöntem — neyin delil sayıldığı
 
@@ -113,13 +115,35 @@ RPC-katmanı hatasıdır — dalın savunmak için var olduğu durumun ta kendis
 yalnızca kaynağı denetimli. *"Kendi taklidinle sınama"* kuralı **kendi kodunun**
 taklidini yasaklar, denetimli bir ağ koşulunu değil.
 
-**Maliyet: 30–45 dakika**, beş dakika değil.
+**Maliyet: 60–90 dakika.** (İlk tahmin 30–45'ti; proxy'nin `.env`'e
+konacağı varsayımına dayanıyordu. § 1.8 o varsayımı çürüttü.)
 
-### 1.7 Task 9 için not
+### 1.7 Task 9 için not — oracle ekran notu DEĞİL
 
-Dal koşturulduğunda doğrulanacaklar: ekranda *"tahmin başarısız oldu, sabit
-limite düşüldü"* notu çıkıyor (F9) ve kullanılan limit **350.000**
-(`sendTransaction.js:116`).
+Dal koşturulduğunda doğrulanacak şey **MetaMask onay ekranındaki gas
+limitinin 350.000 olması** (`sendTransaction.js:116`). Ekran notu (F9)
+**iptal senaryosunda hiç render edilmiyor** — sebebi ve sonucu § 2.2'de.
+
+### 1.8 PROXY HEDEFİ — `.env` DEĞİL, MetaMask'in ağ tanımı (ölçüldü)
+
+Proxy'nin nereye konacağı **ölçülmeden varsayılamaz**; ölçüm iki ayrı sağlayıcı
+yolu gösterdi:
+
+| Yol | Sağlayıcı | Çağrılar |
+|---|---|---|
+| **MetaMask** — `BrowserProvider(window.ethereum).getSigner()` (`sendTransaction.js:15,24`) | MetaMask'in kendi ağ tanımı | `signer.call` `:125` (ön-uçuş) · **`signer.estimateGas` `:201` (HEDEF)** · `signer.sendTransaction` `:211` · negatif kanıt (`main.js:882`) |
+| Uygulamanın RPC'si — `JsonRpcProvider(VITE_SEPOLIA_RPC_URL)` (`sepolia.js:18-24`) | `.env` | `readNonce`, `readDigest`, `readBalance`, `readOwnerPublicKey` (`pqwallet.js:26`) |
+
+**`VITE_SEPOLIA_RPC_URL`'e proxy koymak hedef dal için HİÇBİR ŞEY YAPMAZ** —
+`signer.estimateGas` o yoldan geçmiyor. Bu, SAPMA 3'ün kararının doğrudan
+sonucu: negatif kanıt ve gönderim bilerek MetaMask signer'ında tutuldu.
+
+Süre farkının sebebi proxy'nin kendisi değil, MetaMask tarafı: proxy **tam
+geçirgen** olmak zorunda (MetaMask arka planda `eth_chainId`, `eth_blockNumber`,
+`eth_getBalance`, `net_version` yokluyor), `chainId` 11155111 **korunmalı**
+(yeni ağ eklenirse `chainChanged` yayılır, `watchWalletChanges`
+(`sendTransaction.js:43`) bağlantıyı düşürür ve dala hiç gelinmez), ve geri
+alma + geri alındığının doğrulanması işin parçası.
 
 ---
 
@@ -128,6 +152,53 @@ limite düşüldü"* notu çıkıyor (F9) ve kullanılan limit **350.000**
 **Task 9'da kapatılacak.** Analiz gerekmiyor: MetaMask'te "Reddet" doğrudan
 tetiklenebilir bir kullanıcı eylemi. Beklenen: ekranda iptal mesajı, `signed`
 korunuyor, buton durumu tutarlı, zincire hiçbir şey gitmiyor.
+
+### 2.1 İki dal TEK KOŞUDA kapanıyor — ve bunun bir bedeli var
+
+Akış ikisini arka arkaya diziyor:
+
+```
+estimateGas PATLAR (proxy)  →  gasLimit = GAS_FALLBACK = 350.000n
+                            →  signer.sendTransaction  →  MetaMask açılır
+                            →  İPTAL  →  ACTION_REJECTED (main.js:780)
+```
+
+İptal hem `ACTION_REJECTED`'ı kapatıyor, hem de 350.000 limitli **gerçek bir
+tx'i önlüyor** — nonce yanmıyor, sıfır gaz.
+
+### 2.2 🔴 AÇIK KALEM — iptal dalın HESABINI kapatır, GÖSTERİMİNİ değil
+
+**Bu, raporun fazla iddia etmemesi için yazılıyor.**
+
+`main.js:694`'teki *"tahmin başarısız oldu, sabit limite düşüldü"* notu
+`sendExecute` **başarıyla döndükten sonra** üretiliyor. İptal edilirse
+`sendExecute` fırlatır, `:694`'e **hiç gelinmez**, ve `catch` `sendOut`'u
+*"İşlem MetaMask'te iptal edildi"* ile ezer (`main.js:780-782`). `gasEstimated`
+değişkeni de o kapsamda tanımlı değildir.
+
+| Task 9'da koşan | Task 9'da KOŞMAYAN |
+|---|---|
+| `catch` dalı, `gasLimit = GAS_FALLBACK` ataması (`sendTransaction.js:207`) | Not render'ı (`main.js:694`) |
+| `gasEstimated = false` ataması (`:208`) | `gasNote`'un `sendOut`'a yazılması |
+
+**Bu yüzden `GAS_FALLBACK`'in oracle'ı ekran notu DEĞİL, MetaMask onay
+ekranındaki gas limitidir** — cüzdana giden gerçek parametre. Ayırt edici sayı:
+
+| Dal koştuysa | Koşmadıysa |
+|---|---|
+| `350.000` (sabit) | `estimated × 1,2 ≈ 259.000` |
+
+**Kapanmamış kalan:** not render'ının gerçekten o metni ürettiği **sınanmadı**.
+Kapatmak için 350.000 limitli **gerçek bir tx** göndermek gerekir; bu Sprint 4
+kapsamında değil (nonce yakar, Task 5/6'nın varsayımını bozar) — **Sprint 5
+kararı.** Rapor bu satırı sınanmış gibi sunmaz.
+
+> **İki oracle birlikte gerekiyor, biri tek başına yetmiyor:**
+>
+> | Oracle | Kanıtladığı | Tek başına neden yetmez |
+> |---|---|---|
+> | Proxy log'u: `eth_estimateGas`'a hata döndü | Dala **girildi** | İptal edilince `eth_sendTransaction` proxy'ye **hiç ulaşmaz** — proxy `gasLimit`'i göremez |
+> | MetaMask onay ekranı: limit `350.000` | **Hangi değer** kullanıldı | Tek başına "tahmin mi patladı, kullanıcı mı elle girdi" ayrımını yapmaz |
 
 ---
 
@@ -142,3 +213,15 @@ korunuyor, buton durumu tutarlı, zincire hiçbir şey gitmiyor.
   **varsaymıyor**, koşulu doğrudan üretiyor.
 - `receipt.status === 0` dalının PQWallet'ın **kendi** revert'iyle sınanması bu
   belgenin kapsamı dışında — Foundry, `contracts/test/`, **Hakan'ın alanı**.
+- **MetaMask onay ekranında gas limitinin NEREDE göründüğü ÖLÇÜLMEDİ.** Ana
+  ekranda kendi ücret tahmini gösteriliyor olabilir ve tx'in `gasLimit`'i
+  "Gelişmiş/Düzenle" görünümüne düşebilir. Bu ölçüm MetaMask'in açılmasını
+  gerektiriyor (Akif'in ortamı, cüzdan kilidi onda) ve **bu görevde
+  yapılamadı**. Plan Task 9 Adım 4 bunu varsaymıyor, **ölçtürüyor**: önce ana
+  ekrana bakılır, yoksa gelişmiş görünüm açılır, ve **hangisinde bulunduğu
+  kanıt notuna yazılır**. Ayırt edici alan **gas limit**, "estimated fee"
+  DEĞİL — yanlış alandan okunan sayı dalı kanıtlamaz.
+- K3'ün kendisi **Task 10'dan sonraya alındı** (spec § 1 K3 revizyon kutusu,
+  plan Task 9 başlığı): proxy MetaMask'in ağ tanımına giriyor, bu repo dosyası
+  olmadığı için diff kapısı göremiyor, ve kayıt kesinleşmeden koşarsa kaydı
+  kirletme riski var.

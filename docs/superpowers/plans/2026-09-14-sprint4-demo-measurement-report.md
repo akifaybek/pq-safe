@@ -1094,70 +1094,6 @@ git push
 
 ---
 
-## Task 9: İki dalın sınanması
-
-**Files:**
-- Modify: `docs/evidence/crypto-tests/sprint4-untested-branches.md`
-- Create: `docs/evidence/screenshots/sprint4-action-rejected.png`
-- Create: `docs/evidence/screenshots/sprint4-gas-fallback.png` *(yalnızca
-  `FALLBACK_SONUC ≠ ÖLÜ_KOD` ise)*
-
-**Interfaces:**
-- Consumes: Task 8'in `FALLBACK_SONUC`
-
-- [ ] **Adım 1: `ACTION_REJECTED` — gerçekten beş dakikalık iş**
-
-Gönder'e basılır, MetaMask'te **Reddet**. Beklenen: ekranda iptal mesajı,
-`signed` korunuyor, buton durumu tutarlı, zincire hiçbir şey gitmiyor.
-Ekran görüntüsü alınır.
-
-- [ ] **Adım 2: `GAS_FALLBACK` — `FALLBACK_SONUC`'a göre**
-
-**`DOĞAL` ise:** doğal yoldan tetiklenir.
-
-**`DENETİMLİ_AĞ` ise:** MetaMask'in Sepolia RPC adresi yerel küçük bir proxy'ye
-çevrilir; proxy her metodu geçirir, **yalnızca `eth_estimateGas`'a hata döner**.
-Ön-uçuş sağlıklı geçer, tahmin patlar, dal koşar.
-
-> Bu **enjeksiyon değildir**: kodumuzun tek satırı değişmiyor, ethers'ın kendi
-> yolu, gerçek handler, gerçek MetaMask. Üretilen şey gerçek bir RPC-katmanı
-> hatası — dalın savunmak için var olduğu durumun ta kendisi, sadece kaynağı
-> denetimli. "Kendi taklidinle sınama" kuralı **kendi kodunun** taklidini
-> yasaklar, denetimli bir ağ koşulunu değil.
->
-> Maliyet: 30–45 dakika, beş dakika değil.
-
-**`ÖLÜ_KOD` ise:** sınama yapılmaz, Task 8'in bulgusu nihai.
-
-- [ ] **Adım 3: Ekranda "tahmin başarısız, sabit limite düşüldü" notunun
-      çıktığını ve limitin **350.000** olduğunu doğrula** (sınandıysa)
-
-- [ ] **Adım 4: Mevcut testler + build**
-
-```bash
-cd /Users/akif/pq-safe/contracts
-EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
-  0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
-cd ../frontend
-node src/tx/send-transaction-test.mjs
-node src/tx/build-transaction-test.mjs
-CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
-npx vite build
-```
-Beklenen: **83 · 21 · 9** · build geçer. Console: yalnızca favicon 404.
-(`CAST_EXPECTED` olmadan `pqwallet-test.mjs` bilerek başarısız olur — Task 1
-Adım 5'teki kutu.)
-
-- [ ] **Adım 5: Commit (komut Akif'e verilir)**
-
-```bash
-git add docs/evidence/crypto-tests/sprint4-untested-branches.md docs/evidence/screenshots/
-git commit -m "docs(evidence): ACTION_REJECTED ve GAS_FALLBACK dalları kapatıldı"
-git push
-```
-
----
-
 ## Task 10: Diff kapısı → video finali
 
 **Files:**
@@ -1184,8 +1120,9 @@ eşit değil →  video YENİDEN ÇEKİLİR
 > Bu bir md5 karşılaştırmasıdır ve **öyle kalır.** `KAYIT_COMMIT` (Task 6
 > Adım 4) buraya **girmez.**
 >
-> **Neden:** Task 8 ve Task 9 kanıt notu commit'liyor, yani `HEAD` kayıttan
-> sonra **zorunlu olarak** ilerliyor. Kapıyı `KAYIT_COMMIT == HEAD`'e bağlarsak
+> **Neden:** Task 8'in kanıt notu commit'lendi (ve Task 9 bu kapıdan sonra
+> bir tane daha commit'leyecek), yani `HEAD` kayıttan sonra **zorunlu olarak**
+> ilerliyor. Kapıyı `KAYIT_COMMIT == HEAD`'e bağlarsak
 > beş dosyanın tek baytı değişmese bile kapı **yanlış tetiklenir** ve yeniden
 > çekim ister — bedeli ikinci bir elle mnemonic oturumu artı bir gerçek tx.
 > Kapının ölçtüğü şey **kaydedilen UI'ın değişip değişmediğidir**, reponun
@@ -1198,8 +1135,17 @@ eşit değil →  video YENİDEN ÇEKİLİR
 > karşılaştıralım"* diye aynı tuzağa girmesin.
 
 `index.html`'in dahil olması şart: **kamera DOM'u görüyor, mantığı değil.**
-Task 9'da bir uyarı satırı veya yeni `.class` eklendiyse mantık dosyaları hiç
-değişmeden kayıt ile gönderilen UI ayrışır.
+Kayıttan sonra bir uyarı satırı veya yeni `.class` eklendiyse mantık dosyaları
+hiç değişmeden kayıt ile gönderilen UI ayrışır.
+
+> **Task 9 artık bu kapının ARKASINDA** (Task 10'dan sonra koşuyor), yani
+> kapının kontrol ettiği pencerede K3'ün dal testleri **henüz yapılmamış**
+> olur. Kapı buna rağmen gerekli: Task 8'in kanıt notu commit'lendi ve
+> Task 5B/6 arasında `index.html`'e dokunulmuş olabilir.
+>
+> **Kapının GÖREMEDİĞİ şey Task 9'un ortam değişikliğidir** (MetaMask'in RPC
+> ucu) — repo dosyası olmadığı için md5'e girmiyor. Task 9'un kayıttan sonraya
+> alınmasının sebebi tam olarak budur; ayrıntı Task 9'un başındaki kutuda.
 
 Dondurulmuş `digest.js` / `buildTransaction.js` de sette: eşit çıkmaları
 dondurmanın tuttuğunun yan kanıtıdır.
@@ -1228,6 +1174,190 @@ olarak kalır.**
 ```bash
 git add docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md
 git commit -m "docs(evidence): diff kapısı sonucu — video finali"
+git push
+```
+
+---
+
+## Task 9: İki dalın sınanması — **TEK OTURUM, SIFIR GAZ** (Task 10'DAN SONRA)
+
+> ### NEDEN TASK 10'DAN SONRAYA TAŞINDI
+>
+> Task 9 `DENETİMLİ_AĞ` sonucu yüzünden **MetaMask'in ağ tanımına** dokunmak
+> zorunda (aşağıda ölçüldü). Bu, repo dosyalarına dokunmayan bir **ortam**
+> değişikliği — ve Task 10'un diff kapısı yalnızca **beş repo dosyasının**
+> md5'ine bakıyor, yani **bu değişikliği GÖREMEZ.**
+>
+> Risk somut: MetaMask'in RPC'si eski hâline döndürülmezse, ya da Task 10
+> **yeniden çekim** tetiklerse, taze kayıtta MetaMask arayüzünde `localhost`
+> RPC görünür — üstelik o kayıt **gerçek bir tx** taşır, yani proxy gerçek
+> gönderim yolunda olur. Kapı bunu yakalayamaz çünkü hiçbir dosya değişmemiştir.
+>
+> **Kayıt kesinleştikten sonra koşarsa risk SIFIRLANIYOR.** Task 9 kritik yolda
+> değil (60–90 dk, kimseyi bloke etmiyor) ve sonucu yalnızca rapora giriyor.
+> Kaydı kirletebilecek bir pencerede koşmanın gerekçesi yok.
+>
+> **Yeni sıra:** Task 0 → Task 5 → Task 5B → Task 6 → **Task 10 (kapı kapanır)**
+> → **Task 9** → Task 11/12. Spec § 5'teki sıra anahtarı da buna göre
+> güncellendi (K3, K4'ten sonra).
+
+**Files:**
+- Modify: `docs/evidence/crypto-tests/sprint4-untested-branches.md`
+- Create: `docs/evidence/screenshots/sprint4-gas-fallback-metamask-350k.png`
+- Create: `docs/evidence/screenshots/sprint4-action-rejected.png`
+- Create: `docs/evidence/screenshots/sprint4-metamask-rpc-restored.png`
+
+**Interfaces:**
+- Consumes: Task 8'in `FALLBACK_SONUC = DENETİMLİ_AĞ`
+
+### İKİ DAL TEK KOŞUDA KAPANIR — sıfır gaz, zincire hiçbir şey gitmez
+
+Task 7'nin "HÂLÂ SINANMADI" listesi tam iki kalemdi ve akış ikisini arka arkaya
+diziyor:
+
+```
+estimateGas PATLAR (proxy)  →  gasLimit = GAS_FALLBACK = 350.000n
+                            →  signer.sendTransaction  →  MetaMask açılır
+                            →  İPTAL  →  ACTION_REJECTED (main.js:780)
+```
+
+İptal **hem** `ACTION_REJECTED`'ı kapatıyor **hem de** 350.000 limitli **gerçek
+bir tx'i önlüyor**. Nonce yanmıyor, Task 5/6'nın nonce varsayımı korunuyor.
+
+### PROXY HEDEFİ: **MetaMask'in ağ tanımı** — `.env` DEĞİL (ölçüldü)
+
+| Yol | Sağlayıcı | Çağrılar |
+|---|---|---|
+| **MetaMask** — `BrowserProvider(window.ethereum).getSigner()` (`sendTransaction.js:15,24`) | MetaMask'in kendi ağ tanımı | `signer.call` `:125` (ön-uçuş) · **`signer.estimateGas` `:201` (HEDEF)** · `signer.sendTransaction` `:211` |
+| Uygulamanın RPC'si — `JsonRpcProvider(VITE_SEPOLIA_RPC_URL)` (`sepolia.js:18-24`) | `.env` | `readNonce`, `readDigest`, `readBalance`, `readOwnerPublicKey` |
+
+**`VITE_SEPOLIA_RPC_URL`'e proxy koymak HİÇBİR ŞEY YAPMAZ** — hedef çağrı o
+yoldan geçmiyor. Bu, SAPMA 3'ün kararının doğrudan sonucu.
+
+**Süre: 60–90 dakika** (eski tahmin 30–45'ti, `.env` varsayımına dayanıyordu).
+Fark proxy'nin kendisi değil, MetaMask tarafı:
+- Proxy **tam geçirgen** olmalı: MetaMask arka planda sürekli yokluyor
+  (`eth_chainId`, `eth_blockNumber`, `eth_getBalance`, `net_version`). Oyuncak
+  bir pass-through cüzdanı kilitler.
+- **`chainId` 11155111 KORUNMALI.** Yeni ağ olarak eklenirse MetaMask
+  `chainChanged` yayar → `watchWalletChanges` (`sendTransaction.js:43`)
+  bağlantıyı düşürür → dala hiç gelinmez. Doğru yol: **mevcut Sepolia ağının
+  RPC ucunu değiştirmek**, yeni ağ eklemek değil.
+- Geri alma ve geri alındığının **doğrulanması** işin parçası.
+
+- [ ] **Adım 1: Proxy'yi kur ve tam geçirgenliğini doğrula**
+
+Her metodu yukarı geçirir, **yalnızca `eth_estimateGas`'a hata döner.**
+Kurulduktan sonra, hata enjeksiyonu **kapalıyken**, cüzdanın normal çalıştığı
+görülür (bakiye okunuyor, ağ göstergesi sağlıklı). Bu adım geçilmeden
+enjeksiyon açılmaz — yoksa "proxy mi bozuk, dal mı koştu" ayrılamaz.
+
+- [ ] **Adım 2: MetaMask'in Sepolia RPC ucunu proxy'ye çevir**
+
+Yeni ağ **EKLENMEZ**, mevcut Sepolia'nın RPC ucu değiştirilir (`chainId`
+11155111 aynı kalsın). Değiştirdikten sonra sayfada bağlantının **düşmediği**
+doğrulanır — düştüyse `chainChanged` yayılmış demektir, kurulum yanlış.
+
+- [ ] **Adım 3: İmzala → Gönder → MetaMask onay ekranı**
+
+Buraya kadar zincire hiçbir şey gitmedi. MetaMask açıldığında **DURULUR**.
+
+- [ ] **Adım 4: `GAS_FALLBACK` KANITI — MetaMask onay ekranında limit 350.000**
+
+> **Oracle neden ekran notu DEĞİL:** `main.js:694`'teki *"tahmin başarısız
+> oldu, sabit limite düşüldü"* notu `sendExecute` **başarıyla döndükten sonra**
+> üretiliyor. İptal edilirse `sendExecute` fırlatır, `:694`'e hiç gelinmez ve
+> `catch` `sendOut`'u *"İşlem MetaMask'te iptal edildi"* ile ezer.
+> **İptal senaryosunda o not EKRANDA HİÇ GÖRÜNMEZ.**
+>
+> Bunun yerine cüzdana giden **gerçek parametre** okunur. Ayırt edici sayı net:
+>
+> | Dal koştuysa | Koşmadıysa |
+> |---|---|
+> | `gasLimit = 350.000` (sabit) | `estimated × 1,2 ≈ 259.000` |
+>
+> İkisi karışmaz.
+
+**(a) SAYININ YERİ ÖLÇÜLECEK — VARSAYILMAYACAK.** MetaMask ana onay ekranında
+genelde **kendi ücret tahminini** gösterir; tx'in `gasLimit`'i
+**"Gelişmiş / Düzenle"** görünümüne düşebilir. Sıra:
+
+1. Önce **ana onay ekranı** okunur. `350.000` orada görünüyorsa ekran görüntüsü
+   oradan alınır.
+2. Görünmüyorsa **"Gelişmiş/Düzenle" (gas düzenleme)** görünümü açılır ve
+   `Gas limit` alanı oradan okunur.
+3. **Hangisinde bulunduğu kanıt notuna yazılır.** Bu, bu projede daha önce
+   ölçülmemiş bir MetaMask davranışıdır; sonraki okuyan aynı aramayı baştan
+   yapmasın.
+
+> **DİKKAT — ücret tahmini ile gas limiti aynı şey değil.** Ayırt edici alan
+> **gas limit**, "estimated fee" değil. Yanlış alandan okunan bir sayı dalı
+> kanıtlamaz.
+
+- [ ] **Adım 5: İKİ ORACLE — biri dalın GİRİLDİĞİNİ, diğeri DEĞERİ kanıtlar**
+
+| Oracle | Neyi kanıtlar | Neden tek başına yetmez |
+|---|---|---|
+| **Proxy log'u**: `eth_estimateGas`'a hata döndüğü | Dala **girildi** | İptal edilince `eth_sendTransaction` proxy'ye **hiç ulaşmaz**, yani proxy `gasLimit`'in 350.000 olduğunu **göremez** |
+| **MetaMask onay ekranı**: limit 350.000 | **Hangi değerin** kullanıldığı | Tek başına "tahmin mi patladı, kullanıcı mı elle girdi" ayrımını yapmaz |
+
+İkisi birlikte zinciri kapatıyor: tahmin patladı **ve** sonucu 350.000 oldu.
+
+- [ ] **Adım 6: `ACTION_REJECTED` — MetaMask'te REDDET**
+
+Beklenen: `sendOut` *"İşlem MetaMask'te iptal edildi. İmza hâlâ geçerli, tekrar
+gönderebilirsiniz."* (`main.js:780-782`), `signed` **korunuyor**, buton durumu
+tutarlı, zincire hiçbir şey gitmiyor. Ekran görüntüsü alınır.
+
+Ayrıca `cast nonce <PQWALLET>` ile nonce'un **değişmediği** doğrulanır — iptalin
+gerçekten sıfır gaz olduğunun bağımsız kanıtı.
+
+- [ ] **Adım 7: MetaMask'in RPC'sini GERİ AL — ve geri alındığını kanıtla**
+
+Sepolia'nın RPC ucu eski değerine döndürülür, **ekran görüntüsü alınır**
+(`sprint4-metamask-rpc-restored.png`). Sayfa yenilenip cüzdan normal ağda
+bağlanıyor mu görülür.
+
+> **Bu adım atlanamaz ve diff kapısı onu KORUYAMAZ.** MetaMask ayarı repo
+> dosyası değil; Task 10 beş dosyanın md5'ine bakıyor ve bu değişikliği
+> göremez. Kapının ölçmediği bir ortam değişikliği **elle** kapatılır.
+> (Task 9 kayıttan sonraya alındığı için artık kaydı kirletemez — ama ayar yine
+> de geri alınır, çünkü sonraki her oturum bu cüzdanı kullanacak.)
+
+- [ ] **Adım 8: Mevcut testler + build**
+
+```bash
+cd /Users/akif/pq-safe/contracts
+EXPECTED=$(cast calldata "execute(address,uint256,bytes,bytes)" \
+  0x7268a7c3d52baa50486930e6ed25d29804d075b6 1000000000000000 0x 0xdeadbeef)
+cd ../frontend
+node src/tx/send-transaction-test.mjs
+node src/tx/build-transaction-test.mjs
+CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs
+npx vite build
+```
+Beklenen: **83 · 21 · 9** · build geçer. Console: yalnızca favicon 404.
+
+- [ ] **Adım 9: Kanıt notunu yaz — KAPSAM DIŞINI İDDİA ETME**
+
+`sprint4-untested-branches.md` bölüm 2 ve 3'e yazılır. **"Bitti" ölçütü
+(revize edildi):**
+
+> ~~ekranda "tahmin başarısız, sabit limite düşüldü" notu çıktı~~
+> **MetaMask onay ekranında limit 350.000 görüldü** (yeri belirtilerek)
+> **+ not render'ı (`main.js:694`) SINANMADI**
+
+**(b) İptal, dalın HESABINI kapatır, GÖSTERİMİNİ değil.** `gasLimit = 350000n`
+ataması koştu; `main.js:694`'teki not render'ı **hiç koşmadı** ve bu oturumda
+koşamaz. Bu bir **açık kalem** olarak yazılır — rapor sınanmamış bir gösterimi
+sınanmış gibi sunmaz. (Kapatmak için 350.000 limitli gerçek bir tx gerekir;
+o da Sprint 5 kararı.)
+
+- [ ] **Adım 10: Commit (komut Akif'e verilir)**
+
+```bash
+git add docs/evidence/crypto-tests/sprint4-untested-branches.md docs/evidence/screenshots/
+git commit -m "docs(evidence): ACTION_REJECTED + GAS_FALLBACK tek oturumda kapatıldı, sıfır gaz"
 git push
 ```
 

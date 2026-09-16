@@ -228,9 +228,25 @@ tx gerekirse (Sprint 5), gönderimden hemen önce üçlü boşluk kontrolü
 
 ---
 
-### K3 — Sınanmamış iki dal (**K1'den SONRA**)
+### K3 — Sınanmamış iki dal (**K1'den SONRA, ve artık K4'TEN DE SONRA**)
 
-K1 bu dalları yeniden kırabileceği için sıra böyle.
+K1 bu dalları yeniden kırabileceği için K1'den sonra.
+
+> **REVİZYON (16 Eylül) — K3, K4'ün ARKASINA alındı.** Gerekçe, K3'ün
+> `GAS_FALLBACK` analizinden çıktı (`FALLBACK_SONUC = DENETİMLİ_AĞ`, plan
+> Task 8): hedef çağrı `signer.estimateGas` ve signer **MetaMask'in**
+> sağlayıcısı, uygulamanın `VITE_SEPOLIA_RPC_URL`'i değil. Yani proxy
+> **MetaMask'in ağ tanımına** girmek zorunda — repo dosyası olmayan bir
+> **ortam** değişikliği.
+>
+> **K4'ün diff kapısı bunu göremez:** kapı beş repo dosyasının md5'ine bakıyor,
+> MetaMask ayarı hiçbirine dokunmuyor. RPC geri alınmazsa ya da kapı yeniden
+> çekim tetiklerse, taze kayıtta MetaMask arayüzünde `localhost` RPC görünür ve
+> proxy **gerçek bir tx'in** yolunda olur.
+>
+> K3 kayıt kesinleştikten sonra koşarsa bu risk **sıfırlanıyor**; K3 kritik
+> yolda değil (60–90 dk, kimseyi bloke etmiyor) ve sonucu yalnızca rapora
+> giriyor. Ayrıntı ve adımlar: plan Task 9.
 
 #### `ACTION_REJECTED`
 MetaMask'te "Reddet". Gerçekten beş dakikalık iş, ek analiz gerekmiyor.
@@ -255,9 +271,15 @@ Analiz **üç sonuçlu**:
 | **Yalnızca denetimli ağ koşuluyla** | Proxy yolu denenir (aşağıda) |
 | **Yapısal olarak ölü kod** | Sınama yok. Kanıt notuna dalın neden var olduğu ve neden erişilemediği yazılır. **Bu bir bulgudur, başarısızlık değil** |
 
-**Proxy yolu:** MetaMask'in Sepolia RPC adresi yerel küçük bir proxy'ye
-çevrilir; proxy her metodu geçirir, **yalnızca `eth_estimateGas`'a hata
-döner**. Ön-uçuş sağlıklı geçer, tahmin patlar, hedef dal koşar.
+**Proxy yolu:** **MetaMask'in ağ tanımındaki** Sepolia RPC ucu yerel küçük bir
+proxy'ye çevrilir; proxy her metodu geçirir, **yalnızca `eth_estimateGas`'a
+hata döner**. Ön-uçuş sağlıklı geçer, tahmin patlar, hedef dal koşar.
+
+> **Hedef `.env` DEĞİL — ölçüldü (plan Task 8).** `signer.estimateGas`
+> MetaMask'in sağlayıcısından gidiyor (`BrowserProvider(window.ethereum)`,
+> `sendTransaction.js:15,24`); uygulamanın `VITE_SEPOLIA_RPC_URL`'i yalnızca
+> salt-okunur çağrıları taşıyor (`readNonce`, `readDigest`, …). `.env`'e
+> konan bir proxy hedef dal için hiçbir şey yapmaz.
 
 Bu **enjeksiyon değildir**: bizim kodumuzun tek satırı değişmiyor, ethers'ın
 kendi yolu, gerçek handler, gerçek MetaMask. Üretilen şey gerçek bir RPC-katmanı
@@ -265,10 +287,25 @@ hatası — dalın savunmak için var olduğu durumun ta kendisi, sadece kaynağ
 denetimli. "Kendi taklidinle sınama" kuralı **kendi kodunun** taklidini
 yasaklıyor, denetimli bir ağ koşulunu değil.
 
-**Maliyet:** 30–45 dakika, beş dakika değil.
+**Maliyet:** **60–90 dakika**. (İlk tahmin 30–45'ti ve proxy'nin `.env`'e
+konacağı varsayımına dayanıyordu; ölçüm o varsayımı çürüttü. Fark MetaMask
+tarafından geliyor: proxy tam geçirgen olmalı, `chainId` 11155111 korunmalı —
+yeni ağ eklenirse `chainChanged` bağlantıyı düşürür ve dala hiç gelinmez — ve
+ayarın geri alınması + doğrulanması işin parçası.)
 
 **"Bitti" ölçütü:** `ACTION_REJECTED` ekranda görüldü + ekran görüntüsü ·
-`GAS_FALLBACK` için analiz sonucu üç daldan birine yazıldı ve gereği yapıldı.
+`GAS_FALLBACK` için analiz sonucu üç daldan birine yazıldı ve gereği yapıldı ·
+**MetaMask onay ekranında gas limitinin 350.000 olduğu görüldü** (yeri
+belirtilerek) **ve not render'ının SINANMADIĞI açıkça yazıldı.**
+
+> **Ölçüt neden "ekranda not" değil:** iki dal tek koşuda, sıfır gazla
+> kapanıyor (tahmin patlar → 350.000 → MetaMask → İPTAL). Ama iptal
+> `sendExecute`'u fırlatıyor ve `main.js:694`'teki *"tahmin başarısız oldu,
+> sabit limite düşüldü"* notu **hiç render edilmiyor** — `catch` `sendOut`'u
+> iptal mesajıyla eziyor. Dalın **hesabı** koşuyor, **gösterimi** koşmuyor.
+> Oracle bu yüzden cüzdana giden gerçek parametre: `350.000` (sabit) ile
+> `estimated × 1,2 ≈ 259.000` karışmaz. Not render'ı **açık kalem** kalır;
+> kapatmak 350.000 limitli gerçek bir tx gerektirir → **Sprint 5**.
 
 **Kanıt:** `docs/evidence/crypto-tests/sprint4-untested-branches.md`
 
@@ -548,16 +585,17 @@ anahtarı** konur, ve tarih gelince değişen şey anahtar olur — görevler de
 **Senaryo A — finalden önce teslim YOK**
 
 ```
-ÖK-2  →  K1  →  K2 [kayıt=EVET]  →  K3  →  K4  →  K5  →  K6 (ÖK-2'den paralel)
+ÖK-2  →  K1  →  K2 [kayıt=EVET]  →  K4  →  K3  →  K5  →  K6 (ÖK-2'den paralel)
 ```
 
-Risk sırasına göre: koda dokunan iş önce, video en sonda UI donduktan sonra
-kapıdan geçer.
+Risk sırasına göre: koda dokunan iş önce, video UI donduktan sonra kapıdan
+geçer. **K3 kapının ARKASINDA** — MetaMask'in ağ tanımına dokunduğu ve kapı
+bunu göremediği için (yukarıdaki K3 revizyon kutusu).
 
 **Senaryo B — finalden önce teslim VAR**
 
 ```
-K2 [kayıt=HAYIR]  →  K5  →  K6  →  K1  →  K3  →  K4 (taze çekim)
+K2 [kayıt=HAYIR]  →  K5  →  K6  →  K1  →  K4 (taze çekim)  →  K3
 ```
 
 ### `kayıt = HAYIR` bayrağının gerekçesi ve iki sonucu
@@ -569,8 +607,14 @@ estimator'ı hakkında, bizim UI'ımızla ilgisi yok.
 
 **Sonuç 1 — K4'ün diff kapısı Senaryo B'de devre dışıdır.**
 Karşılaştırılacak bir kayıt yok; çekim en sonda ve zaten dondurulmuş UI
-üzerinde yapılıyor. Kapı yalnızca Senaryo A'da anlamlı: orada kayıt K3'ten
-**önce** alındığı için sonradan değişme riski var.
+üzerinde yapılıyor. Kapı yalnızca Senaryo A'da anlamlı: orada kayıt alındıktan
+sonra UI'ın değişme riski var.
+
+> **K3 artık kapıdan sonra olduğu için kapının koruduğu pencere daraldı** —
+> ama kapı yine gerekli: K2 ile K4 arasında kanıt notu commit'leri var ve
+> `index.html`'e dokunulmuş olabilir. Kapının **hiç göremediği** risk ise
+> K3'ün MetaMask ortam değişikliğidir; o elle geri alınır (plan Task 9
+> Adım 7), kapıya bırakılmaz.
 
 **Sonuç 2 — K1'in canlı regresyon kanıtı Senaryo B'de K4'e kayar.**
 Senaryo A'da K2'nin gerçek tx'i cila **sonrası** atıldığı için aynı zamanda
