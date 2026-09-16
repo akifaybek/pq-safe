@@ -1,3 +1,10 @@
+# NOT: bu dosya git'te İZLENİYOR (.gitignore daraltıldı, 16 Eylül).
+# Buraya mnemonic, private key, anahtarlı RPC URL'si veya .env
+# içeriği YAZILMAZ. Anahtar dosyalarına yalnızca ADIYLA atıf yapılır.
+# Commit öncesi tarama zorunlu: BIP-39 ardışık kelime (satır sınırı
+# yok sayılarak), 64 hane hex, sağlayıcı anahtarı deseni.
+# Gerekçe ve ilk taramanın sonucu: bkz. bu commit'in mesajı.
+
 Task 1: complete (commits f1cb5c1..4ef85a2, review clean)
 Task 2: complete (commits 4ef85a2..13ec307, review clean)
 Task 3: complete (commits 47a842a..68a885a, review clean)
