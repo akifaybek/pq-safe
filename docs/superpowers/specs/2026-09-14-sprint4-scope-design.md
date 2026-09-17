@@ -1,7 +1,11 @@
 # Sprint 4 Kapsam Belgesi — demo cilası, ölçüm, rapor
 
 **Tarih:** 14 Eylül 2026
-**Pencere:** 14–20 Eylül (altı gün)
+**TESLİM: 30 Eylül 2026. Teyit edildi 17 Eylül 2026.** Tek terminal tarih;
+sonrasında ayrı final ya da demo aşaması yok. **Sıra anahtarı: SENARYO A,
+kesin** (§ 5). Takvim: plan § Takvim.
+**Pencere:** 14–30 Eylül. (14 Eylül'de "14–20 Eylül, altı gün" yazılmıştı;
+teslim tarihi belirsizken kurulan varsayımdı, teyitle güncellendi.)
 **Taban commit:** `a5ae60c` (origin/main ile senkron)
 **Zincir durumu (enstantane, 17 Eylül 2026 · blok 11725303):**
 `PQWallet.nonce()` = 2 · bakiye **0,0509 ETH** · gas hesabı `0xe0BF2D19…B7351`
@@ -344,10 +348,10 @@ yokluğu) — ve **üçünde de düzeltme gönderim yolunun dosyalarına indi.**
 **"Bitti" ölçütü:** **tek çekim, kesme yok**, SHA-256 kanıt notunda **ve — taze
 çekim yapıldıysa — `cast` ile bağımsız doğrulama** (nonce, bakiye, receipt).
 
-> **`cast` ölçütü senaryodan bağımsızdır.** Senaryo A'da gereksiz görünür,
-> çünkü K1'in canlı regresyon kanıtını K2'nin tx'i taşır. Ama diff kapısı
-> yeniden çekim tetiklerse o taze tx K1'in canlı kanıtını **taşımaya başlar** ve
-> aynı boşluk A'da da açılır. Ölçüt her iki senaryoda da duruyor.
+> **`cast` ölçütü A'da da gerekli.** İlk bakışta gereksiz görünür, çünkü K1'in
+> canlı regresyon kanıtını K2'nin tx'i taşır. Ama diff kapısı yeniden çekim
+> tetiklerse o taze tx K1'in canlı kanıtını **taşımaya başlar** ve aynı boşluk
+> A'da da açılır. Ölçüt bu yüzden duruyor. (Silinen Senaryo B'de de duruyordu.)
 
 Kesme,
 "kesilen yerde ne oldu" itirazını davet eder ve bu videonun değeri tam olarak
@@ -556,37 +560,32 @@ sebebi değil.
 
 ## 5. Sıralama — sıra anahtarı, "ortak ön ek" değil
 
-TEKNOFEST'in 30 Eylül öncesi rapor teslim tarihi olup olmadığı **belirsiz**.
-
-**Görev içerikleri senaryodan bağımsızdır; değişen yalnızca sıradır.** Plan bu
-yüzden "ortak ön ek" diye kesilmez: görevler bir kez yazılır, başa bir **sıra
-anahtarı** konur, ve tarih gelince değişen şey anahtar olur — görevler değil.
-
-> **Varsayılan sıra anahtarı: SENARYO A.** Plan bu varsayımla yazılır.
+> **KAPANDI — 17 Eylül 2026.** Teslim tarihi teyit edildi: **30 Eylül 2026,
+> tek terminal tarih**; sonrasında ayrı final ya da demo aşaması yok.
 >
-> **Senaryo B silinmez.** Şu an belgede tuttuğumuz maliyet bir tablo satırı ve
-> bir bayrak; yanlış çıkarsa silmenin maliyeti final haftasında yeniden
-> planlama. Asimetri açık, o yüzden B duruyor.
+> Ölçüt tarihin kendisi değildi: *"30 Eylül öncesi ayrı bir rapor teslimi var
+> mı?"* Cevap **yok** → **SENARYO A KESİN.**
 >
-> **Teyit nerede aranacak:** yarışma şartnamesinin takvim bölümü ve yarışma
-> sayfasındaki duyurular — "rapor", "teslim", "değerlendirme" kelimeleri.
-> Tahminî on dakika. "Olmayabilir" ile "yok" arasındaki fark finalden iki hafta
-> önce keşfedilirse pahalıdır.
+> **SENARYO B 17 EYLÜL 2026'DA SİLİNDİ.** Tarih bilinmezken B'yi taşımanın
+> maliyeti bir tablo satırı ve bir bayraktı, asimetri onu haklı kılıyordu.
+> Tarih bilindiği için asimetri tersine döndü: ölü senaryoyu bırakmak, sonraki
+> okuyanın hangisinin geçerli olduğunu yeniden çözmesi demek. Aşağıda B'nin
+> sırası, `kayıt = HAYIR` gerekçesi ve yalnızca B'de geçerli olan Sonuç 1
+> kaldırıldı. A'da da geçerli olan gerekçeler **duruyor**.
 
-### Senaryoya bağlı olan tek şey: bir bayrak
+Plan tarihten bağımsız kurulmuştu — belirsizlik varken doğruydu. Görev
+içerikleri senaryodan bağımsızdı; değişen yalnızca sıraydı, o yüzden görevler
+bir kez yazıldı ve başa bir **sıra anahtarı** konuldu. Anahtar artık sabit.
 
-| Kalem | Senaryoya bağlı mı | Not |
-|---|---|---|
-| ÖK-2 | ❌ Hayır | Her iki senaryoda birebir aynı |
-| K1 | ❌ Hayır | İçerik aynı (**ekran tutarlılığı, ~10 satır**), yalnızca **konumu** değişiyor |
-| **K2 faz 1** | ❌ Hayır | **Birebir aynı** — ölçüm zinciri ölçüyor, UI'ı değil. İmzalar ve tahminler cila öncesi/sonrası aynı çıkar |
-| **K2 faz 2** | ✅ **EVET** | Senaryoya bağlı **tek bayrak**: `kayıt = evet/hayır` |
-| K3, K5, K6 | ❌ Hayır | İçerik aynı, konum değişiyor |
-| K4 | ✅ Kısmen | Diff kapısı yalnızca Senaryo A'da anlamlı (aşağıda) |
+### Kesinleşen bayrak
 
-### Sıra anahtarı
+| Kalem | Durum |
+|---|---|
+| ÖK-2, K1, K2 faz 1, K3, K5, K6 | Senaryodan bağımsızdı, değişmedi |
+| **K2 faz 2** | **`kayıt = EVET` — SABİT.** Senaryoya bağlı tek bayrak buydu; senaryo kesinleştiği için bayrak da kesinleşti |
+| **K4** | **Diff kapısı AKTİF.** B'de devre dışı kalacaktı |
 
-**Senaryo A — finalden önce teslim YOK**
+### Sıra anahtarı — SABİT
 
 ```
 ÖK-2  →  K1  →  K2 [kayıt=EVET]  →  K4  →  K3  →  K5  →  K6 (ÖK-2'den paralel)
@@ -596,23 +595,14 @@ Risk sırasına göre: koda dokunan iş önce, video UI donduktan sonra kapıdan
 geçer. **K3 kapının ARKASINDA** — MetaMask'in ağ tanımına dokunduğu ve kapı
 bunu göremediği için (yukarıdaki K3 revizyon kutusu).
 
-**Senaryo B — finalden önce teslim VAR**
+Gerçek tarihli takvim ve sıkışma hâlinde düşecek kalemlerin sırası: plan
+§ Takvim.
 
-```
-K2 [kayıt=HAYIR]  →  K5  →  K6  →  K1  →  K4 (taze çekim)  →  K3
-```
+### `kayıt = EVET`in sonucu
 
-### `kayıt = HAYIR` bayrağının gerekçesi ve iki sonucu
-
-Senaryo B'de K2 cila **öncesi** çalışır. Orada çekilen kayıt K4'te zaten çöpe
-gideceği için kayıt kurulumu, mnemonic tarama disiplini ve ikinci bir video
-dosyasının yönetimi harcanmaz. Δ₂ ve tablo yine alınır — Δ₂ node'un
-estimator'ı hakkında, bizim UI'ımızla ilgisi yok.
-
-**Sonuç 1 — K4'ün diff kapısı Senaryo B'de devre dışıdır.**
-Karşılaştırılacak bir kayıt yok; çekim en sonda ve zaten dondurulmuş UI
-üzerinde yapılıyor. Kapı yalnızca Senaryo A'da anlamlı: orada kayıt alındıktan
-sonra UI'ın değişme riski var.
+Kayıt cila **sonrası** alınıyor, dolayısıyla kayıt alındıktan sonra UI'ın
+değişme riski gerçek — **K4'ün diff kapısı bu yüzden gerekli.** Kayıt aynı
+zamanda 13 günde tek geri dönüşü olmayan adım; kesilmiyor.
 
 > **K3 artık kapıdan sonra olduğu için kapının koruduğu pencere daraldı** —
 > ama kapı yine gerekli: K2 ile K4 arasında kanıt notu commit'leri var ve
@@ -620,16 +610,17 @@ sonra UI'ın değişme riski var.
 > K3'ün MetaMask ortam değişikliğidir; o elle geri alınır (plan Task 9
 > Adım 7), kapıya bırakılmaz.
 
-**Sonuç 2 — K1'in canlı regresyon kanıtı Senaryo B'de K4'e kayar.**
-Senaryo A'da K2'nin gerçek tx'i cila **sonrası** atıldığı için aynı zamanda
-"refactor gönderim yolunu bozmadı" kanıtıdır. Senaryo B'de K2 cila öncesinde
-olduğu için bu rolü **taşımaz** — o senaryoda K1'in canlı kanıtı K4'ün taze
-çekimindeki gerçek tx olur.
+### K1'in canlı regresyon kanıtını K2 taşıyor
 
-Bu yüzden K4'ün "bitti" ölçütü taze çekimde `cast` doğrulaması istiyor ve
-**bu ölçüt her iki senaryoda da duruyor**: Senaryo A'da da diff kapısı yeniden
-çekim tetiklerse aynı devir gerçekleşir. Ölçütü senaryoya bağlamak, boşluğu
-yalnızca daha nadir hale getirirdi.
+K2'nin gerçek tx'i cila **sonrası** atıldığı için aynı zamanda *"refactor
+gönderim yolunu bozmadı"* kanıtıdır. (Silinen Senaryo B'de bu rol K4'ün taze
+çekimine kayıyordu; A'da kaymıyor.)
+
+K4'ün "bitti" ölçütü yine de taze çekimde `cast` doğrulaması istiyor: **diff
+kapısı yeniden çekim tetiklerse** aynı devir gerçekleşir, kanıt rolü K4'e
+geçer. Ölçütü senaryoya bağlamak boşluğu yalnızca daha nadir hale getirirdi —
+bu yüzden ölçüt A'da da duruyor. Takvimdeki 2 günlük yeniden çekim payı tam
+bu ihtimal için ayrıldı.
 
 Bedeli açık: K4'te **taze çekim zorunlu**, yani bir elle mnemonic oturumu ve
 bir tx daha. Bütçe yeterli (9 gönderim / ~88 tx payı).

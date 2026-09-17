@@ -49,9 +49,20 @@ owner mnemonic'i hiçbir komuta, hiçbir script'e verilmez.
 
 Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 
-- **Sıra anahtarı: SENARYO A** (finalden önce rapor teslimi YOK varsayımı).
-  Tarih teyit edilirse spec § 5'teki Senaryo B anahtarına geçilir; **görev
-  içerikleri değişmez**, yalnızca sıra ve K2 faz 2'nin `kayıt` bayrağı değişir.
+- **TESLİM: 30 Eylül 2026. Teyit edildi 17 Eylül 2026.** Tek terminal tarih;
+  sonrasında ayrı final ya da demo aşaması **yok**. Bugüne kadar plan tarihten
+  bağımsız kurulmuştu — belirsizlik varken doğruydu, tarih bilindiği için artık
+  bir maliyet.
+- **Sıra anahtarı: SENARYO A — KESİN.** Ölçüt tarihin kendisi değildi:
+  *"30 Eylül öncesi ayrı bir rapor teslimi var mı?"* Cevap **yok**, dolayısıyla
+  A. **Senaryo B 17 Eylül 2026'da plandan ve spec'ten SİLİNDİ** — tarih
+  bilinmezken taşımanın maliyeti bir tablo satırıydı, şimdi taşımanın maliyeti
+  sonraki okuyanın hangisinin geçerli olduğunu yeniden çözmesi.
+- **K2 faz 2 bayrağı: `kayıt = EVET` — SABİT.** Senaryoya bağlı tek bayrak
+  buydu; senaryo kesinleştiği için bayrak da kesinleşti. Kayıt, 13 günde **tek
+  geri dönüşü olmayan adım**; kesilmiyor.
+- **K4 diff kapısı AKTİF.** B'de devre dışı kalacaktı; A'da kayıt alındıktan
+  sonra UI'ın değişme riski gerçek olduğu için kapı gerekli.
 - **Claude `git commit` / `git push` ÇALIŞTIRMAZ.** Her commit adımı komutu
   metin olarak verir; Akif çalıştırır.
 - **PLAN–SPEC EŞ GÜNCELLEME:** bir plan revizyonu bir spec kalemini
@@ -101,6 +112,66 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 | `ownerPublicKey` | `0x5c0adf08…` (2. rotasyon) |
 | Referans ölçüm (A) | **216.221** gas, tx `0x320e03d9…e50da` |
 | Δ₁ | 219.104 − 216.221 = **2.883** |
+
+---
+
+## Takvim — 30 Eylül'den geriye (17 Eylül 2026'da kuruldu)
+
+**Süre tahmini değil, oturum sayısı.** Planda görev başına süre tahmini yok;
+elde olan tek sayılar Task 9 için 60–90 dk ve Global Constraints'teki
+*"inline görev ~90 dakikayı aşarsa DURDURULUR"* tavanı. Gerçek kıt kaynak
+Akif'in fiziksel varlığı, dakikalar değil. Ölçülmüş mekanik süreler (klon
+176 sn, `npm i` 16 sn, WASM 25 sn, testler + build ~3 sn) toplamda **4 dakika**
+— takvimde görünmeyecek kadar küçük.
+
+| Tarih | İş | Kim |
+|---|---|---|
+| 17 Eyl Per | C uygulaması, senaryo sabitleme, takvim | ajan |
+| 18 Eyl Cum | ÖK-2 kalanı: tarayıcı adımı, Task 0 kapanışı | **Akif** |
+| **19–20 Eyl Cmt-Paz** | **Task 5** (K2 faz 1, mnemonic oturumu) + **Task 5B** | **Akif** |
+| 21 Eyl Pzt | pay | — |
+| **22 Eyl Sal** | **Task 6** (K2 faz 2, kayıtlı gerçek tx, tek çekim) | **Akif** |
+| 23 Eyl Çar | **Task 7** (gas tablosu — Task 6'nın Δ₂'sini tüketiyor) | ajan |
+| **24 Eyl Per** | **Task 10** (diff kapısı + video finali) | Akif |
+| 25 Eyl Cum | **yeniden çekim payı, gün 1** | — |
+| 26 Eyl Cmt | **yeniden çekim payı, gün 2** | — |
+| 27 Eyl Paz | **Task 9** (K3, 60–90 dk) | Akif |
+| 28–29 Eyl Pzt-Sal | **Task 11 + 12** (rapor) | ajan + Akif |
+| **30 Eyl Çar** | **TESLİM** | — |
+
+### İki türetilmiş son tarih
+
+**Task 5'in en son başlayabileceği tarih: 21 Eylül (Pzt).** Task 6 kapı
+gününden önce bitmeli, yani en geç 23 Eylül; `5 → 5B → 6` üç oturum,
+dolayısıyla 5 en geç 21'inde başlar. Planlanan 19 Eylül'e göre **2 gün pay.**
+
+**Hakan'ın 4. maddesi için kovalama son tarihi: 24 Eylül.** Task 11 Adım 4 o
+cevap olmadan **ilerlemiyor** ve Task 11 28 Eylül'de başlıyor; 24 Eylül iki
+kovalama fırsatı bırakıyor. Soru 17 Eylül'de gönderildi — erken sormanın
+maliyeti yok, geç almanın maliyeti Task 11'in durması.
+
+### Yeniden çekim payı: 2 gün (25–26 Eylül)
+
+Kapı yeniden çekim tetiklerse bedeli: bir tam Task 6 döngüsü (90 dk tavanı)
+**artı** spec'in K4 için zorunlu kıldığı taze çekim, yani bir elle mnemonic
+oturumu ve bir tx daha, **artı** `cast` doğrulaması ve kapının yeniden
+koşması. Bir buçuk oturumluk iş; Akif'in müsaitliğine bağlı olduğu için 2
+takvim günü, hafta sonuna denk gelmesi kasıtlı.
+
+### Sıkışırsa ne düşer — sıra önceden kararlaştırıldı
+
+**23 Eylül'de Task 6 bitmemişse Task 9 ve ÖK-2 ikinci makine BİRLİKTE düşer.**
+İkisi de kritik yolda değil, toplamda bir tam gün geri veriyor.
+
+| # | Kalem | Raporda kayıp |
+|---|---|---|
+| 1 | Task 9 (K3) | İki dal koşulmamış kalır; rapor Task 8'in yapısal analizine (`DENETİMLİ_AĞ`) dayanır, koşuya değil |
+| 2 | ÖK-2 ikinci makine | Kurulum iddiası tek makinede kalır; "farklı makinede demo" zaten Sprint 5'te |
+| 3 | Cross-machine determinizm teyidi | C'nin kontrolü belgelenmiş ama ölçülmemiş varsayımla yayına girer; kaynak-SHA kontrolü bayatlamayı yine yakalar |
+| 4 | Task 7'nin ofset/kova modeli | Gas tablosu ofset modeli yerine "≤ üst sınır" verir; bedelin bir kısmı zaten ölçüme bağlı |
+
+**Kayıt kesilmez.** Onu kesmek, kurtarılabilir bir kapı arızasını kaçırılmış
+teslim tarihine çevirir.
 
 ---
 
@@ -227,9 +298,11 @@ cd pq-safe-clean && git submodule status
 Beklenen: `eef1f889a46c77d45dca013d321e9648fd3eaa7e` başında `-` veya `+`
 **olmadan** listeleniyor.
 
-- [ ] **Adım 4: Teslim tarihi teyidi** — yarışma şartnamesinin takvim bölümü ve
-      duyurular: "rapor", "teslim", "değerlendirme". Sonuç sıra anahtarını
-      belirler (A varsayılan).
+- [x] **Adım 4: Teslim tarihi teyidi — KAPANDI 17 Eylül 2026.**
+      **Sonuç: 30 Eylül 2026, tek terminal tarih; sonrasında ayrı final ya da
+      demo aşaması yok.** Dolayısıyla "30 Eylül öncesi ayrı rapor teslimi"
+      yok → **Senaryo A kesin**, `kayıt = EVET`, K4 diff kapısı aktif.
+      Senaryo B silindi. Takvim yukarıda § Takvim bölümünde.
 
 ---
 
