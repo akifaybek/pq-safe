@@ -75,6 +75,21 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 - **Testler npm script'i yok**, doğrudan çalıştırılır:
   `cd frontend && node src/tx/send-transaction-test.mjs` gibi.
   Build: `cd frontend && npx vite build`.
+- **ARAÇ NOTU — receipt sorguları `cast receipt` ile YAPILMAZ.** Kullanılacak
+  komut:
+
+  ```bash
+  cast rpc eth_getTransactionReceipt <hash> --rpc-url <url>
+  ```
+
+  Gerekçe (ölçüldü, ÖK-2, 17 Eylül 2026): budanmış bir receipt'te `cast receipt`
+  hata vermiyor, tx'in madenlenmesini beklemeye geçip **süresiz asılıyor** — 10
+  dakika sonra elle kesildi. `cast rpc` aynı durumda anında `null` döner.
+  Varsayılan public endpoint receipt'leri ~8.000–10.000 blok sonra buduyor, yani
+  Sprint 3/4 kanıtlarının çoğu o endpoint'te zaten budanmış durumda. Task 5 ve 6
+  baştan sona `cast`'e dayandığı için bu, ölçüm ya da **kayıt** oturumunun
+  ortasında sessiz bir asılma demek. Arşiv endpoint'i kullanılsa bile kural
+  geçerli: `cast receipt`'in bekleme davranışı endpoint'ten bağımsız.
 
 ### Zincir durumu (plan yazıldığı an)
 
