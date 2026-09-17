@@ -1,0 +1,16 @@
+{
+  "name": "sphincs-c13-signer",
+  "type": "module",
+  "description": "WASM SPHINCS+ C13 signer with BIP-39/44 key derivation",
+  "version": "0.1.0",
+  "files": [
+    "sphincs_c13_signer_bg.wasm",
+    "sphincs_c13_signer.js",
+    "sphincs_c13_signer.d.ts"
+  ],
+  "main": "sphincs_c13_signer.js",
+  "types": "sphincs_c13_signer.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

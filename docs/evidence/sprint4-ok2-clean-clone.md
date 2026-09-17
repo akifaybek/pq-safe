@@ -237,7 +237,45 @@ Hakan'a gidecek mesaj listesine eklendi (plan § Hakan'a gidecek).
    README'nin frontend bölümü (Hakan) — yerine `docs/FRONTEND-KURULUM.md`
    yazıldı, README'ye tek satır referans Hakan'a gidecek.
 
-Uygulama brief'i önce yazılacak, onay alınmadan koşulmayacak.
+#### C UYGULANDI — 17 Eylül 2026
+
+Brief: `docs/superpowers/plans/2026-09-17-wasm-vendoring-brief.md`. Onaylandı,
+iki eklemeyle: `build-wasm.sh`'in kendi sha256'sı manifest'e girdi, ve
+toolchain uyuşmazlığı mesajı "**HASH KARŞILAŞTIRMASI ATLANDI**" ifadesini
+açıkça taşıyor.
+
+Eklenen/değişen: `rust-toolchain.toml` (rustc 1.93.1 sabit),
+`frontend/scripts/wasm-manifest.json`, `frontend/scripts/verify-wasm.sh`,
+`frontend/scripts/build-wasm.sh` (manifest üretimi + `wasm-pack` sürüm
+kontrolü + `.gitignore` silme), `frontend/.gitignore` (`wasm-pkg` satırı
+kaldırıldı), ve iki çıktı dizini depoya girdi.
+
+**Başarı ölçütü karşılandı.** Rust `PATH`'ten tamamen çıkarılmış bir ortamda
+(`rustc`/`cargo`/`wasm-pack` üçü de yok), `build-wasm.sh` **koşulmadan**:
+`npm i` → `cp .env.example .env` → `npx vite build` **142 ms'de geçti**;
+`build-transaction-test.mjs` ve `wasm-signer-test.mjs` yeşil.
+
+> Bu sınama, çıktı henüz commit'li olmadığı için **ağdan klon değil**, çalışma
+> ağacının kopyası üzerinde koştu (`.git`, `node_modules`, `target` dışarıda).
+> Ağdan taze klonla tekrarı commit'ten sonra yapılmalı — **hâlâ açık kalem.**
+
+**Altı sınama, üçü negatif — hepsi beklendiği gibi:**
+
+| Sınama | Sonuç |
+|---|---|
+| Sağlam durum | `OK: 4 dosya, sha256 eş, toolchain eş` · çıkış 0 |
+| Çıktıya bir bayt eklendi | `HATA: aynı toolchain, çıktı farklı` · **çıkış 1** |
+| Manifest'te `rustc` 1.90.0 yapıldı | `UYARI: … HASH KARŞILAŞTIRMASI ATLANDI` · **çıkış 0** |
+| Manifest'te submodule commit'i sıfırlandı | `HATA: submodule commit'i … uyuşmuyor` · **çıkış 1** |
+| `build-wasm.sh`'e satır eklendi | `HATA: build-wasm.sh … farklı` · **çıkış 1** |
+| Manifest silindi | `HATA: manifest yok` · **çıkış 2** |
+
+Her sınamadan sonra durum geri alındı ve sağlam durum yeniden doğrulandı.
+
+**Yan bulgu:** iki hedefin `.wasm` dosyaları **birebir aynı** (sha256
+`a0f1f0cb…c4d9cd`); hedefe göre değişen yalnızca JS tutkalı. `wasm-bindgen`
+için beklenen davranış, ama manifest ikisini de ayrı kaydediyor — birinin
+bozulması diğerini gizlemesin.
 
 ## Kapsanmayan — hâlâ açık
 

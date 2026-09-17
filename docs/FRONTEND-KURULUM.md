@@ -8,9 +8,10 @@ Hakan'a iletilecek.
 **Bütün süreler ölçüldü** — ÖK-2 temiz klon testi, 17 Eylül 2026, ağdan taze
 klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
 
-> **DURUM:** Derlenmiş WASM çıktısının depoya konması (C kararı, 17 Eylül)
-> **alındı ama HENÜZ UYGULANMADI.** Bugün geçerli olan **Yol B**'dir. C
-> uygulandığında Yol A açılır ve bu satır güncellenir.
+> **DURUM:** C kararı **UYGULANDI** (17 Eylül 2026). Derlenmiş imzalayıcı
+> depoda geliyor; **geçerli yol A**'dır ve Rust gerekmiyor. Doğrulandı: Rust
+> `PATH`'ten tamamen çıkarılmış bir ortamda `npm i` + `cp .env.example .env` +
+> `npx vite build` geçti (142 ms), `build-wasm.sh` **koşulmadan**.
 
 ---
 
@@ -70,9 +71,32 @@ ERROR: wasm-pack bulunamadı. Kurulum: cargo install wasm-pack
 ```
 
 **Sürüm sabitleme:** aynı çıktıyı üretmek için toolchain sürümlerinin eşleşmesi
-gerekir. `rustc` sürümü `rust-toolchain.toml` ile sabitlenir, `wasm-pack` sürümü
-betikte kontrol edilir. Sürümler tutmazsa karşılaştırma **anlamsızdır, hata
-değildir** — kontrol bunu ayrı bir mesajla söyler.
+gerekir. `rustc` sürümü `rust-toolchain.toml` ile sabitlenir (1.93.1),
+`wasm-pack` sürümü betikte kontrol edilir (0.15.0).
+
+### Çıktıyı doğrulama
+
+```bash
+bash scripts/verify-wasm.sh    # cwd: frontend/
+```
+
+| Sonuç | Çıkış |
+|---|---|
+| `OK: 4 dosya, sha256 eş, toolchain eş` | 0 |
+| `UYARI: toolchain farklı — HASH KARŞILAŞTIRMASI ATLANDI` | **0** — hata değil |
+| `HATA: submodule commit'i manifest'le uyuşmuyor` | 1 |
+| `HATA: build-wasm.sh manifest'te kayıtlı olandan farklı` | 1 |
+| `HATA: aynı toolchain, çıktı farklı` | 1 |
+| manifest ya da çıktı eksik | 2 |
+
+Hash'ler ve **onları üreten toolchain sürümleri** `scripts/wasm-manifest.json`
+içinde. Kaynak kimliği kontrolleri (submodule commit'i ve `build-wasm.sh`'in
+sha256'sı) **toolchain'den bağımsızdır ve her zaman koşar** — sürümünüz farklı
+olsa bile bayatlamış bir çıktı yakalanır.
+
+**Cross-machine determinizm ÖLÇÜLMEDİ.** `OK` çıktısı, çıktının *bu*
+toolchain'de yeniden üretilebilir olduğunu gösterir; başka bir makinede aynı
+baytların çıkacağını göstermez. Ölçüm Hakan'ın teyidiyle gelecek.
 
 ## Testler
 

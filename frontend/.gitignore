@@ -1,1 +1,16 @@
-src/crypto/wasm-pkg/
+# Bu dosya BİLEREK kural içermiyor.
+#
+# Eskiden tek satırı vardı: src/crypto/wasm-pkg/. O satır C kararıyla
+# kaldırıldı (17 Eylül 2026): derlenmiş imzalayıcı artık depoda geliyor, jüri
+# Rust kurmadan `npm i` + `npx vite` ile çalıştırıyor. Gerekçe ve ölçümler:
+# docs/evidence/sprint4-ok2-clean-clone.md
+#
+# src/crypto/wasm-pkg/ ve src/crypto/wasm-pkg-web/ izleniyor. Çıktının kaynağa
+# uyduğu scripts/verify-wasm.sh ile kontrol edilir; hash'ler ve onları üreten
+# toolchain sürümleri scripts/wasm-manifest.json'da.
+#
+# wasm-pack her çıktı dizinine içinde tek bir * olan .gitignore yazar; o dosya
+# kalırsa `git add` çıktıyı SESSİZCE eklemez. build-wasm.sh onları siliyor.
+#
+# BURAYA wasm-pkg ignore satırı EKLEMEYİN. node_modules/, dist/ ve .env kök
+# .gitignore'da; kural çoğaltılmıyor.

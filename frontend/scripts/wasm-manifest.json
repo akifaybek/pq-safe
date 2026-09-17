@@ -1,0 +1,23 @@
+{
+  "uretildi": "2026-09-17T20:17:43Z",
+  "toolchain": {
+    "rustc": "1.93.1",
+    "wasm_pack": "0.15.0",
+    "hedef_platform": "aarch64-apple-darwin"
+  },
+  "kaynak": {
+    "submodule": "contracts/lib/sphincs-minus",
+    "commit": "eef1f889a46c77d45dca013d321e9648fd3eaa7e",
+    "calisma_agaci_kirli": false
+  },
+  "build_script": {
+    "yol": "frontend/scripts/build-wasm.sh",
+    "sha256": "99280d83c0f854e283ffd06f750bf4516c9ae015d7710dca28ff239c45eeab20"
+  },
+  "cikti": {
+    "src/crypto/wasm-pkg/sphincs_c13_signer.js": "daa101a993bd6685ecbe599e4cd43a6321a2fd2649b18f283381f45c494ca7b2",
+    "src/crypto/wasm-pkg/sphincs_c13_signer_bg.wasm": "a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd",
+    "src/crypto/wasm-pkg-web/sphincs_c13_signer.js": "4740df3bd622358e99652575a6f9f7fadd471215978ef3f773ab9852cbade999",
+    "src/crypto/wasm-pkg-web/sphincs_c13_signer_bg.wasm": "a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd"
+  }
+}

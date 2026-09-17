@@ -1,0 +1,17 @@
+# WASM imzalayıcının çıktısı depoya commit'leniyor (C kararı, 17 Eylül 2026 —
+# bkz. docs/evidence/sprint4-ok2-clean-clone.md). Çıktının sha256'sı
+# frontend/scripts/wasm-manifest.json'da kayıtlı ve verify-wasm.sh onu
+# karşılaştırıyor. Karşılaştırmanın anlamlı olması için toolchain sürümünün
+# sabit olması gerekiyor: rustc sürümleri arasında WASM çıktısı pratikte
+# değişir, ve sabitleme olmadan kontrol iyi huylu bir sebeple kırmızı yanar.
+#
+# Bu dosya kurulu rustc'yi DEĞİŞTİRMEZ, bu depoda hangisinin kullanılacağını
+# SEÇER. Jüriyi etkilemez: derlenmiş çıktı depoda hazır geldiği için Rust
+# kurmak gerekmiyor (bkz. docs/FRONTEND-KURULUM.md, Yol A). Yalnızca çıktıyı
+# kendi makinesinde doğrulamak isteyenler bu sürümü indirir.
+#
+# Foundry'yi etkilemez: forge/cast kendi binary'siyle gelir, Rust toolchain'i
+# kullanmaz.
+[toolchain]
+channel = "1.93.1"
+targets = ["wasm32-unknown-unknown"]
