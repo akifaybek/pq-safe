@@ -730,3 +730,81 @@ Plan/belge düzeltmeleri, 15 Eylül
     saf kaynak okuması, zincir/owner anahtarı/MetaMask gerektirmiyor. K3'ün
     "K1'den sonra" koşulu Task 1-2 ile sağlandı. Sonucu (DOĞAL/DENETİMLİ_AĞ/
     ÖLÜ_KOD) Task 9'un maliyetini belirliyor.
+Task 8: complete (commit 151d482), 16 Eylül — SAF KAYNAK OKUMASI
+  Zincire tx atılmadı, owner anahtarı kullanılmadı, MetaMask açılmadı.
+  SONUÇ: FALLBACK_SONUC = DENETİMLİ_AĞ.
+  YÖNTEM: sendTransaction.js:204'teki yorum DELİL SAYILMADI (yazarın niyetini
+    gösterir, dalın koşabilirliğini değil; emsal e.txHash, A2). Hüküm dokuz
+    yapısal olgunun üstüne kuruldu.
+  DALIN KOŞMA KOŞULU: eth_call BAŞARILI + eth_estimateGas BAŞARISIZ.
+    preflight yerel try/catch içinde DEĞİL (main.js:658) → patlarsa
+    sendExecute'a hiç gelinmez. sendExecute'un TEK çağrı yeri var (main.js:686).
+    catch KOŞULSUZ (sendTransaction.js:203) → her fırlatma dalı tetikliyor.
+  ÖLÜ_KOD ELENDİ: koşulsuz catch önünde filtre yok + gasEstimated bayrağı
+    ekrana kadar tüketiliyor (:237 → main.js:694).
+  DOĞAL ELENDİ: dal erişilebilir ama İSTEYEREK koşturulamıyor — tetikleyici
+    sağlayıcının o anki yükü/metod limiti, programlanamaz. Deterministik girdi
+    yolu arandı, bulunamadı (calldata C13'e bağlı ve buildTransaction.js
+    dondurulmuş; bakiye tüketmek yıkıcı ve gönderimi de öldürür).
+  "Ortak taşıma yüzünden eth_call hep birlikte mi düşer?" HAYIR, iki sebeple:
+    (a) taşıma arızaları birlikte düşer AMA eth_call mikrosaniyeler önce
+        dönmüştür; aradaki pencere planlanamaz — yarış durumu, sınama değil.
+    (b) metoda özgü arızalar birlikte DÜŞMEZ: eth_estimateGas ikili aramadır,
+        calldata 3908 bayt (3,82 KB, encodeExecute ile zincirsiz ÖLÇÜLDÜ) ve
+        ~216k gas yürütmeyle sunucu maliyeti eth_call'un katları. Ampirik
+        emsal aynı sprint'ten: sağlayıcı eth_getTransactionByHash'i verirken
+        eth_getTransactionReceipt'e null döndü.
+  Kanıt: docs/evidence/crypto-tests/sprint4-untested-branches.md
+Task 9 BRIEF'İ YAZILDI, KOŞULMADI (commit 9492f1d), 16 Eylül
+  PROXY HEDEFİ ÖLÇÜLDÜ — .env DEĞİL, MetaMask'in ağ tanımı:
+    signer.estimateGas → BrowserProvider(window.ethereum) (sendTransaction.js
+      :15,:24). VITE_SEPOLIA_RPC_URL yalnızca salt-okunur çağrıları taşıyor
+      (readNonce/readDigest/readBalance, pqwallet.js:26).
+    .env'e konan proxy hedef dal için HİÇBİR ŞEY YAPMAZ. SAPMA 3'ün sonucu.
+    SÜRE 30-45 → 60-90 dk. Fark MetaMask tarafı: proxy TAM GEÇİRGEN olmalı
+      (MetaMask arka planda eth_chainId/eth_blockNumber/eth_getBalance/
+      net_version yokluyor), chainId 11155111 KORUNMALI — yeni ağ eklenirse
+      chainChanged yayılır, watchWalletChanges (:43) bağlantıyı düşürür ve dala
+      HİÇ GELİNMEZ; doğru yol mevcut Sepolia'nın RPC UCUNU değiştirmek.
+      Geri alma + geri alındığının doğrulanması işin parçası.
+  İKİ DAL TEK KOŞUDA, SIFIR GAZ: estimateGas patlar → gasLimit 350.000 →
+    MetaMask → İPTAL → ACTION_REJECTED (main.js:780). İptal ayrıca 350.000
+    limitli GERÇEK tx'i önlüyor; nonce yanmıyor, Task 5/6 varsayımı korunuyor.
+  ORACLE DEĞİŞTİ — ekran notu DEĞİL, MetaMask onay ekranındaki gas limiti:
+    main.js:694'teki "tahmin başarısız, sabit limite düşüldü" notu sendExecute
+    DÖNDÜKTEN SONRA üretiliyor. İptal edilirse sendExecute fırlatır, :694'e hiç
+    gelinmez, catch sendOut'u iptal mesajıyla EZER. Ayırt edici sayı:
+      dal koştuysa 350.000 (sabit) · koşmadıysa estimated*1,2 ≈ 259.000
+  🔴 AÇIK KALEM: iptal dalın HESABINI kapatır, GÖSTERİMİNİ değil. Not render'ı
+    SINANMADI ve rapor sınanmış gibi sunmayacak. Kapatmak 350.000 limitli
+    gerçek tx gerektirir → SPRINT 5.
+  ÖLÇÜLMEDİ: MetaMask onay ekranında gas limitinin NEREDE göründüğü (ana ekran
+    kendi ücret tahminini gösteriyor olabilir; gasLimit "Gelişmiş/Düzenle"
+    görünümüne düşebilir). MetaMask Akif'in ortamında, ajan ölçemedi. Brief
+    VARSAYMIYOR, ÖLÇTÜRÜYOR ve hangisinde bulunduğunu yazdırıyor. Ayırt edici
+    alan GAS LIMIT, "estimated fee" DEĞİL.
+  İKİ ORACLE BİRBİRİNİ TAMAMLIYOR: proxy log'u dala GİRİLDİĞİNİ kanıtlar ama
+    iptalde eth_sendTransaction proxy'ye HİÇ ULAŞMAZ, yani gasLimit'i göremez;
+    MetaMask ekranı HANGİ DEĞERİN kullanıldığını kanıtlar ama tek başına
+    "tahmin mi patladı, kullanıcı mı elle girdi" ayrımını yapmaz.
+SIRA DEĞİŞTİ — K3 (Task 9), K4'ün (Task 10) ARKASINA alındı, 16 Eylül
+  GEREKÇE: proxy MetaMask AYARINA dokunuyor; bu repo dosyası değil, diff kapısı
+    (beş dosyanın md5'i) GÖREMEZ. RPC geri alınmazsa ya da kapı yeniden çekim
+    tetiklerse taze kayıtta MetaMask arayüzünde localhost RPC görünür ve proxy
+    GERÇEK bir tx'in yolunda olur. Kayıt kesinleştikten sonra koşarsa risk SIFIR.
+    Task 9 kritik yolda değil (60-90 dk, kimseyi bloke etmiyor).
+  YENİ SIRA: Task 0 → 5 → 5B → 6 → 10 (kapı kapanır) → 9 → 11/12.
+  PLAN-SPEC EŞ GÜNCELLEME kuralı UYGULANDI (kural kendi yazarına işledi): spec
+    aynı commit'te güncellendi — § 1 K3 revizyon kutusu, § 5 sıra anahtarı
+    (A: ÖK-2→K1→K2→K4→K3→K5→K6, B: K2→K5→K6→K1→K4→K3), Sonuç 1'in daralan
+    penceresi, K3 "bitti" ölçütü ve proxy hedefi. Üç belgedeki bayat "30-45 dk"
+    ve "ekranda not" atıfları da temizlendi.
+17 Eylül itibarıyla DURUM
+  Ağaç temiz, origin/main senkron. Commit'siz iş YOK.
+  Ajan tarafında blokörsüz iş KALMADI. Sıradaki her şey Akif'e bağlı:
+    ÖK-2 temiz klon testi 🔴 BLOKÖR — Task 5/6 buna bağlı
+    Teslim tarihi teyidi (sıra anahtarı A varsayılıyor, doğrulanmadı)
+    ÖK-1 kağıttan mnemonic doğrulaması (Task 5 Adım 4'te bedava)
+  Task 5 Adım 0 NONCE KAPISI unutulmasın: mnemonic içe aktarmadan ÖNCE
+    cast nonce <PQWALLET> → 2 beklenir, değilse DUR.
+  Task 9 KOŞULMAZ — Task 10'un diff kapısı kapanana kadar bekliyor.
