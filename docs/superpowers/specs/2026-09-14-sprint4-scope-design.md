@@ -3,8 +3,12 @@
 **Tarih:** 14 Eylül 2026
 **Pencere:** 14–20 Eylül (altı gün)
 **Taban commit:** `a5ae60c` (origin/main ile senkron)
-**Zincir durumu:** `PQWallet.nonce()` = 2 · bakiye 0,0009 ETH · gas hesabı
-`0xe0BF2D19…B7351` (0,0495 ETH) · `ownerPublicKey` `0x5c0adf08…` (2. rotasyon)
+**Zincir durumu (enstantane, 17 Eylül 2026 · blok 11725303):**
+`PQWallet.nonce()` = 2 · bakiye **0,0509 ETH** · gas hesabı `0xe0BF2D19…B7351`
+(0,0495 ETH) · `ownerPublicKey` `0x5c0adf08…` (2. rotasyon)
+Bakiye 14 Eylül'de 0,0009 ETH'ydi; Hakan 0,05 ETH düz transfer yatırdı
+(`0x5b36f902…`), `execute()` çağrılmadığı için nonce değişmedi.
+**Bakiyeden türetilen değerler bu satırdan SABİT alınmaz, ölçüm anında okunur.**
 
 Bu belge **kapsam** belirler: ne yapılacak, ne yapılmayacak, her kalemin "bitti"
 ölçütü ne. Uygulama planı **değildir** — o ayrı bir belge

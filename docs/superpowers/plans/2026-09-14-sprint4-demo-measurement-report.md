@@ -96,7 +96,7 @@ Her görevin gereksinimleri bu bölümü örtük olarak içerir.
 | | |
 |---|---|
 | `PQWallet.nonce()` | **2** |
-| `PQWallet` bakiyesi | 0,0009 ETH |
+| `PQWallet` bakiyesi | **0,0509 ETH** (blok 11725303, 17 Eylül 2026). 14 Eylül'de 0,0009'du; Hakan `0x7268a7c3…`'ten 0,05 ETH yatırdı (`0x5b36f902…`, blok 11724079, düz transfer, `execute()` çağırmadığı için **nonce'a dokunmadı**). **Bu bir enstantane — bakiyeden türetilen hiçbir değer buradan SABİT yazılmaz, ölçüm anında okunur.** |
 | Gas hesabı | `0xe0BF2D190f8e2F2fc97cF19244845F8FeBDB7351` (~0,0495 ETH) |
 | `ownerPublicKey` | `0x5c0adf08…` (2. rotasyon) |
 | Referans ölçüm (A) | **216.221** gas, tx `0x320e03d9…e50da` |
@@ -532,6 +532,13 @@ nonce'a göre plan güncellenir, sonra devam edilir.
 > **Ölçüm (15 Eylül 2026):** nonce hâlâ **2**, bakiye **0,0009 ETH** —
 > `pqwallet-test.mjs`'in canlı okumasıyla doğrulandı. Bu kayıt o günü
 > belgeliyor; **adımın koruduğu şey oturum günü.**
+>
+> **Sonraki ölçüm (17 Eylül 2026, blok 11725303):** nonce **hâlâ 2** — kapı
+> geçerli. Bakiye **0,0509 ETH**'ye çıktı (Hakan'ın 0,05 ETH düz transferi,
+> `0x5b36f902…`). Düz transfer `execute()` çağırmadığı için nonce'a dokunmadı;
+> nonce'u ancak **owner anahtarıyla `execute()` çağıran** biri kaydırır. Yani
+> bu adımın koruduğu risk dar, ama sıfır değil: kontrol yine yapılır.
+> **Bakiye sayısı buraya kayıt olarak yazıldı, türetme girdisi olarak DEĞİL.**
 
 - [ ] **Adım 1: Ölçüm kancasını ekle**
 
@@ -887,12 +894,20 @@ Dosya **repo dışında** tutulur; kimliği SHA-256'dır.
 - [ ] **Adım 8: `cast` ile bağımsız doğrulama — UI'a hiç güvenmeden**
 
 ```bash
+# Adım 0'da okunan bakiyeyi B0 olarak not et; beklenen düşüş B0 - value - 0
+# (gas cüzdandan DEĞİL, gönderen EOA'dan ödenir).
 cast nonce   <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 3
-cast balance <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: 0,0009 − 0,0001 ETH
-cast receipt <TX2_HASH> --rpc-url $SEPOLIA_RPC   # status 1, gasUsed
+cast balance <PQWALLET> --rpc-url $SEPOLIA_RPC   # beklenen: B0 - value
+cast rpc eth_getTransactionReceipt <TX2_HASH> --rpc-url $SEPOLIA_RPC  # status 1, gasUsed
 ```
 
-> **`cast receipt` için `$SEPOLIA_RPC` ARŞİV endpoint'i olmalı.** Gönderim
+> **Bakiye SABİT yazılmaz.** Bu satır 14 Eylül'de `0,0009 − 0,0001 ETH` diye
+> sabitlenmişti; 17 Eylül'de bakiye 0,0509 ETH oldu ve beklenti sessizce
+> yanlışa döndü. Doğru biçim: Adım 0'da okunan `B0`'dan türet.
+
+> **Receipt sorgusu için `$SEPOLIA_RPC` ARŞİV endpoint'i olmalı** (komut
+> `cast rpc eth_getTransactionReceipt`, `cast receipt` DEĞİL — bkz. Global
+> Constraints araç notu). Gönderim
 > anında taze receipt her endpoint'ten gelir; **sonradan** her yeniden
 > doğrulama public endpoint'te `null` döner (~30 saat sınırı). Adım 9'un
 > tutanağı da bu yüzden aynı gün alınıyor.
@@ -1448,7 +1463,9 @@ Kaynaklar: `docs/ARCHITECTURE.md` (§1-5) ve 16 kanıt notu.
 >
 > **Rapora giren `cast` komutlarının yanına ŞU NOT konur:**
 >
-> > `cast receipt <hash>` bir **ARŞİV** düğümü gerektirir. Ücretsiz public
+> > Receipt sorgusu (`cast rpc eth_getTransactionReceipt <hash>`; `cast receipt`
+> > budanmış receipt'te süresiz asılıyor, kullanılmaz) bir **ARŞİV** düğümü
+> > gerektirir. Ücretsiz public
 > > Sepolia endpoint'leri (publicnode dahil) receipt'leri ~8.000–10.000 blok
 > > (≈30 saat) sonra buduyor: `eth_getTransactionByHash` tx'i vermeye devam
 > > ederken `eth_getTransactionReceipt` `null` döner. **Bu bir kusur değil, ağ
@@ -1502,6 +1519,23 @@ git push
    ilerlemiyor**
 5. **`RAPOR_HAM_ICERIK.md` Böl. 4'te 233.429** koşulsuz geçiyor; artık
    **"İLK `execute()`, nonce 0→1"** koşuluyla
+6. **`README.md`'ye tek satır referans:** § Kurulum yalnızca `contracts/`
+   tarafını anlatıyor, frontend kurulumu hiç belgelenmemişti.
+   `docs/FRONTEND-KURULUM.md` yazıldı (ön koşullar, komut sırası, ölçülmüş
+   süreler). README Hakan'ın dosyası olduğu için ona **dokunulmadı** — eklenecek
+   olan yalnızca bu belgeye bir referans satırı. ÖK-2'nin *"jüri elle hiçbir şey
+   ayarlamasın"* amacı bu satır olmadan kapanmıyor
+7. **Cross-machine WASM determinizmi teyidi — ÖLÇÜM İSTEĞİ.** C kararı
+   (derlenmiş imzalayıcının depoya konması) sha256 tutarsızlık kontrolüne
+   dayanıyor. Determinizm şu an **yalnızca tek makinede, tek toolchain
+   sürümüyle** ölçüldü (rustc 1.93.1, wasm-pack 0.15.0, macOS/arm64). Hakan'ın
+   aynı sürümlerle bir kez `bash frontend/scripts/build-wasm.sh` koşup
+   `src/crypto/wasm-pkg-web/sphincs_c13_signer_bg.wasm`'ın sha256'sını
+   bildirmesi yeterli. Beklenen değer
+   `a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd`.
+   **Tutmazsa C'nin kontrolü yeniden tasarlanır** — bu yüzden ölçüm, kontrolün
+   yazılmasından önce değerli. Sürümleri farklıysa **hash beklenmez**, sürüm
+   numaraları istenir
 
 ---
 
