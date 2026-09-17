@@ -85,10 +85,26 @@ noktalar — savunmada doğrudan kullanılabilir:
   `0xd62b812e...631ad9`, gas: 233.429, başarılı. Bu, projenin "uçtan uca
   gerçek kuantum-dirençli imza zincirde doğrulanıyor" iddiasının somut
   kanıtı — simülasyon veya local testnet değil, gerçek Sepolia testnet'i.
-- Bu iki işlemin digest/domain-separator hesaplamaları Akif tarafından
+- **Üçüncü gerçek PQ transfer (17 Eylül 2026):** Akif frontend'den (MetaMask
+  + gerçek owner anahtarı) `PQWallet.execute()`'u tekrar çağırdı — tx
+  `0x320e03d9...e50da`, gas: 216.221, başarılı (nonce 1→2). Bu, 7 Eylül'deki
+  233.429'un cüzdanın İLK execute()'una özgü tek seferlik bir maliyet
+  (nonce 0→1 SSTORE_SET) olduğunu, kalıcı rejimin 216.221 olduğunu gösterdi
+  — fark (17.208 gas) SSTORE maliyet farkı + calldata bayt farkıyla tam
+  eşleşiyor. Ayrıntı: `docs/evidence/crypto-tests/sprint3-end-to-end-transaction.md`.
+- İlk iki işlemin (migration ve 7 Eylül transferi) digest/domain-separator hesaplamaları Akif tarafından
   bağımsız olarak (Hakan'ın kontrat çağrısına güvenmeden, ayrı bir JS
   implementasyonuyla) yeniden türetilip doğrulandı — bkz.
   `docs/evidence/crypto-tests/sprint3-live-signature-verification.md`.
+
+**Not (kanıt tekrarlanabilirliği):** Bu bölümdeki tx hash'leri `cast receipt
+<hash>` ile doğrulamayı deneyen biri, genel/public bir Sepolia RPC endpoint'i
+(ör. publicnode) kullanıyorsa `null` sonucu alabilir — bu tx'lerin geçersiz
+olduğu anlamına gelmez, genel endpoint'lerin eski receipt'leri budamasından
+kaynaklanır. Bu tx'lerin ham `getTransaction`/`getTransactionReceipt`
+JSON çıktıları arşiv node'undan alınıp `docs/evidence/chain/` altında
+saklanıyor — doğrulama için oraya bakılabilir, ya da bir arşiv RPC
+endpoint'i (ör. Alchemy/Infura arşiv katmanı) kullanılmalı.
 
 ## 5. Gas tablosu (test-suite ölçümü, `docs/evidence/gas-reports/sprint2.txt`, 26/26 test geçti)
 
