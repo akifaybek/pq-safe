@@ -209,9 +209,35 @@ Gerekçe:
    ölçütünü açıkça bozuyor: 1 GB toolchain indirmesi jüri için sıfır değil.
 4. 30 Eylül'e 13 gün var. C'nin ek maliyeti bir betik ve bir belge satırı.
 
-**Karar Akif'in.** C seçilirse gereken işler: iki `.gitignore`'un ele alınması,
-çıktıların commit'lenmesi, sha256 karşılaştıran kontrol betiği, ve README'nin
-frontend bölümü (Hakan).
+### KARAR: C — 17 Eylül 2026, Akif
+
+Koşullu kabul edildi. Koşul: **toolchain sabitlenecek.**
+
+#### Neden koşul — cross-machine determinizm ÖLÇÜLMEDİ
+
+Yukarıdaki determinizm ölçümü **tek makinede, tek toolchain sürümüyle** yapıldı
+(rustc 1.93.1, wasm-pack 0.15.0, macOS/arm64). rustc ve wasm-pack sürümleri
+arasında WASM çıktısı pratikte değişir. Sabitleme olmadan sha256 kontrolü
+**Hakan'ın makinesinde iyi huylu bir sebeple kırmızı yanar** — ve herkesin
+görmezden gelmeyi öğrendiği bir kontrol, hiç olmayandan kötüdür.
+
+**Bu ÖLÇÜLMEMİŞTİR ve rapor ölçülmüş gibi sunmayacak.** Ölçülmesi için Hakan'ın
+aynı toolchain sürümleriyle bir kez derleyip hash'i teyit etmesi yeterli; iş
+Hakan'a gidecek mesaj listesine eklendi (plan § Hakan'a gidecek).
+
+#### C'nin uygulama koşulları
+
+1. `rust-toolchain.toml` ile `rustc` sürümü sabitlenir; `wasm-pack` sürümü
+   betikte kontrol edilir.
+2. Kaydedilen sha256'nın **yanına üreten toolchain sürümleri** yazılır.
+3. Kontrol **iki ayrı mesaj** verir, tek kırmızıya yıkılmaz:
+   - *toolchain farklı → çıktı karşılaştırılamaz* — **uyarı, çıkış 0**, ama sesli
+   - *aynı toolchain, çıktı farklı* — **hata, çıkış 1**
+4. Kalan işler: iki `.gitignore`'un ele alınması, çıktıların commit'lenmesi,
+   README'nin frontend bölümü (Hakan) — yerine `docs/FRONTEND-KURULUM.md`
+   yazıldı, README'ye tek satır referans Hakan'a gidecek.
+
+Uygulama brief'i önce yazılacak, onay alınmadan koşulmayacak.
 
 ## Kapsanmayan — hâlâ açık
 
