@@ -28,3 +28,4 @@
 |---|---|---|
 | `Migration.proveOwnership()` | [`0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609`](https://sepolia.etherscan.io/tx/0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609) | ✅ Başarılı (gas: 73753) |
 | `PQWallet.execute()` (transfer, 0.001 ETH) | [`0xd62b812e6a0e0c31d79d4a85c1bd61c738e02368fe51490c57a19ea6ca631ad9`](https://sepolia.etherscan.io/tx/0xd62b812e6a0e0c31d79d4a85c1bd61c738e02368fe51490c57a19ea6ca631ad9) | ✅ Başarılı (gas: 233429) |
+| `PQWallet.execute()` (0.0001 ETH, kendine iade) | [`0x320e03d98cec857bbae8ecb49bcb0736c960287d76a19f2fad39b471b09e50da`](https://sepolia.etherscan.io/tx/0x320e03d98cec857bbae8ecb49bcb0736c960287d76a19f2fad39b471b09e50da) | ✅ Başarılı (gas: 216.221) |
