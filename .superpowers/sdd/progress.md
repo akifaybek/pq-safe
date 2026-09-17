@@ -808,3 +808,121 @@ SIRA DEĞİŞTİ — K3 (Task 9), K4'ün (Task 10) ARKASINA alındı, 16 Eylül
   Task 5 Adım 0 NONCE KAPISI unutulmasın: mnemonic içe aktarmadan ÖNCE
     cast nonce <PQWALLET> → 2 beklenir, değilse DUR.
   Task 9 KOŞULMAZ — Task 10'un diff kapısı kapanana kadar bekliyor.
+ÖK-2 TEMİZ KLON TESTİ KOŞTU — BLOKÖR KAPANDI, 17 Eylül
+  Kanıt: docs/evidence/sprint4-ok2-clean-clone.md. Klonlanan commit 29e2c1d.
+  BULUNAN BLOKÖR: build-wasm.sh yalnızca --target nodejs derliyordu
+    (src/crypto/wasm-pkg). Oysa src/crypto/signer.js:5, yani uygulamanın
+    kendisi, wasm-pkg-web altından import ediyor ve o dizini HİÇBİR belgelenen
+    adım üretmiyordu. Temiz klonda build-transaction-test.mjs, npx vite build
+    ve sayfanın kendisi ERR_MODULE_NOT_FOUND ile patlıyordu.
+  NEDEN GÖRÜNMEDİ (mekanizma): wasm-pack her çıktı dizinine içinde tek bir
+    yıldız olan bir .gitignore yazıyor. wasm-pkg-web KENDİ KENDİNİ gizlediği
+    için Akif'in makinesinde git status'ta HİÇ çıkmadı; ne izlendi, ne
+    commit'lendi, ne de eksikliği fark edildi. frontend/.gitignore yalnızca
+    src/crypto/wasm-pkg/ satırını taşıyordu.
+    Spec § ÖK-2'nin "kıran şey bizim makinemizde hiç görünmez" uyarısı birebir
+    gerçekleşti; uyarı submodule riski için yazılmıştı, mekanizma aynı çıktı.
+  DÜZELTME (commit dbc8e02): betik iki hedefi de derliyor + çıktı varlığını
+    sınıyor, biri eksikse çıkış 1.
+  ÖLÇÜMLER: clone 176 sn, npm i 16 sn (önbellek boşaltılarak; ilk deneme 1 sn
+    sürdü çünkü yerel önbelleği kullandı), soğuk wasm 25 sn, sıcak 1 sn,
+    cargo target 118 MB, çıktı 500 KB / 12 dosya, vite build 155 ms,
+    testler 83 · 21 · 9 + wasm-signer, forge 6 suite 35 test 0 fail.
+  2. YARI (kanıt yeniden doğrulanabiliyor mu): 0x320e03d9 receipt'i varsayılan
+    endpoint'te null (budanmış), arşiv endpoint'inde okunuyor. Plan [D1] doğrulandı.
+  YAN BULGU: cast receipt budanmış receipt'te hata vermiyor, madenlenmeyi
+    beklemeye geçip SÜRESİZ ASILIYOR (10 dk sonra elle kesildi). Bloke etmeyen
+    çağrı cast rpc eth_getTransactionReceipt. Plana araç notu olarak girdi
+    (commit e7c029c) ve planda kalan üç eski kullanım da çevrildi.
+  SUBMODULE RİSKİ: sphincs-minus yan daldaki eef1f889 commit'ine sabitli ve
+    ağdan taze klonda çekilebiliyor. Kapanmadı, bugün patlamadı.
+  KAPSANMAYAN: tarayıcı adımı (npx vite + elle imza) ve ikinci makine — ikisi
+    de Akif'te, kanıt notunda açıkça yazılı.
+README BOŞLUĞU — ÖK-2'nin asıl kalemi, 17 Eylül
+  README § Kurulum YALNIZCA contracts tarafını (Foundry) anlatıyor. Frontend
+  için npm i, build-wasm.sh, .env, vite HİÇ geçmiyor. Yani Rust'ı ön koşul
+  yapan şey düzeltme değildi; frontend README'den zaten kurulamıyordu ve
+  düzeltmeden önce Rust kurulu olsa bile sayfa derlenmiyordu.
+  README Hakan'ın dosyası, DOKUNULMADI. Yerine docs/FRONTEND-KURULUM.md
+  yazıldı (ön koşullar + sürümler, komut sırası, ölçülmüş süreler, Yol A/B,
+  tuzaklar). README'ye tek satır referans Hakan'a gidecek listeye girdi.
+C KARARI VE UYGULAMASI — derlenmiş imzalayıcı depoya, 17 Eylül
+  Üç seçenek ölçülerek karşılaştırıldı (A: Rust ön koşul · B: çıktı depoda ·
+  C: ikisi + tutarsızlık kontrolü). Karar C, Akif, koşullu.
+  BELİRLEYİCİ ÖLÇÜM: derleme DETERMİNİSTİK. Aynı kaynak iki kez derlendi,
+    .wasm sha256 ve .js birebir eş. "Her yeniden derlemede diff gürültüsü"
+    endişesi bu ölçümle düştü.
+  KOŞUL: toolchain sabitlenecek — rustc ve wasm-pack sürümleri arasında WASM
+    çıktısı pratikte değişir; sabitleme olmadan kontrol Hakan'ın makinesinde
+    İYİ HUYLU bir sebeple kırmızı yanar, ve herkesin görmezden gelmeyi
+    öğrendiği bir kontrol hiç olmayandan kötüdür.
+  UYGULANDI: rust-toolchain.toml (rustc 1.93.1), scripts/wasm-manifest.json,
+    scripts/verify-wasm.sh, build-wasm.sh'e manifest üretimi + wasm-pack sürüm
+    kontrolü + .gitignore silme, frontend/.gitignore'dan wasm-pkg satırı
+    kaldırıldı, iki çıktı dizini depoya girdi.
+  TASARIM EKLEMESİ (koşulun açık bıraktığı delik): manifest'e submodule commit
+    SHA'sı ve build-wasm.sh'in kendi sha256'sı da yazılıyor; bu iki kontrol
+    TOOLCHAIN'DEN BAĞIMSIZ ve her zaman koşuyor. Aksi halde toolchain farklıysa
+    hash karşılaştırması atlanır ve bayatlamış çıktı yakalanmazdı.
+  BEŞ SONUÇ, tek kırmızıya yıkılmıyor: kaynak uyuşmazlığı → 1 · toolchain
+    farklı → 0 ama sesli "HASH KARŞILAŞTIRMASI ATLANDI" · aynı toolchain çıktı
+    farklı → 1 · hepsi eş → 0 · manifest/çıktı yok → 2.
+  ALTI SINAMA, ÜÇÜ NEGATİF, hepsi beklendiği gibi; her sınamadan sonra durum
+    geri alındı ve sağlam durum yeniden doğrulandı.
+  BAŞARI ÖLÇÜTÜ KARŞILANDI: rustc/cargo/wasm-pack üçü de PATH'te YOKKEN,
+    build-wasm.sh KOŞULMADAN, npm i + cp .env.example .env + npx vite build
+    142 ms'de geçti; build-transaction ve wasm-signer testleri yeşil.
+    UYARI: bu sınama çalışma ağacının kopyasında koştu, çıktı henüz commit'li
+    olmadığı için AĞDAN KLON DEĞİL. Ağdan tekrarı commit'ten sonra — AÇIK KALEM.
+  YAN BULGU: iki hedefin .wasm dosyaları birebir aynı (a0f1f0cb…); hedefe göre
+    değişen yalnızca JS tutkalı. Manifest ikisini de ayrı kaydediyor.
+  ÖLÇÜLMEDİ: cross-machine determinizm. Kanıt notunda "ölçülmemiştir ve rapor
+    ölçülmüş gibi sunmayacak" diye yazılı. Hakan'ın teyidiyle ölçülecek.
+ZİNCİR ÖLÇÜMÜ — 17 Eylül, blok 11725303, arşiv endpoint'iyle
+  nonce() = 2 · bakiye 50900000000000000 wei (0,0509 ETH)
+  NONCE'U HAREKET ETTİREN TX: 0x320e03d9…, blok 11696552, 13 EYLÜL 14:44 UTC,
+    gönderen 0xe0bf2d19… (Akif'in MetaMask'i), execute(to=0xe0bf2d19…,
+    value=100000000000000 wei) → cüzdandan 0,0001 ETH çıktı, bakiye 0,001 →
+    0,0009, nonce 1 → 2. Hakan bunu 17 Eylül'de yalnızca KAYDETTİ.
+  DÜZELTME: bu ölçümden önce "nonce 2'ye bugün çıktı, kapı tesadüfen geçiyor"
+    demiştim; İKİSİ DE YANLIŞTI. Nonce 13 Eylül'den beri 2. Devir notunun
+    "nonce 2, 16 Eylül'de doğrulandı" satırı DOĞRUYDU.
+  0,05 ETH'NİN KAYNAĞI: 0x5b36f902…, blok 11724079 (15 çağrılık ikili aramayla
+    bulundu), 17 Eylül 13:41 UTC, gönderen 0x7268a7c3… (Hakan'ın EOA'sı),
+    50000000000000000 wei, input 0x → DÜZ ETH TRANSFERİ, fonksiyon çağrısı yok.
+    Düz transfer execute() çağırmadığı için NONCE'A DOKUNMUYOR. Nonce'u ancak
+    owner anahtarıyla execute() çağıran biri kaydırır — Task 5 Adım 0 kapısının
+    koruduğu risk DAR, ama sıfır değil; kontrol yine yapılıyor.
+  BAYATLAYAN TEK SAYI BAKİYEYDİ. Plan ve spec'teki bakiyeden türetilmiş
+    değerler tarandı: plan zincir durumu tablosu ve spec başlığı güncellendi,
+    plan Adım 8'in "beklenen 0,0009 − 0,0001" sabiti B0 − value FORMÜLÜNE
+    çevrildi, 15 Eylül ölçüm kutusu tarihli kayıt olduğu için korundu.
+    Aranan 1000000000000001 sabiti hiçbir dosyada YOK; "bakiye + 1 wei" eski
+    planda ve zaten "ekranda yazan bakiyeden" diye formül hâlinde.
+    Gas hesabının ~0,0495 ETH değeri ölçüldü, hâlâ doğru (0,049536821955312791).
+TESLİM TARİHİ TEYİT EDİLDİ — 30 EYLÜL 2026, 17 Eylül'de teyit
+  Tek terminal tarih; sonrasında ayrı final ya da demo aşaması YOK. 13 gün.
+  ÖLÇÜT TARİH DEĞİLDİ: spec § 5 ayrımı "30 Eylül öncesi AYRI bir rapor teslimi
+    var mı?" idi. Cevap yok → SENARYO A KESİN.
+  SENARYO B SİLİNDİ (plan + spec, aynı commit, silme tarihi yazıldı).
+    Gerekçe: tarih bilinmezken B'yi taşımanın maliyeti bir tablo satırıydı ve
+    asimetri onu haklı kılıyordu; tarih bilindiği için asimetri tersine döndü.
+  KAYIT = EVET sabitlendi (senaryoya bağlı tek bayrak). K4 diff kapısı AKTİF.
+  TAKVİM plana girdi. Süre tahmini değil OTURUM SAYISI üzerine kuruldu, çünkü
+    planda görev başına süre tahmini yok; tek sayılar Task 9'un 60-90 dk'sı ve
+    90 dk tavanı. Ölçülmüş mekanik süreler toplamda 4 dakika.
+    18 Eyl ÖK-2 kalanı · 19-20 Eyl Task 5 + 5B · 21 Eyl pay · 22 Eyl Task 6 ·
+    23 Eyl Task 7 · 24 Eyl Task 10 · 25-26 Eyl yeniden çekim payı ·
+    27 Eyl Task 9 · 28-29 Eyl Task 11+12 · 30 Eyl TESLİM.
+  TÜRETİLMİŞ SON TARİHLER: Task 5 en geç 21 Eylül'de başlar (Task 6 en geç
+    23'ünde bitmeli, üç oturum geriye sayıldı) → 2 gün pay. Hakan'ın 4. maddesi
+    için kovalama son tarihi 24 Eylül (Task 11 Adım 4 o cevap olmadan
+    ilerlemiyor, Task 11 28'inde başlıyor).
+  SIKIŞIRSA: 23 Eylül'de Task 6 bitmemişse Task 9 ve ÖK-2 ikinci makine
+    BİRLİKTE düşer. KAYIT KESİLMEZ — 13 günde tek geri dönüşü olmayan adım.
+  İKİ TUTARSIZLIK yakalandı ve Akif kabul etti: (a) geriye doğru listede
+    Task 9, Task 10'dan önce konmuştu, 9492f1d'deki karara aykırıydı; sıra
+    9-10'dan-sonra olarak kaldı. (b) Task 7 listeden düşmüştü ve Sprint 4'ün
+    Task 7'si BİTMEDİ; Task 5'in TEKRAR dizilerini ve Task 6'nın Δ₂'sini
+    tüketen zorunlu halka, 23 Eylül'e konuldu. (progress.md'deki eski
+    "Task 7: complete" satırı BAŞKA bir planın Task 7'si.)
