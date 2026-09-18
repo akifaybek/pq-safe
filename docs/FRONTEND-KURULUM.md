@@ -168,7 +168,7 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 | `cast` komutu asılı kaldı | `cast receipt` kullanılmış, `cast rpc eth_getTransactionReceipt` olmalı |
 | Receipt `null` | Arşiv olmayan endpoint kullanılmış |
 | `verify-wasm.sh` → `KONTROL KOŞMADI: submodule çekilmemiş` | Yol A klonunda koşuldu; bu betik Yol B içindir |
-| `verify-wasm.sh` → `HATA: manifest okunamadı` (Windows) | **Bilinen açık kusur.** Manifest yolu Git Bash'te `/c/...` biçiminde; Windows `node`'u çözemiyor (betik satır 35, 135, 171). Sorun manifest değil, yol çevirisi. Yol A etkilenmez. |
+| `verify-wasm.sh` → `HATA: manifest okunamadı` (Windows) | 18 Eylül 2026'da **düzeltildi** — `node`'a mutlak yol verilmiyor, manifest göreli yolla okunuyor. **Windows'ta doğrulanmadı;** bu hatayı hâlâ görüyorsanız bildirin. Yol A bu betiği zaten çağırmaz. |
 
 ## Kapsanmayan
 

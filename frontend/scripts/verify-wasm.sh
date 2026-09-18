@@ -25,6 +25,16 @@ REPO_ROOT="$(cd "$FRONTEND_DIR/.." && pwd)"
 SUBMODULE_DIR="$REPO_ROOT/contracts/lib/sphincs-minus"
 MANIFEST="$SCRIPT_DIR/wasm-manifest.json"
 
+# WINDOWS YOL HATASI (Hakan bildirdi, 18 Eylül 2026): Git Bash'te $MANIFEST
+# /c/Users/... biçiminde çıkar ve node bir Windows binary'si olduğu için o yolu
+# ÇÖZEMEZ. require() boş döner, oku() hatayı yutar, betik "manifest okunamadı"
+# deyip çıkış 2 verir — teşhis yanıltıcıdır, sorun manifest değil yol çevirisi.
+# ÇÖZÜM: node'a mutlak yol HİÇ verilmiyor. Süreç dizini frontend/'e alınıyor
+# (bunu kabuk yapar, işletim sistemine gerçek dizin olarak geçer) ve require
+# göreli yol kullanıyor; node -e için require, CWD'ye göre çözülür.
+cd "$FRONTEND_DIR" || { echo "HATA: cd başarısız: $FRONTEND_DIR" >&2; exit 2; }
+MANIFEST_REL="./scripts/wasm-manifest.json"
+
 if [ ! -f "$MANIFEST" ]; then
   echo "HATA: manifest yok: $MANIFEST" >&2
   echo "      Üretmek için: bash scripts/build-wasm.sh" >&2
@@ -32,7 +42,7 @@ if [ ! -f "$MANIFEST" ]; then
 fi
 
 oku() { node -e "
-const m=require('$MANIFEST');
+const m=require('$MANIFEST_REL');
 const p='$1'.split('.').reduce((o,k)=>o===undefined?undefined:o[k],m);
 process.stdout.write(p===undefined?'':String(p));
 " 2>/dev/null; }
@@ -132,7 +142,7 @@ fi
 # --- 3) Aynı toolchain: hash'ler eşleşmek ZORUNDA --------------------------
 SAYAC=0
 node -e "
-const m=require('$MANIFEST');
+const m=require('$MANIFEST_REL');
 for (const [k,v] of Object.entries(m.cikti)) console.log(k+' '+v);
 " | while read -r REL BEKLENEN; do
   DOSYA="$FRONTEND_DIR/$REL"
@@ -168,6 +178,6 @@ for D in wasm-pkg wasm-pkg-web; do
   fi
 done
 
-SAYAC="$(node -e "console.log(Object.keys(require('$MANIFEST').cikti).length)")"
+SAYAC="$(node -e "console.log(Object.keys(require('$MANIFEST_REL').cikti).length)")"
 echo "OK: $SAYAC dosya, sha256 eş, toolchain eş (rustc $M_RUSTC · wasm-pack $M_WASMPACK · $M_PLATFORM)."
 exit 0
