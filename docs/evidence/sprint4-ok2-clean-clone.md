@@ -405,6 +405,37 @@ KONTROL KOŞMADI: submodule çekilmemiş: …/contracts/lib/sphincs-minus
 uyuşmazlığı **yutmuyor.** Sınamadan sonra manifest geri alındı ve sağlam durum
 yeniden doğrulandı.
 
+#### Dağıtım sınandı — düzeltme klonla geliyor, 18 Eylül 2026
+
+Yukarıdaki sıra uyarısının kapattığı boşluk: sınanan şey betiğin **mantığı**
+değil, **dağıtımıydı** — `c5d6003` gerçekten push edildi mi, düzeltilmiş betik
+klonla geliyor mu, jürinin yolunda hangi çıkışı veriyor.
+
+Repo dizininin **dışında**, `/tmp` altında düz `git clone` (`--recursive` yok,
+`git submodule update` **koşulmadı** — çıkış 2'yi üreten koşul zaten submodule'ün
+çekilmemiş olması). Klonun HEAD'i `86f259f`; `c5d6003` ve `81b6cd6` de içinde.
+
+**1) Düzeltilmiş sürüm klona ULAŞTI** — betik çalıştırılmadan önce, ayrı kanıt:
+
+```
+$ grep -n -- "--show-toplevel" frontend/scripts/verify-wasm.sh
+61:SUB_TOP="$(git -C "$SUBMODULE_DIR" rev-parse --show-toplevel 2>/dev/null || echo '')"
+```
+
+Bu grep bilerek ayrı: çıkış 2'yi **eski** betik de bambaşka bir sebepten
+verebilirdi. "Düzeltilmiş sürüm ulaştı" ile "betik çalıştı" ayrı iddialardır.
+Submodule dizini boş doğrulandı (0 giriş).
+
+**2) Çıktı, birebir:**
+
+```
+KONTROL KOŞMADI: submodule çekilmemiş: …/klon/contracts/lib/sphincs-minus
+      Çekmek için: git submodule update --init --recursive
+      Yol A (yalnızca npm) bu betiği GEREKTİRMEZ; çıktı depoda hazır.
+```
+
+**Çıkış kodu 2.** Beklenen davranış. Klon silindi.
+
 ## Kapsanmayan — hâlâ açık
 
 1. **Tarayıcı adımı.** `npx vite` ile sayfayı açıp elle imza üretmek

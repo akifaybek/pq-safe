@@ -37,6 +37,10 @@
 //   - Düzyazıyla anlatılan sır ("parolanın ilk dörtlüsü kedi ile başlıyor").
 //   - Normal kelimeye benzeyen .env değerleri.
 //   - Anahtarın PARÇASI (12 kelimenin 4'ü, hex'in yarısı).
+//   - KISALTILMIŞ / ELİPSLİ hex ve hash (a0f1f0cb…c4d9cd, 0x1234…abcd).
+//     B ve D desenleri TAM uzunluk arar; kısaltılmış hâl sessizce geçer.
+//     18 Eylül 2026'da gözlendi. Burada zararsızdı — kısaltılmış bir anahtar
+//     zaten kullanılamaz — ama yazılı olmazsa sonraki tur "temiz" diye okur.
 //   - İkili dosyalar: ekran görüntüsü, QR, PDF. Sadece düz metin taranır.
 //
 // BAĞIMLILIK: frontend/node_modules/bip39. Temiz klonda (ÖK-2) bu dizin

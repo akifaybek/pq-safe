@@ -1013,10 +1013,13 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      sabitli. Ağdan taze klonda çekilebiliyor, bugün patlamadı, KAPANMADI.
   5. TARAYICI ADIMI: npx vite ile sayfayı açıp elle imza üretmek. Akif'te,
      ajan koşamaz. ÖK-2'nin son açık parçası.
-  6. DÜZELTİLMİŞ verify-wasm.sh TAZE KLONDA SINANMADI. c5d6003 push edildikten
-     sonra düz git clone + bash frontend/scripts/verify-wasm.sh; beklenen
-     çıkış 2 ve "KONTROL KOŞMADI: submodule çekilmemiş". Gözlemlenmeden
-     kapandı YAZILMAYACAK. (18 Eylül akşamı kapanması bekleniyor.)
+  6. KAPANDI — 18 Eylül akşamı. Düzeltilmiş verify-wasm.sh taze klonda
+     sınandı: repo dışında /tmp altında düz git clone, submodule update
+     KOŞULMADI, klonun HEAD'i 86f259f. SINANAN ŞEY MANTIK DEĞİL DAĞITIMDI.
+     İki iddia ayrı ayrı gösterildi: (i) betik çalıştırılmadan önce grep ile
+     --show-toplevel satırının klona ULAŞTIĞI (satır 61) — çünkü çıkış 2'yi
+     eski betik de başka bir sebepten verebilirdi; (ii) çıktı birebir
+     "KONTROL KOŞMADI: submodule çekilmemiş" ve ÇIKIŞ 2. Klon silindi.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
