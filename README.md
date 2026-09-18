@@ -69,6 +69,9 @@ Derleyici ayarları (`contracts/foundry.toml`): solc `0.8.35`, `evm_version =
 verifier'ın yoğun inline assembly kodu via_ir olmadan "stack too deep"
 hatası veriyor).
 
+**Frontend kurulumu:** bkz. `docs/FRONTEND-KURULUM.md` (gerekli sürümler,
+komut sırası, ölçülmüş kurulum süreleri, bilinen tuzaklar).
+
 ### Sepolia'ya deploy
 
 ```bash
