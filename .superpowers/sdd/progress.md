@@ -1016,6 +1016,12 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      ölçümden önce hüküm vermekti, Akif düzeltti.)
      Teyidin pratik değeri düşük: toolchain farklıysa betik zaten ATLANDI
      diyor. Değerli olan tek şey sayının kayda girmesi.
+     BU KALEM MADDE 7'YE BAĞLI DEĞİL — bağı ben kurmuştum, Akif kopardı.
+     Hakan'dan istenen verify-wasm.sh'in ÇIKTISI değil, HAM sha256; betiğe
+     hiç dokunmadan alınır: certutil -hashfile <dosya> SHA256, ya da
+     PowerShell'de Get-FileHash. Determinizm turu BUGÜN başlayabilir,
+     Windows yol hatası kendi hızında gider. Aksi halde iki kalem
+     birbirini bekler.
      Bizim değerimiz
      a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
   3. KAPANDI — 18 Eylül, Hakan'ın Windows raporu. İkinci makine ŞARTININ
@@ -1041,6 +1047,13 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      TEMBEL tutuyor; init yalnızca keygen ya da sign ile tetikleniyor.
      Yani imza üretilmeden .wasm hiç örneklenmiyor. "Konsol temiz" ile
      "imzalayıcı çalışıyor" AYRI İDDİALARDIR.
+     SIRA: TASK 5'TEN ÖNCE. ÖK-2 Task 5/6'nın BLOKÖRÜ olarak tanımlanmıştı;
+     son parçası açıkken Task 5'e başlamak blokörü fiilen atlamaktır.
+     ÖLÇÜM PENCERESİNİ İHLAL ETMEZ: sayfada imza üretmek yerel bir WASM
+     çağrısıdır, execute() değil, zincire hiçbir şey gitmez.
+     BAKILACAK ŞEY konsolun temizliği DEĞİL: .wasm'ın gerçekten yüklendiği
+     ve imzanın üretildiği. Üretilen imzanın BAYT UZUNLUĞU yazılacak,
+     beklenen 3688.
   6. KAPANDI — 18 Eylül akşamı. Düzeltilmiş verify-wasm.sh taze klonda
      sınandı: repo dışında /tmp altında düz git clone, submodule update
      KOŞULMADI, klonun HEAD'i 86f259f. SINANAN ŞEY MANTIK DEĞİL DAĞITIMDI.
@@ -1062,8 +1075,17 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      ÇÖZÜM YÖNÜ (uygulanmadı): yolu node'a hiç verme — manifest'i stdin'den
      akıt (cat "$MANIFEST" | node -e ...), ya da cygpath -w ile çevir.
      Birincisi platformdan bağımsız.
-     ETKİSİ: yalnızca Yol B / determinizm turu. Yol A bu betiği çağırmıyor,
-     Hakan'ın Windows raporu da bu yüzden temiz geçti.
+     ETKİSİ: yalnızca Yol B. Yol A bu betiği çağırmıyor, Hakan'ın Windows
+     raporu da bu yüzden temiz geçti.
+     MADDE 2'Yİ BLOKLAMIYOR: ham sha256 certutil/Get-FileHash ile betiğe
+     dokunmadan alınır. İki kalem bağımsız ilerler.
+TASK 5 ADIM 0 — İKİ ÖLÇÜM, BİRİ UNUTULUYOR (18 Eylül'de netleşti)
+  1. cast nonce <PQWALLET> → 2 beklenir, DEĞİLSE DUR. (Zaten kayıtlıydı.)
+  2. BAKİYE de okunacak ve YAZILACAK. Kaydedilmezse Task 6 Adım 8'in
+     B0 - value formülünün GİRDİSİ kaybolur. Hakan transfer yapmakta
+     serbest, yalnızca haber vermekle yükümlü; yani bakiye Adım 0 ile
+     Task 6 arasında değişebilir ve o anki değer okunmadan formül çalışmaz.
+     17 Eylül ölçümü: 50900000000000000 wei — TARİHLİ KAYIT, sabit değil.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
