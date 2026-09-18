@@ -1002,8 +1002,22 @@ YOL A AĞDAN KLONLA DOĞRULANDI — AÇIK KALEM KAPANDI, 18 Eylül
     bash -c keyfi kod çalıştırır, npx kapsam dışıdır ve bloklanamaz. Liste
     kazayı azaltır, dolaylı yolu kapatmaz.
 AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
-  1. READ KURAL AİLESİ SINANMADI (deny listesi, 18 Eylül). Yalnızca Bash
-     ailesinden cast send gözlendi.
+  1. READ KURAL AİLESİ — DENENDİ, AMA KAPANMADI (18 Eylül akşamı).
+     Kanıt: docs/evidence/sprint4-permission-deny-test.md.
+     GÖZLENEN: frontend/.env ve .env.pqwallet-owner-key için Read denendi,
+     İKİSİ DE REDDEDİLDİ, içerik dönmedi. Mesaj birebir: "File is in a
+     directory that is denied by your permission settings."
+     KONTROL: aynı dizindeki frontend/.env.example OKUNDU (3 satır), yani
+     engel yola özel, dizin geneli değil ve .env.example'ı kapsamıyor.
+     NEDEN KAPANMADI: reddi ÜRETENİN bizim kuralımız olduğu AYIRT EDİLEMEDİ.
+     Harness'ın kendi .env koruması var — kanıt: ls -la frontend/.env Bash
+     çağrısı da reddedildi, oysa listemizde hiç ls kuralı YOK. Korunan iki
+     yol da .env biçiminde olduğu için yalnızca yerleşik koruma çalışsaydı
+     AYNI iki reddi görürdük. Yalıtım için .env biçiminde OLMAYAN bir yola
+     geçici kural eklenip denenmeli; yapılmadı.
+     DOSYALAR MEVCUT: kökte .env* biçiminde 5 dosya sayıldı, adları okundu,
+     içerikleri OKUNMADI. Yıldızlı kural iki emekli anahtar dosyasını da
+     kapsıyor.
   2. CROSS-MACHINE WASM DETERMİNİZMİ ÖLÇÜLMEDİ, ve BEKLENTİ 18 Eylül'de
      DEĞİŞTİ: Hakan Windows'ta. Manifest hedef_platform tutuyor, bizimki
      aarch64-apple-darwin; Hakan derlerse host üçlüsü farklı olacağı için
@@ -1036,8 +1050,19 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      olmadığı doğrulanmadı.
      YAN BULGU: favicon.ico 404 — kozmetik, ama jüri konsolu açarsa görür.
      MetaMask contentscript.js uyarıları bizim kodumuzdan değil.
-  4. SUBMODULE PIN RİSKİ: sphincs-minus yan daldaki eef1f889 commit'ine
-     sabitli. Ağdan taze klonda çekilebiliyor, bugün patlamadı, KAPANMADI.
+  4. SUBMODULE PIN RİSKİ — 18 Eylül akşamı yeniden ölçüldü, RİSK SANILANDAN
+     KÜÇÜK ama kalem AÇIK (günlük çürüyen kontrol).
+     ÖLÇÜM: repo dışında /tmp altında, yalnızca submodule ağdan taze
+     klonlandı (https://github.com/nconsigny/SPHINCS-, --no-checkout).
+     eef1f889a46c77d45dca013d321e9648fd3eaa7e ÇEKİLEBİLİYOR: cat-file -t →
+     commit; tarih 2026-06-12, mesaj "Revise warning in README for SPHINCs-".
+     DÜZELTME — "YAN DALDA" NİTELEMESİ YANLIŞTI: commit origin/main'in
+     ATASI (merge-base --is-ancestor doğruladı) ve ayrıca
+     migrate/c11-c12-fips-layout dalında da var. Yani upstream main'i
+     yeniden yazmadıkça (force-push) ya da depoyu silmedikçe kaybolmaz.
+     Risk sıfır değil, ama "yan dal silinirse gider" senaryosu GEÇERSİZ.
+     Upstream main ucu 55b2f3e (2026-07-30); pinimiz 8 commit geride,
+     bu KASITLI. Klon silindi.
   5. TARAYICI ADIMI: npx vite ile sayfayı açıp ELLE İMZA ÜRETMEK. Akif'te,
      ajan koşamaz. ÖK-2'nin son açık parçası.
      18 EYLÜL'DE KAPANMADI: Hakan sayfayı açtı ve konsol temizdi, ama imza
@@ -1072,9 +1097,21 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      GÖZLEM DURUMU: mekanizma kesin, Windows'ta gözlendiği kaydı BENDE YOK —
      Hakan'ın 18 Eylül mesajında geçmiyor, yalnızca Yol A'yı raporladı.
      Gözlendiyse kaynağı yazılmalı, gözlenmediyse ÖNGÖRÜ olarak durmalı.
-     ÇÖZÜM YÖNÜ (uygulanmadı): yolu node'a hiç verme — manifest'i stdin'den
-     akıt (cat "$MANIFEST" | node -e ...), ya da cygpath -w ile çevir.
-     Birincisi platformdan bağımsız.
+     DÜZELTİLDİ 18 Eylül akşamı, AMA KALEM AÇIK — Windows doğrulaması yok.
+     Uygulanan çözüm: node'a mutlak yol HİÇ verilmiyor. Betik başında
+     cd "$FRONTEND_DIR" yapılıyor (dizin değişimini kabuk yapar, işletim
+     sistemine gerçek dizin olarak geçer) ve üç require de MANIFEST_REL
+     ile göreli yol kullanıyor: ./scripts/wasm-manifest.json. node -e için
+     require CWD'ye göre çözülür, o yüzden Git Bash'in /c/... biçimi hiç
+     devreye girmiyor. MANIFEST mutlak hâli kabuk tarafında (varlık sınaması
+     ve hata mesajları) korundu.
+     macOS'ta ÜÇ DURUM YENİDEN KOŞULDU: (a) ana depo, submodule çekili →
+     çıkış 0 · (b) ağdan taze klon, submodule çekilmemiş → çıkış 2 ·
+     (c) manifest'te submodule commit'i bozuk → çıkış 1, sonra geri alındı
+     ve sağlam durum yeniden doğrulandı (çıkış 0).
+     Ayrıca betik repo KÖKÜNDEN çağrıldığında da çalışıyor, yani cd eklemesi
+     çağrı dizinini bozmuyor.
+     WINDOWS'TA SINANMADI. Doğrulama Hakan'da; o gelene kadar KAPANMADI.
      ETKİSİ: yalnızca Yol B. Yol A bu betiği çağırmıyor, Hakan'ın Windows
      raporu da bu yüzden temiz geçti.
      MADDE 2'Yİ BLOKLAMIYOR: ham sha256 certutil/Get-FileHash ile betiğe
@@ -1086,6 +1123,23 @@ TASK 5 ADIM 0 — İKİ ÖLÇÜM, BİRİ UNUTULUYOR (18 Eylül'de netleşti)
      serbest, yalnızca haber vermekle yükümlü; yani bakiye Adım 0 ile
      Task 6 arasında değişebilir ve o anki değer okunmadan formül çalışmaz.
      17 Eylül ölçümü: 50900000000000000 wei — TARİHLİ KAYIT, sabit değil.
+TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
+  Beş dosya PLANDAN alındı (Task 10 Adım 1), tahmin edilmedi ve sıra korundu:
+  index.html · src/main.js · src/tx/sendTransaction.js · src/crypto/digest.js ·
+  src/tx/buildTransaction.js — hepsi frontend/ göreli.
+  ÜÇ MOD: argümansız mevcut seti basar · --kaydet <yol> referans yazar ·
+  <referans> ile karşılaştırır. Çıkışlar: 0 eşit · 1 en az biri farklı ·
+  2 dosya/araç eksik ya da kullanım hatası. Karar VERMEZ, kontrol eder.
+  DÖRT SINAMA, İKİSİ NEGATİF: basma modu çıkış 0 · kaydet+karşılaştır beşi de
+  eşit çıkış 0 · referansta tek bayt bozuldu, FARKLI satırı iki hash'i de
+  gösterdi, çıkış 1 · referans dosyası yok, çıkış 2.
+  BUGÜNKÜ ÇIKTI REFERANS DEĞİL. Basılan md5 seti yalnızca BETİĞİN ÇALIŞTIĞININ
+  kanıtıdır. Gerçek referans Task 6 Adım 4'te üretilecek KAYIT_MD5'tir; kayıt
+  öncesi hiçbir sette referans değeri yoktur.
+  Windows yol hatasının aynısına düşmemek için betik de frontend'e cd edip
+  göreli ad kullanıyor. md5 yoksa md5sum'a düşüyor, ikisi de yoksa çıkış 2 —
+  sessizce başka bir özete GEÇMİYOR, yoksa karşılaştırma anlamsızlaşır.
+  KAPI KAYIT_COMMIT'e BAĞLANMADI, plandaki gerekçe betiğin başına yazıldı.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
