@@ -1004,15 +1004,43 @@ YOL A AĞDAN KLONLA DOĞRULANDI — AÇIK KALEM KAPANDI, 18 Eylül
 AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
   1. READ KURAL AİLESİ SINANMADI (deny listesi, 18 Eylül). Yalnızca Bash
      ailesinden cast send gözlendi.
-  2. CROSS-MACHINE WASM DETERMİNİZMİ ÖLÇÜLMEDİ. Hakan aynı toolchain'le bir
-     kez derleyip sha256'yı bildirecek; beklenen
+  2. CROSS-MACHINE WASM DETERMİNİZMİ ÖLÇÜLMEDİ, ve BEKLENTİ 18 Eylül'de
+     DEĞİŞTİ: Hakan Windows'ta. Manifest hedef_platform tutuyor, bizimki
+     aarch64-apple-darwin; Hakan derlerse host üçlüsü farklı olacağı için
+     verify-wasm.sh hash karşılaştırmasını ATLAR (çıkış 0). Teyidi betikle
+     almanın yolu KAPALI. İstenecek şey: HAM sha256'yı elle bildirmesi.
+     SONUÇ ŞİMDİDEN YORUMLANMAYACAK: farklı çıkarsa iki açıklama da ayakta
+     kalır — platform farkı YA DA makineler arası determinizm yokluğu — ve o
+     ölçüm ikisini AYIRT ETMEZ. Ayrım aynı platformda ikinci bir derleme
+     ister, yapılmadı. (Önce "platform farkı olarak okunmalı" yazmıştım;
+     ölçümden önce hüküm vermekti, Akif düzeltti.)
+     Teyidin pratik değeri düşük: toolchain farklıysa betik zaten ATLANDI
+     diyor. Değerli olan tek şey sayının kayda girmesi.
+     Bizim değerimiz
      a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
-  3. ÖK-2 İKİNCİ MAKİNE şartı açık. Spec "tercihen ikinci makinede" diyor;
-     17 ve 18 Eylül ölçümlerinin ikisi de Akif'in makinesinde koştu.
+  3. KAPANDI — 18 Eylül, Hakan'ın Windows raporu. İkinci makine ŞARTININ
+     ÜSTÜNDE: ikinci işletim sistemi ve farklı Node ana sürümü (v24.15.0,
+     npm 11.12.1). npm i 7 sn, vite build 1,61 sn, dev ready 192 ms; build
+     çıktısı bizimkiyle AYNI (190 modül, wasm 227,41 kB, js 552,62 kB);
+     konsolda projenin kendi kodundan SIFIR hata.
+     AJAN DOĞRULAMADI — rapor edilen değerler, yeniden üretilmedi.
+     KAPATMADIKLARI, üçü ayrı: (a) elle imza üretimi rapor edilmedi, yalnızca
+     sayfa açıldı — madde 5 AÇIK; (b) klonun taze olduğu söylenmedi, rapor
+     npm i'den başlıyor, git clone adımı ve süresi yok; (c) Rust'ın PATH'te
+     olmadığı doğrulanmadı.
+     YAN BULGU: favicon.ico 404 — kozmetik, ama jüri konsolu açarsa görür.
+     MetaMask contentscript.js uyarıları bizim kodumuzdan değil.
   4. SUBMODULE PIN RİSKİ: sphincs-minus yan daldaki eef1f889 commit'ine
      sabitli. Ağdan taze klonda çekilebiliyor, bugün patlamadı, KAPANMADI.
-  5. TARAYICI ADIMI: npx vite ile sayfayı açıp elle imza üretmek. Akif'te,
+  5. TARAYICI ADIMI: npx vite ile sayfayı açıp ELLE İMZA ÜRETMEK. Akif'te,
      ajan koşamaz. ÖK-2'nin son açık parçası.
+     18 EYLÜL'DE KAPANMADI: Hakan sayfayı açtı ve konsol temizdi, ama imza
+     ürettiğini bildirmedi. Sayfanın açılması WASM'ın yüklendiğini bile
+     kanıtlamaz ve bu KONTROL EDİLDİ, varsayım değil: signer.js:20-25'te
+     ensureWasmInit() init() çağrısını initialized bayrağının arkasında
+     TEMBEL tutuyor; init yalnızca keygen ya da sign ile tetikleniyor.
+     Yani imza üretilmeden .wasm hiç örneklenmiyor. "Konsol temiz" ile
+     "imzalayıcı çalışıyor" AYRI İDDİALARDIR.
   6. KAPANDI — 18 Eylül akşamı. Düzeltilmiş verify-wasm.sh taze klonda
      sınandı: repo dışında /tmp altında düz git clone, submodule update
      KOŞULMADI, klonun HEAD'i 86f259f. SINANAN ŞEY MANTIK DEĞİL DAĞITIMDI.
@@ -1020,6 +1048,22 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      --show-toplevel satırının klona ULAŞTIĞI (satır 61) — çünkü çıkış 2'yi
      eski betik de başka bir sebepten verebilirdi; (ii) çıktı birebir
      "KONTROL KOŞMADI: submodule çekilmemiş" ve ÇIKIŞ 2. Klon silindi.
+  7. WINDOWS YOL HATASI — verify-wasm.sh, AÇIK, bugünkü commit'lerin hiçbiri
+     dokunmadı. require('$MANIFEST') ÜÇ yerde: satır 35, 135, 171.
+     MEKANİZMA (koddan okunuyor): MANIFEST yolu bash'te cd + pwd ile
+     kuruluyor, Git Bash'te /c/Users/... biçiminde çıkar; node Windows
+     binary'sidir ve o yolu çözemez. oku() hatayı 2>/dev/null ile yutuyor,
+     boş dönüyor, satır 47 boşluğu görüp "HATA: manifest okunamadı ya da
+     eksik alan var" diyor ve ÇIKIŞ 2 veriyor. Yani yanlış kırmızı değil ama
+     YANILTICI mesaj: sorun manifest değil, yol çevirisi.
+     GÖZLEM DURUMU: mekanizma kesin, Windows'ta gözlendiği kaydı BENDE YOK —
+     Hakan'ın 18 Eylül mesajında geçmiyor, yalnızca Yol A'yı raporladı.
+     Gözlendiyse kaynağı yazılmalı, gözlenmediyse ÖNGÖRÜ olarak durmalı.
+     ÇÖZÜM YÖNÜ (uygulanmadı): yolu node'a hiç verme — manifest'i stdin'den
+     akıt (cat "$MANIFEST" | node -e ...), ya da cygpath -w ile çevir.
+     Birincisi platformdan bağımsız.
+     ETKİSİ: yalnızca Yol B / determinizm turu. Yol A bu betiği çağırmıyor,
+     Hakan'ın Windows raporu da bu yüzden temiz geçti.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme

@@ -33,12 +33,19 @@ taze klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
 > node v22.21.0, npm 10.9.4, 18 Eylül 2026. **Klon ve `npm i` süreleri ağa
 > bağlıdır** — aynı repo 17 Eylül'de 176 sn'de klonlandı. Birkaç dakika
 > sürmesi kurulumun takıldığı anlamına gelmez.
+>
+> **Platform da değiştirir:** aynı `vite build` Windows + node 24'te 1,61 sn
+> sürdü, macOS'ta 141 ms. Onlarca kat fark normal; **çıktı ikisinde de aynı.**
 
 Yol A'da submodule **çekilmez**: `--recursive` klonu 2,7 sn'den 20,4 sn'ye ve
 83 MB'ı 115 MB'a çıkarır, karşılığında Yol A'ya hiçbir şey katmaz.
 `verify-wasm.sh` de bu yolda gerekmez (aşağıda).
 
-Ön koşul: **Node 22** ve npm. Ölçüm ortamı node v22.21.0, npm 10.9.4.
+Ön koşul: Node ve npm. **Ölçülen sürümler yalnızca ikisi:** macOS +
+node v22.21.0 / npm 10.9.4, ve **Windows + node v24.15.0 / npm 11.12.1**
+(Hakan, 18 Eylül 2026). **22 ve üstü bekleniyor, ama 23 sınanmadı** — bu iki
+nokta arasını genelleme değil, ölçülmemiş aralık olarak okuyun. Build çıktısı
+ölçülen iki ortamda da aynı: 190 modül, wasm 227,41 kB, js 552,62 kB.
 
 `npm run dev` **YOK** — `package.json`'da `scripts` alanı hiç tanımlı değil.
 Geliştirme sunucusu `npx vite` ile açılır.
@@ -161,10 +168,16 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 | `cast` komutu asılı kaldı | `cast receipt` kullanılmış, `cast rpc eth_getTransactionReceipt` olmalı |
 | Receipt `null` | Arşiv olmayan endpoint kullanılmış |
 | `verify-wasm.sh` → `KONTROL KOŞMADI: submodule çekilmemiş` | Yol A klonunda koşuldu; bu betik Yol B içindir |
+| `verify-wasm.sh` → `HATA: manifest okunamadı` (Windows) | **Bilinen açık kusur.** Manifest yolu Git Bash'te `/c/...` biçiminde; Windows `node`'u çözemiyor (betik satır 35, 135, 171). Sorun manifest değil, yol çevirisi. Yol A etkilenmez. |
 
 ## Kapsanmayan
 
-- **İkinci makinede** hiç koşulmadı. ÖK-2 izole dizinde, aynı makinede koştu;
-  rustc/wasm-pack/Foundry kurulumları ve npm kayıt defteri erişimi paylaşıldı.
-- **Tarayıcı adımı** (`npx vite` ile sayfada elle imza üretimi) ÖK-2'de
-  koşulmadı; `vite build`in geçmesi güçlü gösterge ama sayfanın kendisi değil.
+- **Tarayıcı adımı** (`npx vite` ile sayfada **elle imza üretimi**) hâlâ
+  koşulmadı. 18 Eylül'de Windows'ta sayfa açıldı ve konsol temizdi, ama imza
+  üretildiği rapor edilmedi; sayfanın açılması WASM'ın yüklendiğini bile
+  kanıtlamaz. `vite build`in geçmesi güçlü gösterge, sayfanın kendisi değil.
+- **`favicon.ico` 404** — kozmetik, işlevsel etkisi yok. Jüri konsolu açarsa
+  görür.
+
+İkinci makine şartı **kapandı**: Windows + node v24.15.0, Hakan, 18 Eylül 2026.
+Ayrıntı ve kapatmadıkları: `docs/evidence/sprint4-ok2-clean-clone.md`.

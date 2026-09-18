@@ -436,12 +436,73 @@ KONTROL KOŞMADI: submodule çekilmemiş: …/klon/contracts/lib/sphincs-minus
 
 **Çıkış kodu 2.** Beklenen davranış. Klon silindi.
 
+## İkinci makine + ikinci platform — Hakan'ın raporu, 18 Eylül 2026
+
+> **BU ÖLÇÜMÜ AJAN YAPMADI.** Aşağıdakiler Hakan'ın bildirdiği değerlerdir;
+> doğrulanmadı, yeniden üretilmedi. Kaynak: Hakan'ın 18 Eylül mesajı.
+
+**Ortam:** Windows, Node v24.15.0, npm 11.12.1 — yani yalnızca ikinci makine
+değil, **ikinci işletim sistemi ve farklı Node/npm ana sürümü.** Spec yalnızca
+ikinci makineyi istiyordu.
+
+| Adım | Hakan'ın değeri | Bizim macOS değerimiz |
+|---|---|---|
+| `npm i` | 7 sn, 31 paket, 0 zafiyet | 2,4 sn, 33 paket |
+| `npx vite build` | 1,61 sn | 141 ms |
+| `npx vite` (dev) | ready in 192 ms | ölçülmedi |
+
+Build çıktısı iki platformda **aynı**: 190 modül, `index.html` 4,97 kB, wasm
+227,41 kB, js 552,62 kB. Tek uyarı 500 kB üstü chunk için code-split önerisi —
+bizde de çıkıyor, hata değil.
+
+Konsol: **projenin kendi kodundan sıfır hata.** Görülen ikisi de bizim dışımızda:
+`MaxListenersExceededWarning` / `ObjectMultiplex` uyarıları `contentscript.js`'ten,
+yani MetaMask eklentisinin kendi kodu; ve `favicon.ico` 404.
+
+**BU RAPORUN KAPATTIĞI:** ikinci makine şartı **ve** hiç istenmemiş bir ikinci
+platform. Derlenmiş imzalayıcının Windows'ta da çalıştığı, `vite build`
+çıktısının bayt bayt aynı boyutlarda çıktığı gösterildi.
+
+**BU RAPORUN KAPATMADIĞI — üçü de ayrı ayrı:**
+
+1. **Elle imza üretimi.** Rapor "sayfa açıldı, konsol temiz" diyor; **imza
+   üretildiğini söylemiyor.** Sayfanın açılması WASM'ın yüklendiğini bile
+   kanıtlamaz, ve bu **kontrol edildi:** `signer.js:20-25`'te
+   `ensureWasmInit()`, `await init()` çağrısını `initialized` bayrağının
+   arkasında tembel tutuyor; init yalnızca `keygen` ya da `sign` yolundan
+   tetikleniyor. **İmza üretilmeden `.wasm` hiç örneklenmiyor.**
+   Dolayısıyla temiz konsol, imzalayıcı hakkında hiçbir şey söylemiyor.
+   **Tarayıcı adımı AÇIK.**
+2. **Klonun taze olup olmadığı.** Raporda `git clone` adımı ve süresi yok;
+   `npm i`'den başlıyor. Var olan bir çalışma kopyası da aynı çıktıyı verirdi.
+3. **Rust'ın yokluğu doğrulanmadı.** Windows'ta kurulu olmaması muhtemel, ama
+   "kurulu değil" ayrı bir iddiadır ve rapor etmiyor.
+
+### Yan sonuç — cross-machine determinizm Hakan'ın makinesinde ÖLÇÜLEMEZ
+
+Manifest `hedef_platform` alanını da tutuyor ve bizimki `aarch64-apple-darwin`.
+Hakan Windows'ta derlerse host üçlüsü farklı olacağı için `verify-wasm.sh`
+**hash karşılaştırmasını ATLAR** (çıkış 0, "HASH KARŞILAŞTIRMASI ATLANDI") —
+tasarım gereği, ama beklenen teyidi betikle almanın yolu kapalı demek.
+
+İstenecek şey değişiyor: Hakan derlerse **ham sha256'yı elle bildirmeli.**
+
+**Sonuç şimdiden yorumlanmayacak.** Elimizdeki determinizm kanıtı tek
+platformda: aynı makinede iki derleme, aynı sha256. Hakan'ın değeri farklı
+çıkarsa **iki açıklama da ayakta kalır** — (a) platform farkı, (b) derlemenin
+makineler arası deterministik olmaması — ve bu ölçüm ikisini **ayırt etmez.**
+Ayrım için aynı platformda ikinci bir derleme gerekir; yapılmadı.
+
+Teyidin pratik değeri zaten düşük: toolchain farklıysa `verify-wasm.sh` nasılsa
+"ATLANDI" diyor. Değeri olan tek şey **sayının kayda girmesi**, ve yorumun açık
+kalması ona zarar vermiyor.
+
 ## Kapsanmayan — hâlâ açık
 
 1. **Tarayıcı adımı.** `npx vite` ile sayfayı açıp elle imza üretmek
    koşulmadı; ajan tarayıcı çalıştırmadı. `vite build`in geçmesi güçlü bir
    gösterge ama sayfanın kendisi değil.
-2. **İkinci makine.** Spec "tercihen ikinci makinede" diyor. Bu test izole
-   dizinde, aynı makinede koştu. Paylaşılan şeyler: rustc/wasm-pack/forge
-   kurulumları ve npm kayıt defterine erişim. Bunların eksik olduğu bir makinede
-   sonuç farklı olabilir.
+2. **İkinci makine — 18 Eylül'de KAPANDI**, Hakan'ın Windows raporuyla
+   (yukarıdaki bölüm). Bu maddeyi yazdıran ölçümler (17 ve 18 Eylül) hâlâ
+   yalnızca Akif'in makinesinde koştu; kapatan şey Hakan'ın bağımsız koşusudur
+   ve **ajan tarafından doğrulanmadı.**
