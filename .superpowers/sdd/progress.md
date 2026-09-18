@@ -926,3 +926,101 @@ TESLİM TARİHİ TEYİT EDİLDİ — 30 EYLÜL 2026, 17 Eylül'de teyit
     Task 7'si BİTMEDİ; Task 5'in TEKRAR dizilerini ve Task 6'nın Δ₂'sini
     tüketen zorunlu halka, 23 Eylül'e konuldu. (progress.md'deki eski
     "Task 7: complete" satırı BAŞKA bir planın Task 7'si.)
+YOL A AĞDAN KLONLA DOĞRULANDI — AÇIK KALEM KAPANDI, 18 Eylül
+  Kanıt: docs/evidence/sprint4-ok2-clean-clone.md satır 305 ve sonrası.
+  NEDEN GEREKLİYDİ: 17 Eylül'ün başarı ölçütü çalışma ağacının KOPYASINDA
+    koşmuştu; çıktı henüz commit'li olmadığı için "imzalayıcı depodan geliyor"
+    iddiasını kanıtlamıyordu. Bugün ağdan taze klonla tekrarlandı.
+  KLONLANAN COMMIT 3d36c3b — 17 Eylül'ün 8643835'i DEĞİL. Hakan gece README'ye
+    frontend kurulum referansını ekledi; konsolide mesajın README maddesi
+    KAPANDI.
+  PATH BENZETİMİ: env -i HOME=... PATH=<node bin>:/usr/bin:/bin — Rust
+    ~/.cargo/bin'de bırakıldı. Doğrulandı, command -v üçü için de boş döndü:
+    cargo YOK · rustc YOK · wasm-pack YOK. build-wasm.sh KOŞULMADI.
+  ÖLÇÜMLER, tek tek: git clone 2,7 sn · npm i 2,4 sn (boş önbellek dizini),
+    sıcak tekrarı 1,3 sn · npx vite build 141 ms, 190 modül,
+    sphincs_c13_signer_bg.wasm 227,41 kB olarak bundle'a girdi ·
+    build-transaction-test.mjs 21 assertion, çıkış 0 · wasm-signer-test.mjs
+    keygen + sign geçti, imza 3688 bayt, sign 7,5 sn, çıkış 0.
+    Toplam YAZILMIYOR: bunlar farklı birimlerde ayrı ölçümler, toplamı
+    hiçbir şeyin ölçüsü değil.
+  --recursive YOL A'DA GEREKMİYOR — ÖLÇÜLDÜ: düz klon 2,7 sn / 83 MB,
+    --recursive 20,4 sn / 115 MB. Yol A submodule'ü hiç çekmiyor.
+    JÜRİNİN KOMUTU DEĞİŞTİ: git clone --recursive → düz git clone.
+    17 Eylül'ün 176 sn'si --recursive'di; aradaki fark ağ değişkenliği.
+  KUSUR — verify-wasm.sh YOL A KLONUNDA YANLIŞ KIRMIZI YAKIYORDU (c5d6003)
+    Klonda "HATA: submodule commit'i manifest'le uyuşmuyor" verdi ve "gerçek"
+      diye SÜPERPROJENİN commit'ini (3d36c3b) gösterdi.
+    MEKANİZMA: submodule çekilmemişken contracts/lib/sphincs-minus BOŞ bir
+      dizindir. git -C <boş dizin> rev-parse HEAD hata vermez, ÜST depoya
+      yürür ve süperprojenin commit'ini döndürür. Betiğin boşluk kontrolü
+      bunu yakalamıyordu, çünkü dönen değer boş değildi.
+    KUSUR BU ÖLÇÜMDE BULUNDU. Ölçülmeseydi jüri, izlemesi söylenen yolda
+      HER SEFERİNDE ve YANLIŞ kırmızı görecekti. C kararının koşulu tam da
+      buydu: "herkesin görmezden gelmeyi öğrendiği bir kontrol hiç olmayandan
+      kötüdür." Kusur o koşulu doğrudan çiğniyordu.
+    DÜZELTME: dizinin KENDİ deposu olduğu (rev-parse --show-toplevel ==
+      dizinin kendisi) önce doğrulanıyor; değilse durum "kontrol koşamadı",
+      ÇIKIŞ 2, ve mesaj Yol A kullanıcısına betiğin gerekmediğini söylüyor.
+    ÜÇ SINAMA: ana depo (submodule çekili) çıkış 0 · Yol A klonu çıkış 2 ·
+      manifest'te submodule commit'i sıfırlanmış, yani GERÇEK uyuşmazlık,
+      çıkış 1. Sonuncusu REGRESYON sınamasıdır: yeni koruma, yakalaması
+      gereken uyuşmazlığı yutmuyor. Sınamadan sonra manifest geri alındı ve
+      sağlam durum yeniden doğrulandı.
+    SIRA UYARISI — ölçülen klon (3d36c3b) DÜZELTMEDEN ÖNCEKİ hâl. c5d6003 o
+      klondan SONRA doğdu, çünkü kusur zaten o klonda bulundu. Yol A'nın
+      kendisi taze klonda doğrulandı; DÜZELTİLMİŞ betiğin taze klondaki doğal
+      davranışı SINANMADI. Çıkış 2 sınaması klonun dizininde koştu ama betik
+      oraya EL İLE kopyalandı, klon o hâli taşımıyordu; diğer iki sınama
+      yerel ağaçtaydı. Push'tan sonra düz klonla kapatılacak.
+  AĞ DEĞİŞKENLİĞİ HİPOTEZDİR, ÖLÇÜM DEĞİL. 17 Eylül'ün 176 sn'si bugün 20,4 sn,
+    npm i 16 sn bugün 2,4 sn. İki bağımsız ölçüm aynı yönde ve benzer oranda
+    saptı (8,6× ve 6,7×); ağ açıklamasıyla TUTARLI ama başka açıklama
+    DIŞLANMADI — disk önbelleği ve npm CDN'i de aynı imzayı bırakır.
+    Kanıt notundaki teşhis gibi duran cümle bu yazımla değiştirildi.
+İZİN DENY LİSTESİ DEPOYA GİRDİ — 18 Eylül, commit 81b6cd6
+  .claude/settings.json YENİ ve git'te İZLENİYOR; amaç korumaların Hakan'ın
+    makinesinde de geçerli olması. Kök .gitignore yalnızca settings.local.json
+    satırını taşıyor, o yüzden bu dosya dışarıda kalmıyor.
+  17 KURAL: cast send · cast publish · cast rpc eth_sendRawTransaction ·
+    forge create · forge script --broadcast · git commit/push/add/reset/
+    checkout/rebase/clean/stash · Read .env.pqwallet-owner-key* ·
+    Read frontend/.env · Bash cat ve cp ile owner key dosyaları.
+  RED GÖZLENDİ: cast send --help denendi, "Permission to use Bash with command
+    cast send --help has been denied" döndü. Kural çalışıyor.
+    GERÇEK YAYINLA SINANMADI, bilerek: kural tutmasaydı komut Sepolia'ya işlem
+    gönderirdi ve 19-22 Eylül ölçüm penceresi kırılırdı. --help aynı öneki
+    taşıdığı için kuralı aynı kesinlikte sınıyor, tutmasa bile zararsızdı.
+  READ KURAL AİLESİ SINANMADI — AÇIK KALEM. Bash ve Read kurallarının eşleşme
+    yolları ayrıdır; birinin gözlenmesi diğerini kanıtlamaz.
+  settings.local.json allow listesinden YILDIZLI python3 satırı KALDIRILDI:
+    keyfi kod çalıştırma yetkisi, yukarıdaki deny kurallarının hepsini
+    atlatabilirdi. Yerine dar kapsamlı satır KONMADI. Kalan 9 satır; içlerinde
+    python3 -c ile başlayan bir satır var, ama sonunda :* YOK — tam metne
+    eşleşiyor, genel python3 yetkisi vermiyor.
+  AUTO-MODE AÇILMADI. Deny listesi auto-mode'u GÜVENLİ KILMAZ: node -e ve
+    bash -c keyfi kod çalıştırır, npx kapsam dışıdır ve bloklanamaz. Liste
+    kazayı azaltır, dolaylı yolu kapatmaz.
+AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
+  1. READ KURAL AİLESİ SINANMADI (deny listesi, 18 Eylül). Yalnızca Bash
+     ailesinden cast send gözlendi.
+  2. CROSS-MACHINE WASM DETERMİNİZMİ ÖLÇÜLMEDİ. Hakan aynı toolchain'le bir
+     kez derleyip sha256'yı bildirecek; beklenen
+     a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
+  3. ÖK-2 İKİNCİ MAKİNE şartı açık. Spec "tercihen ikinci makinede" diyor;
+     17 ve 18 Eylül ölçümlerinin ikisi de Akif'in makinesinde koştu.
+  4. SUBMODULE PIN RİSKİ: sphincs-minus yan daldaki eef1f889 commit'ine
+     sabitli. Ağdan taze klonda çekilebiliyor, bugün patlamadı, KAPANMADI.
+  5. TARAYICI ADIMI: npx vite ile sayfayı açıp elle imza üretmek. Akif'te,
+     ajan koşamaz. ÖK-2'nin son açık parçası.
+  6. DÜZELTİLMİŞ verify-wasm.sh TAZE KLONDA SINANMADI. c5d6003 push edildikten
+     sonra düz git clone + bash frontend/scripts/verify-wasm.sh; beklenen
+     çıkış 2 ve "KONTROL KOŞMADI: submodule çekilmemiş". Gözlemlenmeden
+     kapandı YAZILMAYACAK. (18 Eylül akşamı kapanması bekleniyor.)
+SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
+  Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
+  a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
+  artefaktının aleni hash'i, frontend/scripts/wasm-manifest.json ile zaten
+  commit'li. Çıkış 1 İNSAN HÜKMÜYLE ezildi; hükmü veren Akif, tarih 18 Eylül.
+  Kayda geçiyor ki ileride "bu çıkış 1 neden yoksayıldı" sorusu cevapsız
+  kalmasın.
