@@ -1002,7 +1002,9 @@ YOL A AĞDAN KLONLA DOĞRULANDI — AÇIK KALEM KAPANDI, 18 Eylül
     bash -c keyfi kod çalıştırır, npx kapsam dışıdır ve bloklanamaz. Liste
     kazayı azaltır, dolaylı yolu kapatmaz.
 AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
-  1. READ KURAL AİLESİ — DENENDİ, AMA KAPANMADI (18 Eylül akşamı).
+  1. READ KURAL AİLESİ — KAPANDI 19 Eylül, tek değişkenli deneyle.
+     (18 Eylül akşamı "denendi ama kapanmadı" diye açılmıştı; kapanış aşağıda,
+     başlık 19 Eylül'de düzeltildi — başlığa bakan kalemi açık sanıyordu.)
      Kanıt: docs/evidence/sprint4-permission-deny-test.md.
      GÖZLENEN: frontend/.env ve .env.pqwallet-owner-key için Read denendi,
      İKİSİ DE REDDEDİLDİ, içerik dönmedi. Mesaj birebir: "File is in a
@@ -1024,7 +1026,8 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      çağrısı da reddedildi, oysa listemizde hiç ls kuralı YOK. Korunan iki
      yol da .env biçiminde olduğu için yalnızca yerleşik koruma çalışsaydı
      AYNI iki reddi görürdük. Yalıtım için .env biçiminde OLMAYAN bir yola
-     geçici kural eklenip denenmeli; yapılmadı.
+     geçici kural eklenip denenmeli; O AN yapılmamıştı, 19 Eylül'de YAPILDI
+     ve kalemi kapattı (yukarı bak).
      DOSYALAR MEVCUT: kökte .env* biçiminde 5 dosya sayıldı, adları okundu,
      içerikleri OKUNMADI. Yıldızlı kural iki emekli anahtar dosyasını da
      kapsıyor.
