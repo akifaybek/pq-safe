@@ -38,7 +38,38 @@ File is in a directory that is denied by your permission settings.
 `frontend/.env.example` **okundu** (3 satır). Yani kural `frontend/` dizinini
 topluca kapatmıyor, `.env.example`'ı da yanlışlıkla kapsamıyor.
 
-### Bu sınamanın KANITLAMADIĞI — açık kalem duruyor
+### KAPANDI — tek değişkenli deney, 19 Eylül 2026
+
+Aşağıdaki belirsizlik **iki dakikalık bir deneyle** çözüldü. Yöntem: `.env`
+biçiminde **olmayan**, yerleşik koruması bulunmayan bir dosyaya geçici bir
+kural koyup tek değişkeni oynatmak.
+
+| Adım | Durum | Sonuç |
+|---|---|---|
+| 1 | `Read(./docs/FRONTEND-KURULUM.md)` deny listesine **eklendi** | Read **REDDEDİLDİ** |
+| 2 | Kural **kaldırıldı** | Aynı dosya **OKUNDU** (3 satır) |
+
+Red mesajı birebir aynı çıktı:
+
+```
+File is in a directory that is denied by your permission settings.
+```
+
+**HÜKÜM: reddi üreten bizim listemizdir.** `docs/FRONTEND-KURULUM.md` düz bir
+markdown dosyası; harness'ın `.env` koruması buraya uğramıyor. Tek değişen şey
+listedeki satırdı ve davranış onunla birlikte değişti, onsuz geri döndü.
+
+Yan sonuç: **ayar dosyası canlı okunuyor** — kural eklendiği anda etkili oldu,
+kaldırıldığı anda etkisi kalktı; oturum yeniden başlatmak gerekmedi.
+
+İkinci yan sonuç: red **mesajı** ayırt edici değil. `.env` dosyalarında görülen
+metnin aynısı burada da çıktı, yani mesaja bakarak "bu bizim kuralımız" denemez;
+ayrımı yapan şey deneyin kendisidir.
+
+`settings.json` deney sonrası **baytı baytına** eski hâline döndü (`git diff`
+boş). Kalıcı bir değişiklik yapılmadı.
+
+### Deney ÖNCESİNDE belirsiz kalan — kayıt olarak duruyor
 
 Red **gözlendi**, ama **bizim kuralımızın** ürettiği ayırt edilemedi:
 
@@ -49,13 +80,12 @@ Red **gözlendi**, ama **bizim kuralımızın** ürettiği ayırt edilemedi:
 3. Kuralları tek başına yalıtacak bir deneme yok: listedeki Read kurallarının
    ikisi de `.env`-biçimli yollara bakıyor.
 
-Bu yüzden kalem **kapanmadı**. Doğru ifade: *"Read yolunda dosya okunamadığı
-gözlendi; reddi üretenin bizim kuralımız mı yerleşik koruma mı olduğu
-ölçülmedi."*
+O aşamada doğru ifade şuydu: *"Read yolunda dosya okunamadığı gözlendi; reddi
+üretenin bizim kuralımız mı yerleşik koruma mı olduğu ölçülmedi."*
 
-Yalıtım isteniyorsa yol: listeye `.env` biçiminde **olmayan** bir yol için
-geçici bir Read kuralı eklenip o dosyanın reddedilip reddedilmediğine bakılır.
-Yapılmadı.
+Önerilen yalıtım yolu — `.env` biçiminde **olmayan** bir yola geçici kural
+koymak — **19 Eylül'de koşuldu ve kalemi kapattı** (yukarıdaki bölüm). Bu
+bölüm neyin neden bilinmediğinin kaydı olarak duruyor.
 
 ### Yan kayıt — kalıba giren dosyalar
 

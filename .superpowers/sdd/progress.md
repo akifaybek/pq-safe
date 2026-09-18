@@ -1009,7 +1009,17 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      directory that is denied by your permission settings."
      KONTROL: aynı dizindeki frontend/.env.example OKUNDU (3 satır), yani
      engel yola özel, dizin geneli değil ve .env.example'ı kapsamıyor.
-     NEDEN KAPANMADI: reddi ÜRETENİN bizim kuralımız olduğu AYIRT EDİLEMEDİ.
+     KAPANDI 19 EYLÜL — TEK DEĞİŞKENLİ DENEY. Read(./docs/FRONTEND-KURULUM.md)
+     deny listesine geçici eklendi → Read REDDEDİLDİ; kural kaldırıldı →
+     aynı dosya OKUNDU (3 satır). O dosya düz markdown, harness'ın .env
+     koruması oraya uğramıyor; tek değişen şey listedeki satırdı.
+     HÜKÜM: reddi üreten BİZİM LİSTEMİZ. Read kuralları çalışıyor.
+     YAN SONUÇ 1: ayar dosyası CANLI okunuyor, oturum yeniden başlatmak
+     gerekmedi. YAN SONUÇ 2: red MESAJI ayırt edici DEĞİL — .env'de görülen
+     metnin aynısı burada da çıktı; ayrımı yapan deneyin kendisi.
+     settings.json deney sonrası baytı baytına eski hâlinde (git diff boş).
+     ------- deney öncesi belirsizlik, kayıt olarak -------
+     REDDİ ÜRETENİN bizim kuralımız olduğu O AN AYIRT EDİLEMEMİŞTİ.
      Harness'ın kendi .env koruması var — kanıt: ls -la frontend/.env Bash
      çağrısı da reddedildi, oysa listemizde hiç ls kuralı YOK. Korunan iki
      yol da .env biçiminde olduğu için yalnızca yerleşik koruma çalışsaydı
@@ -1058,9 +1068,13 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      commit; tarih 2026-06-12, mesaj "Revise warning in README for SPHINCs-".
      DÜZELTME — "YAN DALDA" NİTELEMESİ YANLIŞTI: commit origin/main'in
      ATASI (merge-base --is-ancestor doğruladı) ve ayrıca
-     migrate/c11-c12-fips-layout dalında da var. Yani upstream main'i
-     yeniden yazmadıkça (force-push) ya da depoyu silmedikçe kaybolmaz.
-     Risk sıfır değil, ama "yan dal silinirse gider" senaryosu GEÇERSİZ.
+     migrate/c11-c12-fips-layout dalında da var.
+     RİSKİN SINIFI DEĞİŞTİ, bu şekilde kaydedilsin: eski senaryo "yan dalda
+     pinli, dal silinirse commit kaybolur" idi ve GEÇERSİZ çıktı. KALAN RİSK
+     artık dal silinmesi değil, upstream deposunun TAMAMEN kaybolması ya da
+     force-push'lanması — daha DAR bir sınıf ve daha AZ olası.
+     Pin'in 8 commit geride olması AYRI BİR SORU (upstream'de bizi ilgilendiren
+     bir düzeltme var mı) ve o SPRINT 5'e ait, bu kalemin parçası değil.
      Upstream main ucu 55b2f3e (2026-07-30); pinimiz 8 commit geride,
      bu KASITLI. Klon silindi.
   5. TARAYICI ADIMI: npx vite ile sayfayı açıp ELLE İMZA ÜRETMEK. Akif'te,
@@ -1123,6 +1137,28 @@ TASK 5 ADIM 0 — İKİ ÖLÇÜM, BİRİ UNUTULUYOR (18 Eylül'de netleşti)
      serbest, yalnızca haber vermekle yükümlü; yani bakiye Adım 0 ile
      Task 6 arasında değişebilir ve o anki değer okunmadan formül çalışmaz.
      17 Eylül ölçümü: 50900000000000000 wei — TARİHLİ KAYIT, sabit değil.
+TASK 5 OTURUMU ÖNCESİ DOLDURULACAKLAR — 19 Eylül, plan DEĞİŞMEDİ
+  Plan dondurulmuş olduğu için bu üç eksik oraya YAZILMADI; kaydı burası.
+  Kuru provada bulundu, plandaki referansların geri kalanı tuttu.
+  1. $SEPOLIA_RPC KABUK DEĞİŞKENİ TANIMSIZ. Plan 11 yerde kullanıyor, .env
+     ise VITE_SEPOLIA_RPC_URL tutuyor ve cast onu GÖRMEZ. Oturumun ilk satırı:
+     export SEPOLIA_RPC=https://ethereum-sepolia-rpc.publicnode.com
+     (değer frontend/.env.example'dan, anahtarsız; arşiv gerektiğinde
+     https://sepolia.gateway.tenderly.co)
+  2. A/B/C ADRESLERİ PLANDA TANIMSIZ, üçü de <...> placeholder.
+     A = 0xe0bf2d190f8e2f2fc97cf19244845f8febdb7351 (Akif'in MetaMask'i;
+         from ile AYNI olması A'nın sıcak alıcı olmasının TEK sebebi)
+     B = var olan bir adres; Hakan'ın EOA'sı
+         0x7268a7c3d52baa50486930e6ed25d29804d075b6 uyar
+     C = TAZE BOŞ ADRES, SEÇİLMEDİ. Adım 3'ün üçlü kontrolü (balance/nonce/
+         code = 0/0/0x) 18 Eylül oturumunda YAPILAMADI, zincire dokunmak
+         yasaktı. Oturumun başında seçilip doğrulanacak.
+  3. ADIM 0 KAPISI, adres doldurulmuş hâlde hazır:
+     cast nonce 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB --rpc-url $SEPOLIA_RPC
+     cast balance 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB --rpc-url $SEPOLIA_RPC
+     Nonce 2 beklenir, DEĞİLSE DUR. Bakiye YAZILACAK — Task 6 Adım 8 girdisi.
+  SIRA: tarayıcı adımı (ÖK-2'nin son parçası, Task 5/6'nın blokörü) → Adım 0
+  → mnemonic. Ölçüm penceresi 19 Eylül 00:00'da başladı, Hakan uyacağını yazdı.
 TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   Beş dosya PLANDAN alındı (Task 10 Adım 1), tahmin edilmedi ve sıra korundu:
   index.html · src/main.js · src/tx/sendTransaction.js · src/crypto/digest.js ·
