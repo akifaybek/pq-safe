@@ -873,7 +873,9 @@ C KARARI VE UYGULAMASI — derlenmiş imzalayıcı depoya, 17 Eylül
     build-wasm.sh KOŞULMADAN, npm i + cp .env.example .env + npx vite build
     142 ms'de geçti; build-transaction ve wasm-signer testleri yeşil.
     UYARI: bu sınama çalışma ağacının kopyasında koştu, çıktı henüz commit'li
-    olmadığı için AĞDAN KLON DEĞİL. Ağdan tekrarı commit'ten sonra — AÇIK KALEM.
+    olmadığı için AĞDAN KLON DEĞİL. Ağdan tekrarı commit'ten sonra yapılacaktı
+    ve 18 EYLÜL'DE YAPILDI, kalem KAPANDI — bkz. "YOL A AĞDAN KLONLA
+    DOĞRULANDI". Bu satır 17 Eylül'ün durumunu anlatıyor.
   YAN BULGU: iki hedefin .wasm dosyaları birebir aynı (a0f1f0cb…); hedefe göre
     değişen yalnızca JS tutkalı. Manifest ikisini de ayrı kaydediyor.
   ÖLÇÜLMEDİ: cross-machine determinizm. Kanıt notunda "ölçülmemiştir ve rapor
@@ -991,8 +993,12 @@ YOL A AĞDAN KLONLA DOĞRULANDI — AÇIK KALEM KAPANDI, 18 Eylül
     GERÇEK YAYINLA SINANMADI, bilerek: kural tutmasaydı komut Sepolia'ya işlem
     gönderirdi ve 19-22 Eylül ölçüm penceresi kırılırdı. --help aynı öneki
     taşıdığı için kuralı aynı kesinlikte sınıyor, tutmasa bile zararsızdı.
-  READ KURAL AİLESİ SINANMADI — AÇIK KALEM. Bash ve Read kurallarının eşleşme
-    yolları ayrıdır; birinin gözlenmesi diğerini kanıtlamaz.
+  READ KURAL AİLESİ O GÜN SINANMAMIŞTI — Bash ve Read kurallarının eşleşme
+    yolları ayrıdır, birinin gözlenmesi diğerini kanıtlamaz.
+    19 EYLÜL'DE SINANDI VE KAPANDI: tek değişkenli deney, bkz. açık kalemler
+    listesindeki 1. madde. Bu satır 18 Eylül'ün durumunu anlatıyor; "AÇIK
+    KALEM" ibaresi 19 Eylül'de kaldırıldı, çünkü kapalı bir kalemi açık
+    gösteriyordu.
   settings.local.json allow listesinden YILDIZLI python3 satırı KALDIRILDI:
     keyfi kod çalıştırma yetkisi, yukarıdaki deny kurallarının hepsini
     atlatabilirdi. Yerine dar kapsamlı satır KONMADI. Kalan 9 satır; içlerinde
