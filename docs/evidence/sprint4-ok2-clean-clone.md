@@ -311,6 +311,14 @@ commit'li olmadığı için gerçekten depodan gelip gelmediğini kanıtlamıyor
 
 **Klonlanan commit:** `3d36c3b` (`origin/main` uç; 17 Eylül'ün `8643835`'inden
 sonra Hakan README'ye frontend kurulum referansını ekledi)
+
+> **SIRA UYARISI — bu klon düzeltmeden ÖNCEKİ hâldir.** `c5d6003`
+> (`verify-wasm.sh` düzeltmesi) bu klondan **sonra** doğdu; kusur zaten bu
+> ölçümde bulundu. Yani Yol A'nın kendisi — `clone` → `npm i` → `vite build` →
+> testler — taze klonda doğrulandı, ama **düzeltilmiş betiğin taze klondaki
+> doğal davranışı bu ölçümde sınanmadı.** Aşağıdaki çıkış 2 sınaması klonun
+> dizininde koştu, fakat betik oraya **el ile kopyalandı**; klonun kendisi o
+> hâli taşımıyordu. Diğer iki sınama yerel ağaçtaydı.
 **Makine:** Akif'in MacBook Air'i, izole dizin — **ikinci makine DEĞİL**, o şart
 hâlâ açık.
 **Ortam:** node v22.21.0, npm 10.9.4
@@ -347,7 +355,12 @@ Testler, aynı kısıtlı ortamda:
 | `git clone` | 2,7 sn | 83 MB |
 | `git clone --recursive` | 20,4 sn | 115 MB |
 
-17 Eylül'de klon 176 sn sürmüştü (`--recursive`); aradaki fark ağ değişkenliği.
+17 Eylül'de klon 176 sn sürmüştü (`--recursive`), bugün aynı komut 20,4 sn.
+**Fark ÖLÇÜLMEDİ.** İki bağımsız ölçümün aynı yönde ve benzer oranda sapması
+(klon 8,6× · `npm i` 16 sn → 2,4 sn, 6,7×) ağ değişkenliğiyle **tutarlı**;
+başka bir açıklama **dışlanmadı** — disk önbelleği ve npm kayıt defteri CDN'i
+de aynı imzayı bırakır.
+
 Yol A için submodule hiç çekilmiyor, o yüzden doğru komut düz `git clone`.
 
 ### Bu ölçümde bulunan kusur — `verify-wasm.sh` Yol A klonunda YANLIŞ kırmızı yakıyordu

@@ -17,13 +17,21 @@ kalması.
 | Dosya | İşlem |
 |---|---|
 | `frontend/.gitignore` | `src/crypto/wasm-pkg/` satırı **kaldırılır** |
-| `frontend/src/crypto/wasm-pkg/` | depoya girer (248 KB, 6 dosya) |
-| `frontend/src/crypto/wasm-pkg-web/` | depoya girer (252 KB, 6 dosya) |
+| `frontend/src/crypto/wasm-pkg/` | depoya girer (5 dosya, 236.418 bayt) |
+| `frontend/src/crypto/wasm-pkg-web/` | depoya girer (5 dosya, 241.345 bayt) |
 | `frontend/scripts/build-wasm.sh` | manifest üretimi + wasm-pack sürüm kontrolü eklenir |
 | `frontend/scripts/wasm-manifest.json` | **yeni** — hash'ler + üreten toolchain |
 | `frontend/scripts/verify-wasm.sh` | **yeni** — tutarsızlık kontrolü |
 | `rust-toolchain.toml` (repo kökü) | **yeni** — `rustc` sürümü sabitlenir |
 | `docs/FRONTEND-KURULUM.md` | DURUM kutusu ve Yol A/B güncellenir |
+
+> **DÜZELTME — 18 Eylül 2026.** Bu iki satırda "6 dosya" yazıyordu, **gerçek
+> 5**. Altıncı dosya `wasm-pack`'in her çıktı dizinine yazdığı `.gitignore`
+> idi ve `build-wasm.sh:58` onu **siliyor** — yani depoya hiç girmedi.
+> Boyutlar da `du` blok kullanımıydı (248/252 KiB), içerik değil; yerlerine
+> ağdan klonda ölçülen gerçek bayt sayıları yazıldı. Toplam **10 dosya,
+> 477.763 bayt**. Aynı hata `docs/evidence/sprint4-ok2-clean-clone.md` ve
+> `docs/FRONTEND-KURULUM.md`'de de vardı, ikisi de düzeltildi.
 
 Hakan'ın hiçbir dosyasına dokunulmuyor. `contracts/lib/sphincs-minus`
 submodule'ü **değişmiyor** — yalnızca commit SHA'sı manifest'e yazılıyor.

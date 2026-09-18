@@ -29,6 +29,11 @@ taze klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
 | 4 | `npx vite build` | 141 ms |
 | 5 | `npx vite` — sayfayı aç | — |
 
+> **Süreler beklenti değil, ölçümdür.** Ölçüm ortamı: ODTÜ ağı, macOS,
+> node v22.21.0, npm 10.9.4, 18 Eylül 2026. **Klon ve `npm i` süreleri ağa
+> bağlıdır** — aynı repo 17 Eylül'de 176 sn'de klonlandı. Birkaç dakika
+> sürmesi kurulumun takıldığı anlamına gelmez.
+
 Yol A'da submodule **çekilmez**: `--recursive` klonu 2,7 sn'den 20,4 sn'ye ve
 83 MB'ı 115 MB'a çıkarır, karşılığında Yol A'ya hiçbir şey katmaz.
 `verify-wasm.sh` de bu yolda gerekmez (aşağıda).
