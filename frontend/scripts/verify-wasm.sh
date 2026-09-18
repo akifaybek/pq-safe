@@ -8,7 +8,7 @@
 #   0  toolchain farklı → hash karşılaştırması ATLANDI (sesli uyarı, hata DEĞİL)
 #   1  kaynak kimliği (submodule commit / build betiği) manifest'le uyuşmuyor
 #   1  AYNI toolchain, çıktı farklı
-#   2  manifest ya da çıktı eksik, kontrol koşamadı
+#   2  submodule çekilmemiş, ya da manifest/çıktı eksik → KONTROL KOŞAMADI
 #
 # Kaynak kontrolü toolchain'den BAĞIMSIZDIR ve her zaman koşar: toolchain
 # farklıysa hash karşılaştırması atlanır, ama biri kaynağı değiştirip çıktıyı
@@ -53,10 +53,23 @@ sha() { shasum -a 256 "$1" | awk '{print $1}'; }
 HATA=0
 
 # --- 1) Kaynak kimliği: toolchain'den bağımsız, HER ZAMAN koşar -------------
+# Submodule çekilmemişse dizin BOŞTUR; `git -C` o boş dizinden ÜST depoya yürür
+# ve süperprojenin commit'ini döndürür. Boşluk kontrolü bunu yakalamaz, çünkü
+# dönen değer boş değildir — betik "kaynak uyuşmuyor" diye YANLIŞ kırmızı yakar.
+# 18 Eylül 2026'da Yol A klonunda ölçüldü. O yüzden önce dizinin KENDİ deposu
+# olduğu doğrulanır; değilse durum "kontrol koşamadı" (çıkış 2), hata değil.
+SUB_TOP="$(git -C "$SUBMODULE_DIR" rev-parse --show-toplevel 2>/dev/null || echo '')"
+[ -n "$SUB_TOP" ] && SUB_TOP="$(cd "$SUB_TOP" 2>/dev/null && pwd -P || echo '')"
+SUB_DIR_P="$(cd "$SUBMODULE_DIR" 2>/dev/null && pwd -P || echo '')"
+if [ -z "$SUB_TOP" ] || [ "$SUB_TOP" != "$SUB_DIR_P" ]; then
+  echo "KONTROL KOŞMADI: submodule çekilmemiş: $SUBMODULE_DIR" >&2
+  echo "      Çekmek için: git submodule update --init --recursive" >&2
+  echo "      Yol A (yalnızca npm) bu betiği GEREKTİRMEZ; çıktı depoda hazır." >&2
+  exit 2
+fi
 GERCEK_COMMIT="$(git -C "$SUBMODULE_DIR" rev-parse HEAD 2>/dev/null || echo '')"
 if [ -z "$GERCEK_COMMIT" ]; then
-  echo "HATA: submodule commit'i okunamadı: $SUBMODULE_DIR" >&2
-  echo "      Submodule çekilmemiş olabilir: git submodule update --init --recursive" >&2
+  echo "KONTROL KOŞMADI: submodule commit'i okunamadı: $SUBMODULE_DIR" >&2
   exit 2
 fi
 if [ "$GERCEK_COMMIT" != "$M_COMMIT" ]; then

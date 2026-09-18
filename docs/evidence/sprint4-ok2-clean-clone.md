@@ -1,6 +1,9 @@
 # ÖK-2 — Temiz klon testi
 
 **Tarih:** 17 Eylül 2026
+**Ek ölçüm:** 18 Eylül 2026 — Yol A **ağdan taze klonla** doğrulandı ve bu
+sırada `verify-wasm.sh`'te bir kusur bulunup düzeltildi. Bkz. "Yol A ağdan
+klonla doğrulandı" bölümü. 17 Eylül'ün çıktı boyutu rakamları da orada düzeltildi.
 **Klonlanan commit:** `29e2c1d` (`origin/main`, o anki uç)
 **Makine:** Akif'in MacBook Air'i, izole dizin. Spec'in tercih ettiği **ikinci
 makine DEĞİL** — bu şart hâlâ açık, aşağıda "Kapsanmayan" bölümünde.
@@ -153,11 +156,32 @@ kapanmaz.** README Hakan'ın dosyası — ona iletilecek.
 
 ### (b) Çıktının boyutu
 
-| Dizin | Boyut | Dosya | `.wasm` |
+| Dizin | Disk (`du`) | Dosya | `.wasm` |
 |---|---|---|---|
-| `wasm-pkg` (nodejs) | 248 KB | 6 | 224 KB |
-| `wasm-pkg-web` (web) | 252 KB | 6 | 224 KB |
-| **Toplam** | **500 KB** | **12** | — |
+| `wasm-pkg` (nodejs) | 248 KiB | 6 | 224 KiB |
+| `wasm-pkg-web` (web) | 252 KiB | 6 | 224 KiB |
+| **Toplam** | **500 KiB** | **12** | — |
+
+> **DÜZELTME — 18 Eylül 2026.** Yukarıdaki satırlar 17 Eylül'de, çıktı henüz
+> commit'lenmeden ölçüldü ve **depoya giren şeyi göstermiyor.** İki fark var:
+>
+> 1. **12 değil 10 dosya.** Sayıma her dizindeki `wasm-pack` üretimi
+>    `.gitignore` de girmişti; `build-wasm.sh` artık ikisini de siliyor.
+> 2. **500 KiB `du` çıktısıydı**, yani 4 KiB'lik blok kullanımı — içerik
+>    boyutu değil. Silinen iki `.gitignore` birer blok tutuyordu; 500 − 8 = 492.
+>
+> Ağdan klonda ölçülen gerçek değerler:
+>
+> | Ölçü | Değer |
+> |---|---|
+> | Tracked dosya | **10** |
+> | İçerik toplamı | **477.763 bayt** (466,6 KiB) |
+> | Disk kullanımı (`du`) | 492 KiB |
+> | Her iki `.wasm` | 227.416 bayt (birebir aynı dosya) |
+>
+> Aynı hata `docs/FRONTEND-KURULUM.md`'de de vardı, düzeltildi. **17 Eylül'ün
+> commit mesajlarında kalan "12 dosya, 500 KB" ifadesi düzeltilemez** — commit
+> mesajı geçmişte sabittir; düzeltme kaydı burasıdır.
 
 ### (c) Çıktıyı depoya koymanın maliyeti
 
@@ -257,7 +281,8 @@ kaldırıldı), ve iki çıktı dizini depoya girdi.
 
 > Bu sınama, çıktı henüz commit'li olmadığı için **ağdan klon değil**, çalışma
 > ağacının kopyası üzerinde koştu (`.git`, `node_modules`, `target` dışarıda).
-> Ağdan taze klonla tekrarı commit'ten sonra yapılmalı — **hâlâ açık kalem.**
+> **Ağdan taze klonla tekrarı 18 Eylül 2026'da yapıldı ve geçti** — aşağıdaki
+> "Yol A ağdan klonla doğrulandı" bölümü. Açık kalem KAPANDI.
 
 **Altı sınama, üçü negatif — hepsi beklendiği gibi:**
 
@@ -276,6 +301,96 @@ Her sınamadan sonra durum geri alındı ve sağlam durum yeniden doğrulandı.
 `a0f1f0cb…c4d9cd`); hedefe göre değişen yalnızca JS tutkalı. `wasm-bindgen`
 için beklenen davranış, ama manifest ikisini de ayrı kaydediyor — birinin
 bozulması diğerini gizlemesin.
+
+## Yol A ağdan klonla doğrulandı — 18 Eylül 2026
+
+17 Eylül'ün başarı ölçütü **çalışma ağacının kopyasında** koşmuştu; çıktı henüz
+commit'li olmadığı için gerçekten depodan gelip gelmediğini kanıtlamıyordu. Bu
+ölçüm o boşluğu kapatıyor: **ağdan taze klon**, Rust `PATH`'te YOKKEN,
+`build-wasm.sh` **koşulmadan**.
+
+**Klonlanan commit:** `3d36c3b` (`origin/main` uç; 17 Eylül'ün `8643835`'inden
+sonra Hakan README'ye frontend kurulum referansını ekledi)
+**Makine:** Akif'in MacBook Air'i, izole dizin — **ikinci makine DEĞİL**, o şart
+hâlâ açık.
+**Ortam:** node v22.21.0, npm 10.9.4
+
+`PATH` benzetimi — Rust `~/.cargo/bin`'de, dışarıda bırakıldı:
+
+```bash
+env -i HOME="$HOME" PATH="<node bin>:/usr/bin:/bin" sh -c '...'
+```
+
+Doğrulandı: `command -v cargo` · `rustc` · `wasm-pack` → **üçü de YOK.**
+
+| Adım | Komut | Süre |
+|---|---|---|
+| 1 | `git clone <repo-url>` (**`--recursive` YOK**) | **2,7 sn** |
+| 2 | `npm i` | **2,4 sn** (boş önbellek dizini) · 1,3 sn (sıcak) |
+| 3 | `cp .env.example .env` | — |
+| 4 | `npx vite build` | **141 ms** |
+
+`vite build` çıktısı: 190 modül, `sphincs_c13_signer_bg.wasm` 227,41 kB olarak
+bundle'a girdi — yani derlenmiş imzalayıcı gerçekten **depodan** geldi.
+
+Testler, aynı kısıtlı ortamda:
+
+| Test | Sonuç |
+|---|---|
+| `src/tx/build-transaction-test.mjs` | `TÜM TESTLER GEÇTİ` · çıkış 0 |
+| `src/crypto/wasm-signer-test.mjs` | keygen + sign geçti, imza **3688 bayt**, sign 7,5 sn · çıkış 0 |
+
+**`--recursive` Yol A'da GEREKMİYOR — ölçüldü:**
+
+| Klon | Süre | Disk |
+|---|---|---|
+| `git clone` | 2,7 sn | 83 MB |
+| `git clone --recursive` | 20,4 sn | 115 MB |
+
+17 Eylül'de klon 176 sn sürmüştü (`--recursive`); aradaki fark ağ değişkenliği.
+Yol A için submodule hiç çekilmiyor, o yüzden doğru komut düz `git clone`.
+
+### Bu ölçümde bulunan kusur — `verify-wasm.sh` Yol A klonunda YANLIŞ kırmızı yakıyordu
+
+Klonda `verify-wasm.sh` koşuldu ve şunu verdi:
+
+```
+HATA: submodule commit'i manifest'le uyuşmuyor.
+      manifest: eef1f889…
+      gerçek  : 3d36c3b5…          ← süperprojenin commit'i
+```
+
+**Mekanizma:** submodule çekilmemişken `contracts/lib/sphincs-minus` BOŞ bir
+dizindir. `git -C <boş dizin> rev-parse HEAD` hata vermez, **üst depoya yürür**
+ve süperprojenin commit'ini döndürür. Betiğin boşluk kontrolü bunu yakalamıyordu,
+çünkü dönen değer boş değildi.
+
+**Neden önemli:** C kararının tek gerekçesi tutarsızlık kontrolüydü ve o kararın
+koşulu açıkça şuydu — *"herkesin görmezden gelmeyi öğrendiği bir kontrol hiç
+olmayandan kötüdür."* Kontrol, jürinin izleyeceği yolda **her seferinde** ve
+**yanlış** kırmızı yakıyordu. Tam olarak kaçınılmak istenen hata sınıfı.
+
+**Düzeltme:** dizinin kendi deposu olduğu (`rev-parse --show-toplevel` == dizinin
+kendisi) önce doğrulanıyor; değilse durum "kontrol koşamadı" (**çıkış 2**) ve
+mesaj Yol A kullanıcısına bu betiğin gerekmediğini söylüyor:
+
+```
+KONTROL KOŞMADI: submodule çekilmemiş: …/contracts/lib/sphincs-minus
+      Çekmek için: git submodule update --init --recursive
+      Yol A (yalnızca npm) bu betiği GEREKTİRMEZ; çıktı depoda hazır.
+```
+
+Üç sınama, biri negatif:
+
+| Sınama | Sonuç |
+|---|---|
+| Ana depo, submodule çekili | `OK: 4 dosya, sha256 eş, toolchain eş` · çıkış 0 |
+| Yol A klonu, submodule çekilmemiş | `KONTROL KOŞMADI: submodule çekilmemiş` · **çıkış 2** |
+| Manifest'te submodule commit'i sıfırlandı (gerçek uyuşmazlık) | `HATA: … uyuşmuyor` · **çıkış 1** |
+
+Üçüncüsü regresyon sınamasıdır: yeni koruma, yakalaması gereken gerçek
+uyuşmazlığı **yutmuyor.** Sınamadan sonra manifest geri alındı ve sağlam durum
+yeniden doğrulandı.
 
 ## Kapsanmayan — hâlâ açık
 

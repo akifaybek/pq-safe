@@ -5,13 +5,14 @@ Frontend kurulumu hiçbir yerde belgelenmemişti; bu belge o boşluğu kapatıyo
 Sahiplik: Akif (`docs/`). README'ye buraya **tek satır referans** eklenmesi
 Hakan'a iletilecek.
 
-**Bütün süreler ölçüldü** — ÖK-2 temiz klon testi, 17 Eylül 2026, ağdan taze
-klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
+**Bütün süreler ölçüldü** — ÖK-2 temiz klon testi, 17-18 Eylül 2026, ağdan
+taze klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
 
 > **DURUM:** C kararı **UYGULANDI** (17 Eylül 2026). Derlenmiş imzalayıcı
-> depoda geliyor; **geçerli yol A**'dır ve Rust gerekmiyor. Doğrulandı: Rust
-> `PATH`'ten tamamen çıkarılmış bir ortamda `npm i` + `cp .env.example .env` +
-> `npx vite build` geçti (142 ms), `build-wasm.sh` **koşulmadan**.
+> depoda geliyor; **geçerli yol A**'dır ve Rust gerekmiyor. **18 Eylül 2026'da
+> ağdan taze klonla doğrulandı**: Rust `PATH`'ten tamamen çıkarılmış bir ortamda
+> `git clone` + `npm i` + `cp .env.example .env` + `npx vite build` geçti
+> (141 ms), `build-wasm.sh` **koşulmadan**; testler yeşil.
 
 ---
 
@@ -22,11 +23,15 @@ klon, macOS. Kaynak: `docs/evidence/sprint4-ok2-clean-clone.md`.
 
 | Adım | Komut | Ölçülen süre |
 |---|---|---|
-| 1 | `git clone --recursive <repo-url>` | 176 sn |
-| 2 | `cd pq-safe/frontend && npm i` | 16 sn (boş npm önbelleğiyle) |
+| 1 | `git clone <repo-url>` — **`--recursive` YOK** | 2,7 sn |
+| 2 | `cd pq-safe/frontend && npm i` | 2,4 sn (boş npm önbelleğiyle) |
 | 3 | `cp .env.example .env` | — (**el düzenlemesi yok**) |
-| 4 | `npx vite build` | 0,2 sn |
+| 4 | `npx vite build` | 141 ms |
 | 5 | `npx vite` — sayfayı aç | — |
+
+Yol A'da submodule **çekilmez**: `--recursive` klonu 2,7 sn'den 20,4 sn'ye ve
+83 MB'ı 115 MB'a çıkarır, karşılığında Yol A'ya hiçbir şey katmaz.
+`verify-wasm.sh` de bu yolda gerekmez (aşağıda).
 
 Ön koşul: **Node 22** ve npm. Ölçüm ortamı node v22.21.0, npm 10.9.4.
 
@@ -58,7 +63,7 @@ bash scripts/build-wasm.sh    # cwd: frontend/
 | Soğuk tam derleme (iki hedef, `target/` yok) | **25 sn** |
 | Sıcak yeniden derleme | 1 sn |
 | Ürettiği `cargo target/` dizini | **118 MB** |
-| Ürettiği çıktı | 500 KB, 12 dosya |
+| Ürettiği çıktı | 477.763 bayt (466,6 KiB), **10 dosya** |
 
 Betik iki hedefi de derler — `--target nodejs` → `wasm-pkg` (Node testleri
 kullanır), `--target web` → `wasm-pkg-web` (`src/crypto/signer.js`, yani
@@ -87,7 +92,11 @@ bash scripts/verify-wasm.sh    # cwd: frontend/
 | `HATA: submodule commit'i manifest'le uyuşmuyor` | 1 |
 | `HATA: build-wasm.sh manifest'te kayıtlı olandan farklı` | 1 |
 | `HATA: aynı toolchain, çıktı farklı` | 1 |
+| `KONTROL KOŞMADI: submodule çekilmemiş` | 2 |
 | manifest ya da çıktı eksik | 2 |
+
+**Bu betik Yol A'da koşturulmaz** — submodule çekilmemişken kontrol koşamaz ve
+çıkış 2 verir. Yol A'da çıktının doğruluğunu commit'in kendisi taşır.
 
 Hash'ler ve **onları üreten toolchain sürümleri** `scripts/wasm-manifest.json`
 içinde. Kaynak kimliği kontrolleri (submodule commit'i ve `build-wasm.sh`'in
@@ -146,6 +155,7 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 | `UNRESOLVED_IMPORT … wasm-pkg-web/sphincs_c13_signer.js` | Yol B'de adım `build-wasm.sh` atlanmış |
 | `cast` komutu asılı kaldı | `cast receipt` kullanılmış, `cast rpc eth_getTransactionReceipt` olmalı |
 | Receipt `null` | Arşiv olmayan endpoint kullanılmış |
+| `verify-wasm.sh` → `KONTROL KOŞMADI: submodule çekilmemiş` | Yol A klonunda koşuldu; bu betik Yol B içindir |
 
 ## Kapsanmayan
 
