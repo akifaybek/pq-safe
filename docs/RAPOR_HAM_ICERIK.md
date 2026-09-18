@@ -106,7 +106,18 @@ JSON çıktıları arşiv node'undan alınıp `docs/evidence/chain/` altında
 saklanıyor — doğrulama için oraya bakılabilir, ya da bir arşiv RPC
 endpoint'i (ör. Alchemy/Infura arşiv katmanı) kullanılmalı.
 
-## 5. Gas tablosu (test-suite ölçümü, `docs/evidence/gas-reports/sprint2.txt`, 26/26 test geçti)
+## 5. Gas tablosu — saf execution, stub verifier (test-suite ölçümü, `docs/evidence/gas-reports/sprint2.txt`, 26/26 test geçti)
+
+Bu tablonun ÜÇ önemli sınırı var:
+- Doğrulama maliyeti SIFIR sayılmıştır — `PQWallet.t.sol`'daki testler
+  `MockVerifier` kullanıyor (`verify()` gövdesi `pure { return true; }`),
+  gerçek C13 verifier hiç çağrılmıyor.
+- İntrinsic maliyet (21.000 gas) DAHİL DEĞİL — Foundry'nin internal-call
+  gaz ölçümü gerçek bir transaction'ın taban maliyetini görmüyor.
+- Calldata maliyeti DAHİL DEĞİL — gerçek bir C13 imzasının calldata'sı
+  3.908 bayt ve bunun zincirdeki maliyeti bu tabloda yok.
+
+Gerçek zincir maliyetleri için Bölüm 4'e bakın.
 
 | Fonksiyon | Min | Ort. | Max | Not |
 |---|---|---|---|---|
