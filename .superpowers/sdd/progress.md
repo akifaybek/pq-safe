@@ -1293,7 +1293,23 @@ SIR TARAMASI HÜKMÜ — 19 Eylül, Akif — İKİ AYRI TARAMA, AYRI AYRI
   KURAL — bundan sonra her tarama kaydına GENİŞLİK (kaç satır) ve HANGİ
   COMMIT/DEĞİŞİKLİK olduğu yazılır. Bir turda birden fazla tarama koşarsa
   her biri ayrı kaydedilir; tek hüküm iki taramayı kapsayamaz.
+  DURUŞ HÜKMÜ — 19 Eylül, Akif. TARAMA KENDİ KAYDINI KAPSAYAMAZ:
+  0x2EafA294C14b6752128bfd4f5873D1EA39f000BB ve
+  0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc bu dosyada TAM BİÇİMDE KASTEN
+  duruyor; bu iki değerin BU DOSYADAKİ eşleşmeleri önceden hükme bağlanmıştır
+  ve her tur yeni hüküm GEREKMEZ. Başka bir değer ya da başka bir dosya
+  çıkarsa hüküm YENİDEN VERİLİR.
+  GEREKÇE: kayıt kendini kayda geçirdiği için eşleşiyor, yani C 2 · D 2 her
+  tur tekrarlanacaktı. Sorun döngü değil, HÜKMÜN UCUZLAMASI: her tur mekanik
+  olarak ezilen bir kapı, gerçek bir sır çıktığı gün de mekanik olarak
+  ezilir. Böylece kapı yalnızca YENİ bir şey çıktığında konuşur ve
+  konuştuğunda dinlenir.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
+  GENİŞLİK, 19 EYLÜL'DE GERİYE DÖNÜK TAMAMLANDI: 87 satır, commit 86f259f.
+  O 87 satır awk ile çıkarılmış bir bloktu (progress.md + wasm-vendoring
+  brief), git diff DEĞİL — aynı commit'in progress.md + satırları 98.
+  Kural ileriye dönüktü; ilk uygulandığı yerde kendi istisnasını taşımasın
+  diye bu kayıt da tamamlandı. Sayılar: A 5 · B 1 · C 1 · D 0 · çıkış 1.
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
   artefaktının aleni hash'i, frontend/scripts/wasm-manifest.json ile zaten
