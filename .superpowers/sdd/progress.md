@@ -1159,13 +1159,29 @@ TASK 5 OTURUMU ÖNCESİ DOLDURULACAKLAR — 19 Eylül, plan DEĞİŞMEDİ
          from ile AYNI olması A'nın sıcak alıcı olmasının TEK sebebi)
      B = var olan bir adres; Hakan'ın EOA'sı
          0x7268a7c3d52baa50486930e6ed25d29804d075b6 uyar
-     C = TAZE BOŞ ADRES, SEÇİLMEDİ. Adım 3'ün üçlü kontrolü (balance/nonce/
-         code = 0/0/0x) 18 Eylül oturumunda YAPILAMADI, zincire dokunmak
-         yasaktı. Oturumun başında seçilip doğrulanacak.
-  3. ADIM 0 KAPISI, DÜZELTİLMİŞ komutla hazır (gerekçe hemen altta):
+     C = 0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc — 19 Eylül'de üretildi.
+         ÜRETİM YÖNTEMİ: cast wallet new | grep -i "^Address". Özel anahtar
+         EKRANA BASILMADI, hiçbir yere KAYDEDİLMEDİ ve GEREKMİYOR: C hiç
+         fonlanmayacak, Task 6 Adım 6 gerçek tx'i A'ya atıyor (plan satır
+         947, "gerçek A tx'i" — plandan teyit edildi, hatırlamaya değil
+         dosyaya dayanıyor).
+         ÜÇLÜ, 19 Eylül 11:18 UTC, blok 11737350: balance 0 · nonce 0 ·
+         code 0x — beklenen üçlü TUTTU.
+         BU BİR TARİHLİ ÖN-KONTROLDÜR, KAPININ YERİNE GEÇMEZ. Task 5 Adım 3
+         oturum günü KAPI olarak yeniden koşar; nonce ön-kontrolüyle aynı
+         sınıf ve gerekçesi planın kendi cümlesi: "faz 1'de boş olması
+         haftaya boş olduğunu göstermez."
+         NOT: buradaki cast nonce DOĞRU komuttur — C bir EOA adresi ve
+         ölçülen şey zaten HESAP nonce'u.
+  3. ADIM 0 KAPISI, DÜZELTİLMİŞ komutla hazır:
      cast call 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB "nonce()(uint256)" --rpc-url $SEPOLIA_RPC
      cast balance 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB --rpc-url $SEPOLIA_RPC
-     Nonce 2 beklenir, DEĞİLSE DUR. Bakiye YAZILACAK — Task 6 Adım 8 girdisi.
+     Nonce 2 beklenir, DEĞİLSE DUR. Bakiye YAZILACAK.
+     GEREKÇE — iki ayrı sebep: (i) planda satır 585'te YANLIŞ komut duruyor
+     ve düzeltilmedi (plan dondurulmuş), o yüzden oturumda buradaki satır
+     kullanılacak; (ii) bakiye Task 6 Adım 8'in B0 - value formülünün
+     girdisi ve o adım OTURUM SIRASINDA okuyacak, yani B0 oturum başında
+     yazılmazsa formül girdisiz kalır.
 PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR — 19 Eylül, ÖLÇÜLDÜ
   Plan satır 585: cast nonce <PQWALLET> → "beklenen 2". BU KOMUT HER ZAMAN 1
   DÖNER ve kapı sabah ilk adımda YANLIŞ ALARM verip oturumu durdururdu.
@@ -1181,8 +1197,26 @@ PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR — 19 Eylül, ÖLÇÜLDÜ
   pqwallet-test.mjs ve arşiv endpoint'iyle, yani nonce() ÜZERİNDEN alınmıştı.
   Bozuk olan yalnızca PLANA YAZILAN KOMUT.
   AYNI HATA ÜÇ YERDE: plan satır 585 (Task 5 Adım 0), 972 (Task 6, beklenen 3),
-  1415 (iptal dalında "nonce değişmedi" doğrulaması). ÜÇÜ DE cast call'a
+  1415 (Task 9 Adım 6, "nonce değişmedi" doğrulaması). ÜÇÜ DE cast call'a
   çevrilmeli. Plan DEĞİŞTİRİLMEDİ (kural), düzeltme kaydı burası.
+  DÜZELTME 19 EYLÜL — ÜÇÜ AYNI KEFEDE DEĞİL, 1415 AYRI SINIF (Akif ayırdı):
+    585 ve 972 YANLIŞ KIRMIZI üretir. Beklenen 2 ya da 3, komut 1 döner,
+      kapı DURUR. Bedeli görünür: oturum yarıda kesilir.
+    1415 YANLIŞ YEŞİL üretir ve bu DAHA KÖTÜ. Orada aranan şey nonce'un
+      DEĞİŞMEDİĞİ; cast nonce kontrat üzerinde HER KOŞULDA 1 döndüğü için
+      kontrol HİÇBİR ZAMAN kırmızı yanamaz. Koşulsuz geçen bir kontrol
+      ölçüm değildir: iptal gerçekten sıfır gaz olmasa bile "kanıtlandı"
+      yazılırdı. Task 9 Adım 6'nın bağımsız kanıtı aslında YOK.
+    Bu ayrım yazılı olmazsa 1415 "aynı hatanın üçüncüsü" diye düzeltilir ve
+      kimse o kontrolün BAŞTAN BERİ boş olduğunu fark etmez.
+  KEŞİF DEĞİL, PLANIN İÇ TUTARSIZLIĞI — üçü de dosyadan teyit edildi:
+    plan satır 109 zaten "PQWallet.nonce() = 2" yazıyor, yani plan doğru
+      kavramı 14 Eylül'den beri taşıyor, yanlış olan yalnızca komut satırları;
+    frontend/src/contracts/pqwallet.js:35 readNonce zaten contract.nonce()
+      çağırıyor, yani UYGULAMA ilk günden doğru okuyordu;
+    plan satır 1415'in bağlamı Task 9 Adım 6 (ACTION_REJECTED), okundu.
+    Yani hata kodda ya da zincirde değil, YALNIZCA plana yazılan cast
+    komutlarında; tutarsızlık planın kendi içinde, 109 ile 585/972/1415 arası.
   YANLIŞ DEĞİL: plan satır 699'daki cast nonce <C_ADRESI> DOĞRU — C boş bir
   EOA adresi ve orada ölçülmek istenen şey zaten HESAP nonce'u (beklenen 0).
   BU HATAYI 18 EYLÜL'DE AJAN DA TEKRARLAMIŞTI: "hazır komut" diye deftere
@@ -1213,6 +1247,12 @@ TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   göreli ad kullanıyor. md5 yoksa md5sum'a düşüyor, ikisi de yoksa çıkış 2 —
   sessizce başka bir özete GEÇMİYOR, yoksa karşılaştırma anlamsızlaşır.
   KAPI KAYIT_COMMIT'e BAĞLANMADI, plandaki gerekçe betiğin başına yazıldı.
+SIR TARAMASI HÜKMÜ — 19 Eylül, Akif
+  Betik çıkış 1 verdi: C ve D desenlerinde birer eşleşme, ikisi de aynı değer,
+  0x2EafA294...f000BB — PQWallet'ın kontrat adresi. Sır DEĞİL: aleni ve
+  frontend/src/config/contracts.js:8 ile zaten commit'li; betiğin kendi
+  başlığı da D'yi "adresler zaten aleni, kayda geçsin diye taranıyor" diye
+  tanımlıyor. Çıkış 1 İNSAN HÜKMÜYLE ezildi; hükmü veren Akif, tarih 19 Eylül.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
