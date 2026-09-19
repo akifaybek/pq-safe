@@ -1086,8 +1086,43 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      bir düzeltme var mı) ve o SPRINT 5'e ait, bu kalemin parçası değil.
      Upstream main ucu 55b2f3e (2026-07-30); pinimiz 8 commit geride,
      bu KASITLI. Klon silindi.
-  5. TARAYICI ADIMI: npx vite ile sayfayı açıp ELLE İMZA ÜRETMEK. Akif'te,
-     ajan koşamaz. ÖK-2'nin son açık parçası.
+  5. KAPANDI — 20 Eylül. ÖK-2'NİN SON PARÇASI DA GİTTİ, BLOKÖR TAMAMEN AÇILDI.
+     Kanıt: docs/evidence/crypto-tests/sprint4-browser-signing.md.
+     KAPATAN GÖZLEM, iki iddia AYRI: (i) sayfa açılışında Ağ sekmesinde .wasm
+     YOKTU — yalnızca 54,1 kB JS tutkalı vardı, başlatan signer.js:5; keygen'den
+     SONRA sphincs_c13_signer_bg.wasm · 200 · tür wasm · 228 kB belirdi.
+     (ii) tarayıcı 3688 BAYTLIK imza üretti, ekranda "imza uzunluğu 3688 bayt
+     (C13 beklenen)" kontrolü GEÇTİ. keygen 628,5 ms · sign 11.008,8 ms.
+     "Sayfa açıldı, konsol temiz" kanıt olarak KULLANILMADI.
+     TEŞHİS DOĞRULANDI VE KESKİNLEŞTİ: import tutkalı getiriyor, .wasm'ı
+     getiren init() ve o tembel. Ölçümden önce açık bırakılan "Vite ön-yükleme
+     yapıyor olabilir" ihtimali de kapandı: YAPIYOR, ama yalnızca MODÜL için,
+     BINARY için değil. 18 Eylül'de Hakan'ın raporu için kurulan "temiz konsol
+     imzalayıcı hakkında sıfır kanıttır" argümanının dayanağı artık ölçülü.
+     KONSOL: projenin kendi kodundan 0 hata. Görünen 12 kaydın hepsi eklenti
+     kaynaklı ve depodan doğrulandı: grep sentry → boş, content.js → yok.
+     Sentry isteklerindeki ERR_CERT_AUTHORITY_INVALID araya giren TLS
+     denetimine işaret ediyor, uygulamayla ilgisiz; sayaç biz hiçbir şey
+     yapmadan 3'ten 12'ye çıktı çünkü eklenti isteği yeniden deniyor.
+     favicon.ico 404 bu koşuda konsolda GÖRÜNMEDİ (Hakan Windows'ta görmüştü);
+     "yok" denmiyor, "görünmedi" deniyor.
+     SAPMA: sign tarayıcıda 11,0 sn, Node'da 7,5 sn ölçülmüştü — yaklaşık
+     %47 yavaş. SEBEP ÖLÇÜLMEDİ. İki açıklama da ayakta: ayrı süreç ve farklı
+     WASM hedefi (nodejs vs web tutkalı) YA DA sekme içi tek iş parçacığı;
+     bu ölçüm ikisini AYIRT ETMEZ.
+     KOŞULMAYANLAR: owner mnemonic girilmedi, MetaMask bağlanmadı, zincire
+     hiçbir şey gitmedi (ölçüm penceresi ihlal EDİLMEDİ), Bölüm 4'ün
+     build+sign yolu ve gerçek tx yolu koşulmadı.
+     AJAN TARAYICIYI ÇALIŞTIRMADI — değerler Akif'in ekran görüntülerinden.
+YAN BULGU — index.html:30 BAYAT, TASK 2 İLE ÇELİŞİYOR, 20 Eylül
+  Giriş paragrafı "Mnemonic ekranda gösterilir, hiçbir yere kaydedilmez" diyor.
+  Task 2 (a64129b) mnemonic'in DOM'a yazılmasını KALDIRDI ve aynı sayfa birkaç
+  satır aşağıda "Gizli anahtar ekrana yazılmıyor" diyor. SAYFA KENDİ İÇİNDE
+  ÇELİŞİYOR ve çelişen cümle jürinin İLK okuyacağı yerde.
+  DÜZELTİLMEDİ. index.html Task 10 diff kapısının beş dosyasından biri; kapı
+  HENÜZ KURULMADI (referans Task 6 Adım 4'te alınacak), yani kayıttan önce
+  düzeltilebilir. UI kararı, Akif'e ait. KARAR VERİLMEZSE KAYDA BU CÜMLEYLE
+  GİRER — jüri videoda bu satırı okuyacak.
      18 EYLÜL'DE KAPANMADI: Hakan sayfayı açtı ve konsol temizdi, ama imza
      ürettiğini bildirmedi. Sayfanın açılması WASM'ın yüklendiğini bile
      kanıtlamaz ve bu KONTROL EDİLDİ, varsayım değil: signer.js:20-25'te
@@ -1315,16 +1350,28 @@ SIR TARAMASI HÜKMÜ — 19 Eylül, Akif — İKİ AYRI TARAMA, AYRI AYRI
   A İÇİN DURUŞ HÜKMÜ: en uzun dizi < 6 kaldığı sürece A ayrıca hükme
   bağlanmaz, sayı kayda girer ve geçilir. 6 ve üstü bir dizi çıkarsa
   eşleşmeler TEK TEK incelenir.
+  EŞİK 6 ÖLÇÜLMEDİ, SEÇİLDİ. Elde iki sayı var: gözlenen en uzun teknik
+  dizi 3 ve mnemonic eşiği 12. 6 bu ikisinin arasında, güvenlik payıyla
+  seçilmiş bir TERCİHTİR — türetilmiş değer DEĞİL. Böyle yazılıyor ki
+  ileride biri 6'yı ölçülmüş bir sınır sanıp dokunmaya çekinmesin;
+  gözlem biriktikçe aşağı ya da yukarı çekilebilir.
   BU HÜKÜM YAZILDIĞI ANDA KENDİ ÜZERİNDE TETİKLENDİ — 19/20 Eylül gecesi:
   taramada en uzun dizi 9 çıktı ve incelendi. Dizi GERÇEK DEĞİLDİ: yukarıdaki
   cümlede 18 Eylül'ün dört ayrı eşleşmesi yan yana ALINTILANMIŞTI ve betik
   noktalamayı atıp dördünü TEK dizi saydı. Yani kayıt, kendi eşleşmelerini
   alıntılayarak OLMAYAN bir dizi üretti.
-  DÜZELTME VE KURAL: A eşleşmeleri deftere yan yana alıntılanmaz. Alıntı
-  gerekiyorsa aralarına sözlükte OLMAYAN kelime konur (Türkçe sözcük yeter);
-  çünkü betik satır sınırını ve noktalamayı yok sayıyor, diziyi ancak
-  sözlük dışı bir token kırıyor. Yukarıdaki cümle bu yüzden alıntısız
-  yeniden yazıldı ve dizi 9'dan düştü.
+  ASIL KUSUR BETİKTE, YAZIMDA DEĞİL: scan-secrets.mjs dizi kurarken satır
+  sınırını ve noktalamayı yok sayıyor, yani iki AYRI satırdaki iki kelimeyi
+  bitişik sayıyor. Bunu düzelten şey TOKENIZER'dır, defterin yazım biçimi
+  değil. TOKENIZER DÜZELTMESİ → SPRINT 5.
+  GEÇİCİ YAZIM ÖNLEMİ (kalıcı politika DEĞİL): A eşleşmeleri deftere yan
+  yana alıntılanmaz; alıntı gerekiyorsa aralarına sözlük dışı bir kelime
+  konur (Türkçe sözcük yeter), çünkü diziyi ancak sözlük dışı token kırıyor.
+  Yukarıdaki cümle bu yüzden alıntısız yeniden yazıldı, dizi 9'dan 2'ye indi.
+  NEDEN ŞİMDİ BETİĞE DOKUNULMUYOR: 10 gün kaldı, kayıt 22'sinde ve betik
+  Task 10'un yakınında. Bu satır olmasa altı ay sonra biri "neden
+  cümlelerin arasına kelime sıkıştırıyoruz" diye sorar ve cevap defterde
+  olmaz.
   DURUŞ HÜKMÜ — 19 Eylül, Akif. TARAMA KENDİ KAYDINI KAPSAYAMAZ:
   0x2EafA294C14b6752128bfd4f5873D1EA39f000BB ve
   0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc bu dosyada TAM BİÇİMDE KASTEN
