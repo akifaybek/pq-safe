@@ -1212,8 +1212,9 @@ PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR — 19 Eylül, ÖLÇÜLDÜ
   KEŞİF DEĞİL, PLANIN İÇ TUTARSIZLIĞI — üçü de dosyadan teyit edildi:
     plan satır 109 zaten "PQWallet.nonce() = 2" yazıyor, yani plan doğru
       kavramı 14 Eylül'den beri taşıyor, yanlış olan yalnızca komut satırları;
-    frontend/src/contracts/pqwallet.js:35 readNonce zaten contract.nonce()
-      çağırıyor, yani UYGULAMA ilk günden doğru okuyordu;
+    frontend/src/contracts/pqwallet.js:36 zaten contract.nonce() çağırıyor
+      (fonksiyon readNonce :35'te başlıyor, çağrının KENDİSİ :36'da ve
+      iddia çağrı hakkında), yani UYGULAMA ilk günden doğru okuyordu;
     plan satır 1415'in bağlamı Task 9 Adım 6 (ACTION_REJECTED), okundu.
     Yani hata kodda ya da zincirde değil, YALNIZCA plana yazılan cast
     komutlarında; tutarsızlık planın kendi içinde, 109 ile 585/972/1415 arası.
@@ -1230,6 +1231,24 @@ PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR — 19 Eylül, ÖLÇÜLDÜ
   bu okumadan sonra da girebilir.
   SIRA: tarayıcı adımı (ÖK-2'nin son parçası, Task 5/6'nın blokörü) → Adım 0
   → mnemonic. Ölçüm penceresi 19 Eylül 00:00'da başladı, Hakan uyacağını yazdı.
+FAVICON KARARI — KAPATILMIYOR, 19 Eylül, Akif onayladı
+  Karar tarayıcı adımından ÖNCE gerekliydi: konsol hata sayısı kanıta giriyor.
+  ÖNCE BİR DÜZELTME: 18 Eylül'de ajan "favicon diff kapısını tetikler"
+  demişti, YANLIŞTI. frontend/public/ dizini HİÇ YOK; oluşturup favicon.ico
+  koymak index.html'e dokunmaz, yani kapının beş hash'inden hiçbiri
+  değişmezdi. Kapı da henüz KURULMADI (referans Task 6 Adım 4'te alınacak).
+  Teknik engel yoktu; karar başka gerekçelerle verildi:
+  1. Gerçek bir .ico UYDURULACAKTI — kaydın alınmasına üç gün kala depoya
+     kaynağı belirsiz bir ikili dosya girer.
+  2. 404'ün bizim kodumuzdan olmadığı zaten gösterilebiliyor. Ayrı satırda
+     SAYMAK, susturmaktan daha güçlü kanıt disiplini: susturulursa kanıt
+     "0 hata" der ve neyin sayılmadığı görünmez olur.
+  3. Sprint 5'te profesyonel tasarım geçişi var; favicon oraya ait.
+  4. Tek geri dönüşü olmayan adımın üç gün öncesinde, sıfır ölçüm faydası
+     için yeni değişken eklenmez.
+  SONUÇ: tarayıcı adımında konsol hata sayısı İKİ SATIR yazılacak —
+  projenin kendi kodundan N hata, ayrıca favicon.ico 404 (tarayıcının kendi
+  isteği, bizim kodumuzdan değil).
 TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   Beş dosya PLANDAN alındı (Task 10 Adım 1), tahmin edilmedi ve sıra korundu:
   index.html · src/main.js · src/tx/sendTransaction.js · src/crypto/digest.js ·
@@ -1247,12 +1266,33 @@ TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   göreli ad kullanıyor. md5 yoksa md5sum'a düşüyor, ikisi de yoksa çıkış 2 —
   sessizce başka bir özete GEÇMİYOR, yoksa karşılaştırma anlamsızlaşır.
   KAPI KAYIT_COMMIT'e BAĞLANMADI, plandaki gerekçe betiğin başına yazıldı.
-SIR TARAMASI HÜKMÜ — 19 Eylül, Akif
-  Betik çıkış 1 verdi: C ve D desenlerinde birer eşleşme, ikisi de aynı değer,
-  0x2EafA294...f000BB — PQWallet'ın kontrat adresi. Sır DEĞİL: aleni ve
-  frontend/src/config/contracts.js:8 ile zaten commit'li; betiğin kendi
-  başlığı da D'yi "adresler zaten aleni, kayda geçsin diye taranıyor" diye
-  tanımlıyor. Çıkış 1 İNSAN HÜKMÜYLE ezildi; hükmü veren Akif, tarih 19 Eylül.
+SIR TARAMASI HÜKMÜ — 19 Eylül, Akif — İKİ AYRI TARAMA, AYRI AYRI
+  DÜZELTME: bu kayıt önce TEK hüküm olarak yazılmıştı ve hangi taramayı
+  ezdiğini söylemiyordu; defter PQWallet adresini, aynı turun mesajı ise C
+  adresini gösteriyordu. İkisi de doğruydu ama AYRI TARAMALARA aitti. Akif
+  çelişkiyi yakaladı, hüküm askıya alındı, aşağıdaki ölçüm yeniden koşuldu.
+  TARAMA 1 — commit d9d77e1, GENİŞLİK 30 satır (o commit'in + satırları):
+    C: 1 eşleşme · D: 1 eşleşme · ikisi de 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB
+    A: 0 · B: 0 · çıkış 1.
+    HÜKÜM: PQWallet'ın kontrat adresi, sır DEĞİL — aleni ve
+    frontend/src/config/contracts.js:8 ile zaten commit'li.
+  TARAMA 2 — commit e0432b3, GENİŞLİK 46 satır:
+    C: 1 eşleşme · D: 1 eşleşme · ikisi de 0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc
+    A: 0 · B: 0 · çıkış 1.
+    HÜKÜM: yeni C adresi, sır DEĞİL — hiç kullanılmamış boş bir adres, özel
+    anahtarı üretilirken ekrana bile basılmadı ve hiçbir yere kaydedilmedi.
+  NEDEN 46 SATIRLIK DİFF'TE PQWALLET YOK — ölçüldü, iki sebep birden:
+    (i) Adım 0'ın iki cast komut satırı o commit'te DEĞİŞMEDİ, git onları
+        BAĞLAM satırı olarak veriyor, + kümesine girmiyorlar;
+    (ii) aynı diff'te PQWallet adresi bir + satırında geçiyor ama
+        "0x2EafA294...f000BB" biçiminde, yani KISALTILMIŞ — D deseni tam
+        40 hane arıyor ve kısaltılmışı yakalamıyor. Bu tam olarak 18
+        Eylül'de scan-secrets.mjs başlığına eklenen sınırın kendisi;
+        ilk kez canlı örneği çıktı.
+    Doğrulama: grep -o "0x[0-9a-fA-F]{40}" ile 46 satırda TEK adres bulundu.
+  KURAL — bundan sonra her tarama kaydına GENİŞLİK (kaç satır) ve HANGİ
+  COMMIT/DEĞİŞİKLİK olduğu yazılır. Bir turda birden fazla tarama koşarsa
+  her biri ayrı kaydedilir; tek hüküm iki taramayı kapsayamaz.
 SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   Betik çıkış 1 verdi: B ve C desenlerinde birer eşleşme, ikisi de aynı değer,
   a0f1f0cb...c4d9cd — WASM çıktısının sha256'sı. Sır DEĞİL: derleme
