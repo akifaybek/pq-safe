@@ -1290,9 +1290,41 @@ SIR TARAMASI HÜKMÜ — 19 Eylül, Akif — İKİ AYRI TARAMA, AYRI AYRI
         Eylül'de scan-secrets.mjs başlığına eklenen sınırın kendisi;
         ilk kez canlı örneği çıktı.
     Doğrulama: grep -o "0x[0-9a-fA-F]{40}" ile 46 satırda TEK adres bulundu.
-  KURAL — bundan sonra her tarama kaydına GENİŞLİK (kaç satır) ve HANGİ
-  COMMIT/DEĞİŞİKLİK olduğu yazılır. Bir turda birden fazla tarama koşarsa
-  her biri ayrı kaydedilir; tek hüküm iki taramayı kapsayamaz.
+  KURAL — bundan sonra her tarama kaydına GENİŞLİK (kaç satır), HANGİ
+  COMMIT/DEĞİŞİKLİK olduğu ve GİRDİNİN NASIL KURULDUĞU yazılır. Bir turda
+  birden fazla tarama koşarsa her biri ayrı kaydedilir; tek hüküm iki
+  taramayı kapsayamaz.
+  GİRDİ YÖNTEMİ — tek kelime, üç seçenek: "awk bloğu" · "git diff" ·
+  "çalışma ağacı". GEREKÇE: bugüne kadar üçü de kullanıldı (86f259f awk
+  bloğu, d9d77e1 ve e0432b3 git diff, 19 Eylül turları çalışma ağacı) ve
+  yöntem yazılmazsa turlar arası sayılar KARŞILAŞTIRILAMAZ — "C 2" ile
+  "C 1" arasındaki farkın desenden mi girdiden mi geldiği söylenemez.
+  Genişlik bunu yarı yarıya çözdü; yöntem kalan yarısı.
+  A DESENİ ÇIKIŞ KODUNU ETKİLEMEZ — KODDAN ÖLÇÜLDÜ, başlık yorumundan değil:
+  docs/tools/scan-secrets.mjs:133 → process.exit(b + c + d > 0 ? 1 : 0).
+  A ifadede HİÇ YOK, yani A'daki eşleşme sayısı ne olursa olsun çıkış kodu
+  değişmez. A'nın aradığı şey: BIP-39 İngilizce sözlüğünden ardışık kelime
+  dizileri, raporlama eşiği 2, mnemonic eşiği 12; betik en uzun diziyi de
+  basıyor. Eşik BİLEREK düşük (başlıkta yazılı gerekçe: eşiği yükseltmek
+  "0 eşleşme" yazmanın en kolay yolu olurdu).
+  DOLAYISIYLA 18 EYLÜL'ÜN A 5'İ KAPIYI SESSİZCE GEÇMİŞ DEĞİL — kapı A'ya
+  hiç bakmıyor. Ama betiğin başlığı "A'da hükmü İNSAN VERİR" diyor ve o
+  hüküm o gün YAZILMAMIŞTI; şimdi yazılıyor: eşleşmelerin hepsi teknik
+  kelime çiftiydi — kabuk anahtar sözcükleri ve dosya yolu parçaları —
+  en uzun dizi 3, mnemonic eşiği 12. Sır değil, teknik düzyazı gürültüsü.
+  A İÇİN DURUŞ HÜKMÜ: en uzun dizi < 6 kaldığı sürece A ayrıca hükme
+  bağlanmaz, sayı kayda girer ve geçilir. 6 ve üstü bir dizi çıkarsa
+  eşleşmeler TEK TEK incelenir.
+  BU HÜKÜM YAZILDIĞI ANDA KENDİ ÜZERİNDE TETİKLENDİ — 19/20 Eylül gecesi:
+  taramada en uzun dizi 9 çıktı ve incelendi. Dizi GERÇEK DEĞİLDİ: yukarıdaki
+  cümlede 18 Eylül'ün dört ayrı eşleşmesi yan yana ALINTILANMIŞTI ve betik
+  noktalamayı atıp dördünü TEK dizi saydı. Yani kayıt, kendi eşleşmelerini
+  alıntılayarak OLMAYAN bir dizi üretti.
+  DÜZELTME VE KURAL: A eşleşmeleri deftere yan yana alıntılanmaz. Alıntı
+  gerekiyorsa aralarına sözlükte OLMAYAN kelime konur (Türkçe sözcük yeter);
+  çünkü betik satır sınırını ve noktalamayı yok sayıyor, diziyi ancak
+  sözlük dışı bir token kırıyor. Yukarıdaki cümle bu yüzden alıntısız
+  yeniden yazıldı ve dizi 9'dan düştü.
   DURUŞ HÜKMÜ — 19 Eylül, Akif. TARAMA KENDİ KAYDINI KAPSAYAMAZ:
   0x2EafA294C14b6752128bfd4f5873D1EA39f000BB ve
   0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc bu dosyada TAM BİÇİMDE KASTEN
