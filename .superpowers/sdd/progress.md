@@ -1162,10 +1162,38 @@ TASK 5 OTURUMU ÖNCESİ DOLDURULACAKLAR — 19 Eylül, plan DEĞİŞMEDİ
      C = TAZE BOŞ ADRES, SEÇİLMEDİ. Adım 3'ün üçlü kontrolü (balance/nonce/
          code = 0/0/0x) 18 Eylül oturumunda YAPILAMADI, zincire dokunmak
          yasaktı. Oturumun başında seçilip doğrulanacak.
-  3. ADIM 0 KAPISI, adres doldurulmuş hâlde hazır:
-     cast nonce 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB --rpc-url $SEPOLIA_RPC
+  3. ADIM 0 KAPISI, DÜZELTİLMİŞ komutla hazır (gerekçe hemen altta):
+     cast call 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB "nonce()(uint256)" --rpc-url $SEPOLIA_RPC
      cast balance 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB --rpc-url $SEPOLIA_RPC
      Nonce 2 beklenir, DEĞİLSE DUR. Bakiye YAZILACAK — Task 6 Adım 8 girdisi.
+PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR — 19 Eylül, ÖLÇÜLDÜ
+  Plan satır 585: cast nonce <PQWALLET> → "beklenen 2". BU KOMUT HER ZAMAN 1
+  DÖNER ve kapı sabah ilk adımda YANLIŞ ALARM verip oturumu durdururdu.
+  ÖLÇÜM (19 Eylül 08:46 UTC, blok 11736605, publicnode endpoint):
+    cast call <PQWALLET> "nonce()(uint256)"  →  2   ← KAPININ İSTEDİĞİ SAYI
+    cast nonce <PQWALLET>                    →  1
+    cast code <PQWALLET>                     →  3481 bayt (kontrat, EOA değil)
+  SEBEP: iki ayrı nonce var. cast nonce HESAP nonce'unu okur; bir kontrat
+  hesabının nonce'u EIP-161 gereği 1'de başlar ve yalnızca CREATE ile artar.
+  Replay korumasını sağlayan sayı ise kontratın STORAGE'ındaki nonce()
+  değişkeni ve ona ancak cast call ile bakılır.
+  GEÇMİŞ ÖLÇÜMLER SAĞLAM: 15 ve 17 Eylül'ün "nonce 2" kayıtları
+  pqwallet-test.mjs ve arşiv endpoint'iyle, yani nonce() ÜZERİNDEN alınmıştı.
+  Bozuk olan yalnızca PLANA YAZILAN KOMUT.
+  AYNI HATA ÜÇ YERDE: plan satır 585 (Task 5 Adım 0), 972 (Task 6, beklenen 3),
+  1415 (iptal dalında "nonce değişmedi" doğrulaması). ÜÇÜ DE cast call'a
+  çevrilmeli. Plan DEĞİŞTİRİLMEDİ (kural), düzeltme kaydı burası.
+  YANLIŞ DEĞİL: plan satır 699'daki cast nonce <C_ADRESI> DOĞRU — C boş bir
+  EOA adresi ve orada ölçülmek istenen şey zaten HESAP nonce'u (beklenen 0).
+  BU HATAYI 18 EYLÜL'DE AJAN DA TEKRARLAMIŞTI: "hazır komut" diye deftere
+  yazdığı satır planınkini kopyalamıştı; 19 Eylül'de düzeltildi.
+ÖN-KONTROL — KAPININ YERİNE GEÇMEZ, 19 Eylül 08:46 UTC
+  nonce() = 2 · bakiye = 50900000000000000 wei · blok 11736605.
+  Bakiye 17 Eylül'den beri DEĞİŞMEMİŞ. Bu bir ön-kontroldür: oturum günü
+  yeniden okunacak, çünkü kapının koruduğu şey OTURUM ANI. Ölçüm penceresi
+  19 Eylül 00:00'da başladı ve bu okuma pencerenin ihlal edilmediğiyle
+  TUTARLI, ama ihlalin yokluğunu KANITLAMAZ — araya giren bir execute()
+  bu okumadan sonra da girebilir.
   SIRA: tarayıcı adımı (ÖK-2'nin son parçası, Task 5/6'nın blokörü) → Adım 0
   → mnemonic. Ölçüm penceresi 19 Eylül 00:00'da başladı, Hakan uyacağını yazdı.
 TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
