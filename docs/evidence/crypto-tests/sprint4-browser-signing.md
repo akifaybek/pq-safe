@@ -10,8 +10,15 @@ göstermiyordu.
 
 ## SONUÇ
 
-**İki iddia da ayrı ayrı kanıtlandı.** Aşağıda ayrı başlıklar altında; "sayfa
-açıldı, konsol temiz" ifadesi kanıt olarak **kullanılmadı** ve kullanılamazdı.
+**İki teknik iddia da ayrı ayrı kanıtlandı** (`.wasm` örneklendi · 3688 baytlık
+imza üretildi). "Sayfa açıldı, konsol temiz" ifadesi kanıt olarak
+**kullanılmadı** ve kullanılamazdı.
+
+> **ÖK-2'nin tarayıcı maddesi HENÜZ KAPANMADI.** Konsol sayımı eksik: sayfa
+> açılışındaki 3 hata enumerе edilmedi ve filtrenin gizlediği 3 kayıt
+> incelenmedi; ayrıca `/favicon.ico` isteği Ağ sekmesinde aranmadı. Madde,
+> bunlar ölçülünce kapanır. Eksik listesi aşağıda **"Tamamlanacak ölçümler"**
+> başlığında.
 
 ## İddia 1 — `.wasm` gerçekten örneklendi
 
@@ -72,10 +79,61 @@ transkripsiyon hatası riski taşır ve bu değerler zaten taze, tek kullanıml�
 mnemonic'ten türetildi. Gözlem: `pkSeed` ve `pkRoot` sondaki sıfır dolgusuyla
 32'şer bayt olarak gösteriliyor, 64 baytlık doğrulayıcı formatıyla tutarlı.
 
-## Konsol — projenin kendi kodundan SIFIR hata
+## Konsol — SAYIM EKSİK, hüküm ASKIDA
 
-Sayaç imzadan sonra **12 hata · 6 uyarı** gösteriyordu. **On ikisinin de kaynağı
-eklenti**, üçü de dosyadan doğrulandı:
+> **DÜZELTME, 20 Eylül.** Bu bölüm önce *"görünen 12 kayıt, proje kodundan 0
+> hata"* diye yazılmıştı. **İki hata vardı:** (i) 12, yalnızca **imzadan
+> sonraki** ana ait — sayfa açılışında sayaç **3 hata · 6 uyarı** gösteriyordu
+> ve iki an birbirine karışmıştı; (ii) o üç hatanın kaynağı **hiç
+> enumerе edilmedi**, dolayısıyla "0 hata" hükmü gözleme değil **varsayıma**
+> dayanıyordu. Akif yakaladı. Aşağısı yalnızca **gerçekten görülen** şeyi
+> yazıyor.
+
+### Sayaçlar, ana ana
+
+| An | Hata | Uyarı |
+|---|---|---|
+| Sayfa açılışı (keygen'den ÖNCE) | **3** | 6 |
+| keygen'den sonra | **6** | 6 |
+| sign'dan sonra (Ağ sekmesindeyken) | **8** | 6 |
+| Konsol sekmesi açıldığında | **12** | 6 |
+
+Tek toplam yazılmıyor. Hata sayısı biz hiçbir şey yapmadan artmaya devam etti;
+artışın kaynağı aşağıdaki Sentry isteklerinin yeniden denenmesi.
+
+### Enumerasyon — YALNIZCA sign sonrası an için var
+
+Konsol sekmesi **yalnızca imzadan sonra** açıldı. O listede görünen her kaydın
+kaynak dosyası okundu:
+
+| Kayıt (ilk satır) | Kaynak dosya | Etiket |
+|---|---|---|
+| `MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 close listeners added.` | `contentscript.js:14083` | **eklenti** (MetaMask) |
+| `MaxListenersExceededWarning: … 11 end listeners added.` | `contentscript.js:14083` | **eklenti** |
+| `ObjectMultiplex - orphaned data for stream "app-init-liveness"` ×2 | `contentscript.js:14083` | **eklenti** |
+| `ObjectMultiplex - orphaned data for stream "background-liveness"` ×2 | `contentscript.js:14083` | **eklenti** |
+| `POST https://o370968.ingest.sentry.io/api/6260025/envelope/… net::ERR_CERT_AUTHORITY_INVALID` (çok sayıda) | `content.js:50` | **eklenti** |
+| aynı istek, bir kez `net::ERR_CONNECTION_TIMED_OUT` | `content.js:50` | **eklenti** |
+| `Unchecked runtime.lastError: The message port closed before a response was received.` | `(dizin):1` | **eklenti** (mesajlaşma) |
+
+Etiketler dosya adına dayanıyor, tahmine değil; ve "eklenti" etiketi depodan
+doğrulandı:
+
+- `grep -rin "sentry" frontend/src frontend/index.html frontend/package.json` → **boş**
+- `find frontend/src -name "content*.js"` → **boş**
+
+### AÇIK KALAN İKİ BOŞLUK — hüküm bu yüzden askıda
+
+1. **Sayfa açılışındaki 3 hata enumerе EDİLMEDİ.** O anda yalnızca sayaç
+   görüldü, konsol sekmesi açılmadı. Üçünün kaynağı yazılmadan *"proje
+   kodundan 0 hata"* denemez.
+2. **DevTools filtre çubuğu "3 gizli" diyordu.** Yani sign sonrası listede bile
+   üç kayıt filtre tarafından gizlenmişti ve **incelenmedi**. Görünen kayıtların
+   hepsinin eklenti kaynaklı olması, gizlenenler için hiçbir şey söylemez.
+
+**Şu an söylenebilecek en güçlü cümle:** *imzadan sonraki konsol listesinde
+GÖRÜNEN kayıtların hepsi eklenti kaynaklıydı.* "Proje kodundan 0 hata" bundan
+daha geniş bir iddiadır ve henüz karşılanmadı.
 
 | Kayıt | Kaynak | Bizim mi |
 |---|---|---|
@@ -95,9 +153,21 @@ denetimine işaret ediyor (kurumsal ağ ya da güvenlik yazılımı) — **uygul
 ilgisi yok**, ve hata sayısı biz hiçbir şey yapmadan artmaya devam etti
 (3 → 6 → 8 → 12), çünkü eklenti isteği yeniden deniyor.
 
-**`favicon.ico` 404 konsolda GÖRÜNMEDİ.** Hakan 18 Eylül'de Windows'ta görmüştü.
-Chrome favicon hatasını konsola yazmayabiliyor; ayrıca konsol filtresinde
-"3 gizli" kaydı vardı. **Yok demiyoruz — bu koşuda konsolda görünmedi.**
+### `favicon.ico` — GÖRÜNMEMESİ ÖLÇÜM DEĞİL
+
+Konsolda 404 görünmedi. **Bu, 404'ün olmadığını göstermez:** konsol filtresi
+("3 gizli"), önbellek ya da DevTools ayarı da aynı sonucu verir. Chrome favicon
+hatasını çoğu durumda Ağ sekmesine yazar, konsola değil.
+
+**ÖLÇÜLMEDİ — Ağ sekmesinde `/favicon.ico` isteği aranmadı.** Filtre kutusunda
+`wasm` yazılıydı, yani favicon isteği listede zaten görünemezdi. Yapılacak:
+filtreyi temizleyip `favicon` aramak, istek varsa **durum kodunu**, yoksa
+"istek hiç yok"u yazmak.
+
+**Kayda geçen taahhüt hatırlatması:** 19 Eylül'de favicon'un kapatılmaması
+kararı verilirken gerekçelerden biri *"404 ayrı satırda sayılacak"* idi
+(bkz. defter, FAVICON KARARI). Bu koşuda **sayılmadı**; sebebi yukarıdaki
+filtre. Ölçüm tamamlanınca buraya yazılacak.
 
 ## Kapsam — ne koşuldu, ne koşulmadı
 
@@ -114,10 +184,47 @@ Koşulan yol: **Bölüm 1 keygen → Bölüm 2 İmzala**, `btn-keygen` ile üret
   çağıran yolu kanıtlar, `buildAndSign` zincirini değil.
 - **Gerçek tx yolu koşulmadı** — o Task 6'nın işi.
 
+## Ölçüm ortamı — EKSİK, tamamlanacak
+
+Sapma yorumlanmayacak (yukarıda öyle yazıldı), ama sebep ileride aranırsa girdi
+olsun diye ortam kayda girer. **Şu an elde olmayanlar:** Chrome sürümü,
+macOS sürümü, o an açık sekme sayısı ve makine yükü. Bunlar yazılmadan
+"tarayıcı WASM yürütme farkı" ile "o andaki makine yükü" açıklamaları
+arasında ileride bile seçim yapılamaz. İkisi de şu an ayakta, **ölçülmedi**.
+
+## İki boyut — hangi sütun olduğu NETLEŞMEDİ
+
+DevTools'un **Boyut** sütunu okundu: JS **54,1 kB**, wasm **228 kB**.
+**Önbelleği devre dışı bırak** işaretliydi, yani transfer bekleniyor.
+
+| Dosya | Diskte (ölçüldü) | Ağ sekmesinde | Uyum |
+|---|---|---|---|
+| `sphincs_c13_signer_bg.wasm` | **227.416 bayt** | 228 kB | tutarlı |
+| `sphincs_c13_signer.js` | **10.082 bayt** | **54,1 kB** | **TUTMUYOR — 5,4 kat** |
+
+wasm satırı transfer ≈ kaynak olarak okunuyor ve diskle uyuşuyor. **JS satırı
+uyuşmuyor** ve sebebi ölçülmedi. Akla yatkın açıklama Vite dev sunucusunun
+modülü dönüştürüp satır içi kaynak haritası eklemesi — **ama bu bir tahmindir**,
+DevTools satırı genişletilip transfer/kaynak ayrımı okunmadan yazılmaz.
+Bu rakam hiçbir iddiayı taşımıyor; yine de açıklanmadan bırakılmıyor.
+
+## Tamamlanacak ölçümler — madde kapanmadan önce
+
+1. Sayfa açılışındaki **3 hatanın** her biri: ilk satır + kaynak dosya + etiket.
+2. Konsol filtresinin gizlediği **3 kaydın** açılması ve etiketlenmesi.
+3. Ağ sekmesinde filtre temizlenip **`/favicon.ico`** aranması: istek var mı,
+   varsa durum kodu.
+4. Ortam: Chrome sürümü · macOS sürümü · açık sekme sayısı.
+5. `sphincs_c13_signer.js` satırının **transfer/kaynak** boyut ayrımı.
+
 ## ÖK-2 için anlamı
 
-ÖK-2'nin tarayıcı maddesi **KAPANDI**: derlenmiş imzalayıcı, depodan gelen
-çıktıyla, gerçek bir tarayıcıda örneklendi ve doğru uzunlukta imza üretti.
+Teknik çekirdek **kanıtlandı**: derlenmiş imzalayıcı, depodan gelen çıktıyla,
+gerçek bir tarayıcıda örneklendi ve doğru uzunlukta imza üretti.
+
+**Madde yine de KAPANMADI.** Kapanış kuralı: konsol sayımı iki ana ayrılmadan
+ve sayfa açılışındaki üç hatanın kaynağı yazılmadan işaretlenmez. Şu an kapatan
+gözlem eksik — "0 hata" iddiası var, onu doğrulayan satır yok.
 
 ## Yan bulgu — `index.html:30` bayat, Task 2 ile ÇELİŞİYOR
 

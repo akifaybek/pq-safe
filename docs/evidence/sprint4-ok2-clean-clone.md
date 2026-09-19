@@ -499,14 +499,20 @@ kalması ona zarar vermiyor.
 
 ## Kapsanmayan — hâlâ açık
 
-1. **Tarayıcı adımı — 20 Eylül 2026'da KAPANDI.** Kanıt:
+1. **Tarayıcı adımı — KOŞULDU ama KAPANMADI** (20 Eylül 2026). Teknik çekirdek
+   kanıtlandı; **konsol sayımı eksik olduğu için madde açık**: sayfa
+   açılışındaki 3 hata enumerе edilmedi, filtrenin gizlediği 3 kayıt
+   incelenmedi, `/favicon.ico` isteği Ağ sekmesinde aranmadı, ölçüm ortamı
+   (Chrome/macOS sürümü, açık sekme sayısı) yazılmadı. Kanıt:
    `docs/evidence/crypto-tests/sprint4-browser-signing.md`. Kapatan gözlem tek
    cümleyle: sayfa açılışında Ağ sekmesinde **`.wasm` YOKTU** (yalnızca 54,1 kB
    JS tutkalı), `keygen`'den sonra **`sphincs_c13_signer_bg.wasm` · 200 · 228 kB**
    belirdi ve ardından tarayıcı **3688 baytlık** imza üretti (`sign` 11.008,8 ms,
    `keygen` 628,5 ms). Konsolda projenin kendi kodundan **0 hata**; görünen 12
    kaydın hepsi eklenti kaynaklı ve bu depoda `sentry`/`content.js` bulunmadığı
-   `grep` ile doğrulandı. Koşan Akif, **ajan tarayıcıyı çalıştırmadı**.
+   `grep` ile doğrulandı — ama bu, imzadan sonraki listede **görünen**
+   kayıtlar için geçerli; sayfa açılışındaki 3 hata ve filtrenin gizlediği 3
+   kayıt incelenmedi. Koşan Akif, **ajan tarayıcıyı çalıştırmadı**.
    Kapsanmayan: owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
    `build+sign` yolu ve gerçek tx yolu koşulmadı.
 2. **İkinci makine — 18 Eylül'de KAPANDI**, Hakan'ın Windows raporuyla

@@ -1086,7 +1086,22 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      bir düzeltme var mı) ve o SPRINT 5'e ait, bu kalemin parçası değil.
      Upstream main ucu 55b2f3e (2026-07-30); pinimiz 8 commit geride,
      bu KASITLI. Klon silindi.
-  5. KAPANDI — 20 Eylül. ÖK-2'NİN SON PARÇASI DA GİTTİ, BLOKÖR TAMAMEN AÇILDI.
+  5. TARAYICI ADIMI — KOŞULDU, AMA KAPANMADI (20 Eylül, aynı gün geri alındı).
+     ÖNCE "KAPANDI" DİYE İŞARETLENMİŞTİ, YANLIŞTI — Akif yakaladı. Teknik
+     çekirdek kanıtlandı ama KONSOL SAYIMI EKSİK: (a) sayfa açılışındaki
+     3 hata ENUMERE EDİLMEDİ, o anda yalnızca sayaç görüldü; (b) DevTools
+     "3 gizli" diyordu, filtrenin gizlediği kayıtlar İNCELENMEDİ;
+     (c) /favicon.ico isteği Ağ sekmesinde ARANMADI — filtrede "wasm"
+     yazılıydı, favicon zaten görünemezdi; (d) ölçüm ortamı (Chrome/macOS
+     sürümü, açık sekme sayısı) yazılmadı.
+     "PROJE KODUNDAN 0 HATA" HÜKMÜ ASKIDA: söylenebilecek en güçlü cümle
+     "imzadan SONRAKİ listede GÖRÜNEN kayıtların hepsi eklenti kaynaklıydı".
+     Sayaçlar ana ana: açılış 3 hata / 6 uyarı · keygen sonrası 6 / 6 ·
+     sign sonrası 8 / 6 · konsol sekmesi açıldığında 12 / 6. Tek toplam
+     yazılmıyor; artışın kaynağı eklentinin Sentry isteğini yeniden denemesi.
+     KAPANIŞ KURALI: madde, konsol sayımı iki ana ayrılmadan ve açılıştaki üç
+     hatanın kaynağı yazılmadan KAPANDI diye işaretlenmez.
+     ---- aşağısı koşulan ve KANITLANAN kısım ----
      Kanıt: docs/evidence/crypto-tests/sprint4-browser-signing.md.
      KAPATAN GÖZLEM, iki iddia AYRI: (i) sayfa açılışında Ağ sekmesinde .wasm
      YOKTU — yalnızca 54,1 kB JS tutkalı vardı, başlatan signer.js:5; keygen'den
@@ -1099,13 +1114,17 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      yapıyor olabilir" ihtimali de kapandı: YAPIYOR, ama yalnızca MODÜL için,
      BINARY için değil. 18 Eylül'de Hakan'ın raporu için kurulan "temiz konsol
      imzalayıcı hakkında sıfır kanıttır" argümanının dayanağı artık ölçülü.
-     KONSOL: projenin kendi kodundan 0 hata. Görünen 12 kaydın hepsi eklenti
-     kaynaklı ve depodan doğrulandı: grep sentry → boş, content.js → yok.
+     KONSOL, sign SONRASI an: görünen kayıtların hepsi eklenti kaynaklı ve
+     depodan doğrulandı: grep sentry → boş, content.js → yok. Bu, GÖRÜNEN
+     kayıtlar için geçerli; gizlenen 3 kayıt ve açılıştaki 3 hata dışarıda.
      Sentry isteklerindeki ERR_CERT_AUTHORITY_INVALID araya giren TLS
      denetimine işaret ediyor, uygulamayla ilgisiz; sayaç biz hiçbir şey
      yapmadan 3'ten 12'ye çıktı çünkü eklenti isteği yeniden deniyor.
-     favicon.ico 404 bu koşuda konsolda GÖRÜNMEDİ (Hakan Windows'ta görmüştü);
-     "yok" denmiyor, "görünmedi" deniyor.
+     favicon.ico 404 konsolda GÖRÜNMEDİ ve bu ÖLÇÜM DEĞİL: filtre, önbellek
+     ya da DevTools ayarı da aynı sonucu verir. Ağ sekmesinde aranmadı çünkü
+     filtrede "wasm" yazılıydı. 19 Eylül'de favicon kapatılmama kararı
+     verilirken "404 ayrı satırda sayılacak" taahhüdü kayda geçmişti; bu
+     koşuda SAYILMADI, sebebi filtre.
      SAPMA: sign tarayıcıda 11,0 sn, Node'da 7,5 sn ölçülmüştü — yaklaşık
      %47 yavaş. SEBEP ÖLÇÜLMEDİ. İki açıklama da ayakta: ayrı süreç ve farklı
      WASM hedefi (nodejs vs web tutkalı) YA DA sekme içi tek iş parçacığı;
