@@ -172,12 +172,16 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 
 ## Kapsanmayan
 
-- **Tarayıcı adımı** (`npx vite` ile sayfada **elle imza üretimi**) hâlâ
-  koşulmadı. 18 Eylül'de Windows'ta sayfa açıldı ve konsol temizdi, ama imza
-  üretildiği rapor edilmedi; sayfanın açılması WASM'ın yüklendiğini bile
-  kanıtlamaz. `vite build`in geçmesi güçlü gösterge, sayfanın kendisi değil.
-- **`favicon.ico` 404** — kozmetik, işlevsel etkisi yok. Jüri konsolu açarsa
-  görür.
+- **Tarayıcı adımı KOŞULDU — 20 Eylül 2026.** macOS + Chrome'da `npx vite` ile
+  sayfa açıldı, `keygen` ve `İmzala` elle çalıştırıldı: `.wasm` sayfa açılışında
+  **istenmedi**, `keygen`'de indi (228 kB), imza **3688 bayt** çıktı. Ölçümler:
+  `keygen` 628,5 ms · `sign` 11.008,8 ms (Node'da 7,5 sn ölçülmüştü, sapmanın
+  sebebi ölçülmedi). Kanıt:
+  `docs/evidence/crypto-tests/sprint4-browser-signing.md`.
+  **Kapsanmayan:** owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
+  `build+sign` yolu ve gerçek tx yolu koşulmadı.
+- **`favicon.ico` 404** — kozmetik, işlevsel etkisi yok. Windows'ta konsola
+  düştü (Hakan, 18 Eylül); macOS/Chrome koşusunda konsolda **görünmedi**.
 
 İkinci makine şartı **kapandı**: Windows + node v24.15.0, Hakan, 18 Eylül 2026.
 Ayrıntı ve kapatmadıkları: `docs/evidence/sprint4-ok2-clean-clone.md`.
