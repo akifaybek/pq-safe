@@ -499,22 +499,35 @@ kalması ona zarar vermiyor.
 
 ## Kapsanmayan — hâlâ açık
 
-1. **Tarayıcı adımı — KOŞULDU ama KAPANMADI** (20 Eylül 2026). Teknik çekirdek
-   kanıtlandı; **konsol sayımı eksik olduğu için madde açık**: sayfa
-   açılışındaki 3 hata enumerе edilmedi, filtrenin gizlediği 3 kayıt
-   incelenmedi, `/favicon.ico` isteği Ağ sekmesinde aranmadı, ölçüm ortamı
-   (Chrome/macOS sürümü, açık sekme sayısı) yazılmadı. Kanıt:
-   `docs/evidence/crypto-tests/sprint4-browser-signing.md`. Kapatan gözlem tek
-   cümleyle: sayfa açılışında Ağ sekmesinde **`.wasm` YOKTU** (yalnızca 54,1 kB
-   JS tutkalı), `keygen`'den sonra **`sphincs_c13_signer_bg.wasm` · 200 · 228 kB**
-   belirdi ve ardından tarayıcı **3688 baytlık** imza üretti (`sign` 11.008,8 ms,
-   `keygen` 628,5 ms). Konsolda projenin kendi kodundan **0 hata**; görünen 12
-   kaydın hepsi eklenti kaynaklı ve bu depoda `sentry`/`content.js` bulunmadığı
-   `grep` ile doğrulandı — ama bu, imzadan sonraki listede **görünen**
-   kayıtlar için geçerli; sayfa açılışındaki 3 hata ve filtrenin gizlediği 3
-   kayıt incelenmedi. Koşan Akif, **ajan tarayıcıyı çalıştırmadı**.
-   Kapsanmayan: owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
-   `build+sign` yolu ve gerçek tx yolu koşulmadı.
+1. **Tarayıcı adımı — KAPANDI, 20 Eylül 2026, İKİNCİ KOŞUYLA.** Kanıt:
+   `docs/evidence/crypto-tests/sprint4-browser-signing.md`.
+   **Koşan Akif, ajan tarayıcıyı çalıştırmadı.**
+   - **Koşu 1** teknik çekirdeği kanıtladı ama konsol sayımı eksik kaldığı için
+     madde açık bırakılmıştı: sayfa açılışında Ağ sekmesinde **`.wasm` YOKTU**
+     (yalnızca 54,1 kB JS tutkalı), `keygen`'den sonra
+     **`sphincs_c13_signer_bg.wasm` · 200 · 228 kB** belirdi, imza **3688 bayt**
+     çıktı (`keygen` 628,5 ms · `sign` 11.008,8 ms).
+   - **Koşu 2** beş eksiği kapattı: konsol filtresi **kaldırıldı** (gizlenen
+     kayıt bırakılmadı), açılış listesi **tam enumere edildi**, `/favicon.ico`
+     Ağ sekmesinde arandı (**0/31 istek**), ortam yazıldı (Chrome
+     **153.0.8010.48** arm64 · macOS **26.6.2**), JS satırının transfer/kaynak
+     ayrımı **ve** farkın sebebi ölçüldü. İmzalayıcı bağımsız bir oturumda yine
+     **3688 baytlık** imza üretti.
+   - **Kapatan gözlem:** açılışta tek hata `Unchecked runtime.lastError`, hata
+     seviyesindeki diğer her kayıt `content.js:50`'den — hepsi eklenti.
+     Depoda `sentry`/`content.js` bulunmadığı `grep` ile doğrulandı.
+   - **HÜKÜM DARALDI:** *"görünen kayıtların hepsi eklenti kaynaklı"* **yanlıştı**.
+     Filtre kaldırılınca depodan iki kalem göründü — `index.html:38` için bir
+     **bilgi** kaydı ve Sorunlar panelinde `index.html:64, 67, 70` için üç
+     erişilebilirlik kalemi. İkisi de **hata seviyesinin altında**, bu yüzden
+     *"konsolda proje kodundan 0 hata"* ayakta kalıyor.
+   - **AYRI KALEM OLARAK DEVREDİLDİ:** Sorunlar panelindeki
+     ``CSP `eval`i engelliyor`` kalemi. Bizim sayfamızdan gelmediği **ölçüldü**
+     (HTML'de CSP meta'sı yok; dev sunucusu CSP başlığı göndermiyor; kodda
+     `eval`/`new Function` yok), **kimin olduğu ölçülmedi**. Konsolda değil,
+     ayrı yüzeyde; tarayıcı maddesini bloklamıyor.
+   - **Kapsanmayan:** owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
+     `build+sign` yolu ve gerçek tx yolu koşulmadı.
 2. **İkinci makine — 18 Eylül'de KAPANDI**, Hakan'ın Windows raporuyla
    (yukarıdaki bölüm). Bu maddeyi yazdıran ölçümler (17 ve 18 Eylül) hâlâ
    yalnızca Akif'in makinesinde koştu; kapatan şey Hakan'ın bağımsız koşusudur

@@ -1086,22 +1086,79 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      bir düzeltme var mı) ve o SPRINT 5'e ait, bu kalemin parçası değil.
      Upstream main ucu 55b2f3e (2026-07-30); pinimiz 8 commit geride,
      bu KASITLI. Klon silindi.
-  5. TARAYICI ADIMI — KOŞULDU, AMA KAPANMADI (20 Eylül, aynı gün geri alındı).
-     ÖNCE "KAPANDI" DİYE İŞARETLENMİŞTİ, YANLIŞTI — Akif yakaladı. Teknik
-     çekirdek kanıtlandı ama KONSOL SAYIMI EKSİK: (a) sayfa açılışındaki
-     3 hata ENUMERE EDİLMEDİ, o anda yalnızca sayaç görüldü; (b) DevTools
-     "3 gizli" diyordu, filtrenin gizlediği kayıtlar İNCELENMEDİ;
-     (c) /favicon.ico isteği Ağ sekmesinde ARANMADI — filtrede "wasm"
-     yazılıydı, favicon zaten görünemezdi; (d) ölçüm ortamı (Chrome/macOS
-     sürümü, açık sekme sayısı) yazılmadı.
-     "PROJE KODUNDAN 0 HATA" HÜKMÜ ASKIDA: söylenebilecek en güçlü cümle
-     "imzadan SONRAKİ listede GÖRÜNEN kayıtların hepsi eklenti kaynaklıydı".
-     Sayaçlar ana ana: açılış 3 hata / 6 uyarı · keygen sonrası 6 / 6 ·
-     sign sonrası 8 / 6 · konsol sekmesi açıldığında 12 / 6. Tek toplam
-     yazılmıyor; artışın kaynağı eklentinin Sentry isteğini yeniden denemesi.
-     KAPANIŞ KURALI: madde, konsol sayımı iki ana ayrılmadan ve açılıştaki üç
-     hatanın kaynağı yazılmadan KAPANDI diye işaretlenmez.
-     ---- aşağısı koşulan ve KANITLANAN kısım ----
+  5. TARAYICI ADIMI — KAPANDI 20 Eylül, İKİNCİ KOŞUYLA. Kapanış kuralı
+     karşılandı: sayaçlar beş ana AYRILDI, açılış listesi TAM ENUMERE EDİLDİ.
+     KOŞU 2 — filtresiz, konsol keygen'den ÖNCE açık:
+       ORTAM: Chrome 153.0.8010.48 (arm64) · macOS 26.6.2 (25G83) · V8 15.3.76.12.
+       SEKME SAYISI ÇELİŞKİLİ: Akif 1 bildirdi, altı ekran görüntüsünün
+         altısında da 2 sekme sayıldı. İkisi de yazıldı, hüküm VERİLMEDİ.
+       İKİ SAYFA OTURUMU: Akif ölçümün ortasında sayfayı YENİLEDİ (kendisi
+         bildirdi; iki bağımsız ölçüm de doğruladı — DOMContentLoaded 329 →
+         296 msn ve hata sayacı 4 → 1, ki aynı oturumda sayaç AZALAMAZ).
+         Dolayısıyla keygen 379,1 ms OTURUM A'ya, sign 24.213,6 ms OTURUM B'ye
+         ait; ardışık adımlar DEĞİL. B'nin keygen süresi ÖLÇÜLMEDİ.
+       SAYAÇLAR: A açılış 1/6/1 · A biraz sonra 2/6/1 · A keygen sonrası 4/6/1 ·
+         B sign sonrası 1/6/1 · B ~1,1 dk sonra 2/6/1. (hata/uyarı/bilgi)
+         Artış yine eklentinin Sentry isteğini yeniden denemesinden.
+       AÇILIŞ ENUMERASYONU: 6 uyarı contentscript.js:14083 (MetaMask) ·
+         2 log [vite] client:859/968 · 1 BİLGİ "[DOM] Password field is not
+         contained in a form" (dizin):1 · 1 HATA "Unchecked runtime.lastError"
+         (dizin):1. keygen sonrası 3 hata daha: Sentry POST, content.js:50.
+       GİZLENEN KAYIT YOK — filtre kutusu boş, seviye "Tüm seviyeler".
+         Koşu 1'deki "3 gizli" ne olduğu artık ÖLÇÜLEMEZ; Koşu 2 sorunu
+         gizlenenleri açarak değil, GİZLENEN BIRAKMAYARAK çözdü.
+       favicon: Ağ'da filtre "favicon" → 0/31 istek. Ajan ayrıca yerel olarak
+         curl attı: sunucu /favicon.ico için 404 döndürüyor, yani İSTENSEYDİ
+         404 olurdu. KALAN BELİRSİZLİK: "istek yok" ile "istek Ağ paneline
+         yazılmadı" bu ölçümle AYRILMIYOR (Chrome favicon'u tarayıcı
+         sürecinden ister). Ayıracak şey sunucu erişim günlüğü, Vite dev
+         varsayılanda tutmuyor. 19 Eylül'ün "404 ayrı satırda sayılacak"
+         taahhüdü bu yüzden KARŞILANDI SAYILMIYOR.
+       JS BOYUT FARKI ÇÖZÜLDÜ: transfer 54,1 kB ≈ kaynak 53,8 kB, yani fark
+         ağda DEĞİL. Ajan curl ile ölçtü: sunucunun verdiği gövde 53.819 bayt,
+         diskteki 10.082, satır içi base64 kaynak haritası 43.656 bayt.
+         10.082 + 43.656 = 53.738, kalan ~81 bayt sourceMappingURL öneki ve
+         Vite'ın import yeniden yazımı. Gövdenin %81'i kaynak haritası.
+         Koşu 1'in "akla yatkın açıklama ama tahmin" cümlesi artık ÖLÇÜM.
+     DEPO KAYNAKLI KAYITLAR BULUNDU — HÜKÜM DARALDI, İKİ CÜMLE AYRI:
+       "Konsolda proje kodundan 0 HATA" AYAKTA — depodan gelen kayıt bilgi
+         seviyesinde, hata değil.
+       "Görünen kayıtların hepsi eklenti kaynaklı" ÇÖKTÜ. Filtre kaldırılınca
+         index.html:38'in password input'u için bir BİLGİ kaydı göründü.
+         Etiket alıntının kendisiyle konuldu, tahminle değil.
+       runtime.lastError ETİKETİ ÇIKARIMDIR, GÖZLEM DEĞİL: kaynak sütunu
+         (dizin):1 yani BELGE'yi gösteriyor, bizim dosyamızı. "Eklenti"
+         diyebilmemizin dayanağı grep -rn "chrome\.runtime|runtime\.lastError"
+         src index.html → BOŞ olması. Koşu 1 bunu düz "eklenti" diye
+         etiketlemişti ve o gerekçeyi taşımıyordu.
+     SORUNLAR (ISSUES) PANELİ — KOŞU 1'DE HİÇ AÇILMAMIŞTI, ayrı yüzey.
+       Araç çubuğundaki "4 sorun: 1 hata 3 bilgi" GİZLİ KONSOL KAYDI SAYACI
+       DEĞİL. Dört kalem: 3 bilgi "No label associated with a form field" ve
+       1 HATA "CSP of your site blocks the use of eval", yönerge script-src,
+       durum Engellendi, kaynak konumu BOŞ.
+       ÜÇ LABEL KALEMİ KESİN BİZİM, sayım birebir tutuyor: index.html:64,67,70
+         üç çıplak <label>, üçü de <div class="field">e eşlik ediyor, form
+         alanına değil. Kozmetik/erişilebilirlik, işlevsel etkisi yok.
+       CSP KALEMİ AÇIK KALEM — MADDE 6. Bizim sayfamız OLMADIĞI ölçüldü:
+         index.html'de CSP meta'sı yok (grep) ve dev sunucusu
+         Content-Security-Policy başlığı göndermiyor (curl -D). Kodda
+         eval(/new Function da yok (grep). "Engellendi" olduğuna göre bir CSP
+         engelledi ama O CSP BİZİM DEĞİL; KİMİN OLDUĞU ÖLÇÜLMEDİ.
+         AYIRACAK ÖLÇÜM: aynı sayfayı EKLENTİSİZ pencerede açmak (~2 dk).
+     SÜRE YAYILIMI — "%47 YAVAŞ" CÜMLESİ TEK ÖLÇÜMDÜ:
+       Node 7,5 sn · tarayıcı koşu 1 11,0 sn · tarayıcı koşu 2 24,2 sn.
+       Tarayıcının iki ölçümü arasında 2,2 KAT fark, aynı makine aynı gün.
+       SEBEP ÖLÇÜLMEDİ, YORUMLANMIYOR. Ayakta kalan açıklamalar: makine yükü ·
+       web/nodejs hedef farkı · sekme içi tek iş parçacığı · ikinci oturumda
+       tarayıcının başka iş yapıyor olması. Bu ölçümler HİÇBİRİNİ AYIRT ETMEZ.
+     KAPATAN GÖZLEM: açılışta tek hata runtime.lastError, hata seviyesindeki
+       diğer her kayıt content.js:50'den. İmzalayıcı ikinci bağımsız oturumda
+       yine 3688 baytlık imza üretti, kontrol GEÇTİ.
+     YAN GÖZLEM: sayfa açılışta zinciri okuyor (sepolia.js:34, pqwallet.js:36,
+       pqwallet.js:41) ve UI'da nonce 2 · bakiye 50900000000000000 wei göründü.
+       ADIM 0 KAPISIYLA TUTARLI AMA KAPININ YERİNE GEÇMEZ — kapı cast call ile,
+       uygulamanın salt-okunur provider'ından bağımsız koşar.
+     ---- aşağısı KOŞU 1'in kaydı, SİLİNMEDİ ----
      Kanıt: docs/evidence/crypto-tests/sprint4-browser-signing.md.
      KAPATAN GÖZLEM, iki iddia AYRI: (i) sayfa açılışında Ağ sekmesinde .wasm
      YOKTU — yalnızca 54,1 kB JS tutkalı vardı, başlatan signer.js:5; keygen'den
@@ -1133,6 +1190,22 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      hiçbir şey gitmedi (ölçüm penceresi ihlal EDİLMEDİ), Bölüm 4'ün
      build+sign yolu ve gerçek tx yolu koşulmadı.
      AJAN TARAYICIYI ÇALIŞTIRMADI — değerler Akif'in ekran görüntülerinden.
+  6. CSP / eval KALEMİ — KAYNAĞI ÖLÇÜLMEDİ (20 Eylül'de açıldı, madde 5'ten
+     devredildi). DevTools Sorunlar panelinde hata seviyesinde bir kalem:
+     "Content Security Policy of your site blocks the use of eval in
+     JavaScript", yönerge script-src, durum Engellendi, kaynak konumu BOŞ.
+     BİZİM SAYFAMIZ OLMADIĞI ÖLÇÜLDÜ, üç ayrı kontrol:
+       index.html'de CSP meta'sı YOK (grep -n -i "content-security-policy")
+       dev sunucusu CSP başlığı GÖNDERMİYOR (curl -s -D - localhost:5173)
+       kodumuzda eval(/new Function YOK (grep -rn, src + index.html)
+     "Engellendi" olduğuna göre bir CSP gerçekten engelledi; O CSP BİZİM DEĞİL,
+     KİMİN OLDUĞU BİLİNMİYOR. Aday: eklentinin kendi CSP'si (eklenti bağlamları
+     eval'i varsayılan yasaklar) — TAHMİN, ölçüm değil.
+     AYIRACAK ÖLÇÜM, tek değişkenli: aynı sayfayı EKLENTİSİZ bir pencerede aç
+     (yeni profil ya da Misafir). Kalem kaybolursa kaynak eklenti; KALIRSA
+     arama bize döner. ~2 dk, zincire dokunmaz.
+     ÖK-2'Yİ BLOKLAMIYOR: konsolda değil ayrı yüzeyde, ve bizim sayfamızdan
+     gelmediği ölçüldü. Madde 5 bu kalem olmadan kapatıldı, gerekçesi bu.
 YAN BULGU — index.html:30 BAYAT, TASK 2 İLE ÇELİŞİYOR, 20 Eylül
   Giriş paragrafı "Mnemonic ekranda gösterilir, hiçbir yere kaydedilmez" diyor.
   Task 2 (a64129b) mnemonic'in DOM'a yazılmasını KALDIRDI ve aynı sayfa birkaç
@@ -1142,6 +1215,12 @@ YAN BULGU — index.html:30 BAYAT, TASK 2 İLE ÇELİŞİYOR, 20 Eylül
   HENÜZ KURULMADI (referans Task 6 Adım 4'te alınacak), yani kayıttan önce
   düzeltilebilir. UI kararı, Akif'e ait. KARAR VERİLMEZSE KAYDA BU CÜMLEYLE
   GİRER — jüri videoda bu satırı okuyacak.
+  KOŞU 2'DE index.html'DE İKİ KOZMETİK KALEM DAHA ÇIKTI, ikisi de DÜZELTİLMEDİ
+  (Sprint 4 UI'ına dokunulmuyor): satır 38 password input'u bir <form> içinde
+  değil (konsolda bilgi kaydı); satır 64/67/70 üç çıplak <label> hiçbir form
+  alanına bağlı değil (Sorunlar panelinde üç erişilebilirlik kalemi). İşlevsel
+  etkileri YOK; kayda girmelerinin sebebi "proje kodundan 0 hata" hükmünün
+  KAPSAMINI DARALTMALARI. Karar verilirse Sprint 5.
      18 EYLÜL'DE KAPANMADI: Hakan sayfayı açtı ve konsol temizdi, ama imza
      ürettiğini bildirmedi. Sayfanın açılması WASM'ın yüklendiğini bile
      kanıtlamaz ve bu KONTROL EDİLDİ, varsayım değil: signer.js:20-25'te
@@ -1320,6 +1399,32 @@ TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   göreli ad kullanıyor. md5 yoksa md5sum'a düşüyor, ikisi de yoksa çıkış 2 —
   sessizce başka bir özete GEÇMİYOR, yoksa karşılaştırma anlamsızlaşır.
   KAPI KAYIT_COMMIT'e BAĞLANMADI, plandaki gerekçe betiğin başına yazıldı.
+SIR TARAMASI — 20 Eylül, tarayıcı koşusu 2 kaydı
+  GENİŞLİK: 507 satır (bu kaydın kendisi dahil — ilk koşu 484 satırdaydı,
+    kayıt yazılınca genişlik büyüdü ve tarama SON HÂLDE yeniden koşuldu;
+    iki koşunun da sayıları aynı çıktı, yalnızca token 4219 → 4494).
+  GİRDİ YÖNTEMİ: git diff.
+  HANGİ DEĞİŞİKLİK: commit ÖNCESİ çalışma ağacı, dört dosya —
+    progress.md · sprint4-browser-signing.md · sprint4-ok2-clean-clone.md ·
+    FRONTEND-KURULUM.md. Komut:
+    git diff -- .superpowers/sdd/progress.md docs/ | grep '^+' | grep -v '^+++'
+      | cut -c2- | node docs/tools/scan-secrets.mjs
+  SAYILAR: A 5 · B 0 · C 0 · D 0 · ÇIKIŞ 0. Token 4219, sözlükte 39 tekil.
+  A HÜKME BAĞLANMADI, duruş hükmü gereği: en uzun dizi 2, eşik 6'nın altında.
+    Beşi de teknik kelime çifti (istemci/zarf/hedef/girdi/derleme terimleri);
+    mnemonic eşiği 12. Eşleşmeler buraya YAN YANA ALINTILANMADI — 19/20 Eylül
+    gecesinin tokenizer kusuru (madde: Sprint 5) aynı tuzağı kurar.
+  D 0 ÇIKMASI BEKLENENDİ: bu turda hiçbir dosyaya tam 40 haneli adres
+    yazılmadı; PQWallet ve C adresleri progress.md'de DEĞİŞMEYEN satırlarda
+    duruyor, git onları bağlam satırı veriyor ve + kümesine girmiyorlar.
+    Duruş hükmü bu turda TETİKLENMEDİ, çünkü tetikleyecek eşleşme çıkmadı.
+  İLK KOŞU GİRDİSİZDİ VE KAYDA GEÇİYOR: argümansız çağrıldığında betik stdin
+    okuyor, boş girdide "toplam token: 0" ile dört desende de 0 basıyor ve
+    çıkış 0 veriyor. Sayılara bakıp "temiz" denebilirdi. AYIRT EDEN SATIR
+    "toplam token" — 0 ise tarama HİÇ KOŞMAMIŞTIR. Bu, betiğin başlığındaki
+    "NE YAKALAMAZ" listesine ait bir sınır değil, KULLANIM HATASIDIR ve
+    çıktısı başarılı taramadan ayırt edilemiyor. Sprint 5'te tokenizer
+    düzeltmesiyle birlikte bakılacak: boş girdi çıkış 2 vermeli.
 SIR TARAMASI HÜKMÜ — 19 Eylül, Akif — İKİ AYRI TARAMA, AYRI AYRI
   DÜZELTME: bu kayıt önce TEK hüküm olarak yazılmıştı ve hangi taramayı
   ezdiğini söylemiyordu; defter PQWallet adresini, aynı turun mesajı ise C

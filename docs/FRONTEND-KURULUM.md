@@ -175,13 +175,23 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 - **Tarayıcı adımı KOŞULDU — 20 Eylül 2026.** macOS + Chrome'da `npx vite` ile
   sayfa açıldı, `keygen` ve `İmzala` elle çalıştırıldı: `.wasm` sayfa açılışında
   **istenmedi**, `keygen`'de indi (228 kB), imza **3688 bayt** çıktı. Ölçümler:
-  `keygen` 628,5 ms · `sign` 11.008,8 ms (Node'da 7,5 sn ölçülmüştü, sapmanın
-  sebebi ölçülmedi). Kanıt:
-  `docs/evidence/crypto-tests/sprint4-browser-signing.md`.
+  `keygen` 628,5 ms · `sign` 11.008,8 ms. **Aynı gün ikinci bir koşu daha
+  yapıldı** (filtresiz konsol, Chrome 153.0.8010.48 / macOS 26.6.2): imza yine
+  **3688 bayt**, `keygen` 379,1 ms · `sign` 24.213,6 ms. **Süre yayılımı geniş
+  ve sebebi ölçülmedi** — Node 7,5 sn, tarayıcı 11,0 ve 24,2 sn; iki tarayıcı
+  ölçümü arasında 2,2 kat fark var, ikisi de aynı makinede aynı gün alındı.
+  Kanıt: `docs/evidence/crypto-tests/sprint4-browser-signing.md`.
   **Kapsanmayan:** owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
   `build+sign` yolu ve gerçek tx yolu koşulmadı.
-- **`favicon.ico` 404** — kozmetik, işlevsel etkisi yok. Windows'ta konsola
-  düştü (Hakan, 18 Eylül); macOS/Chrome koşusunda konsolda **görünmedi**.
+- **`favicon.ico`** — kozmetik, işlevsel etkisi yok. Windows'ta konsola 404
+  düştü (Hakan, 18 Eylül). macOS/Chrome'da **20 Eylül'de Ağ sekmesinde arandı**
+  (filtre `favicon`): **0/31 istek**, yani istek listede görünmedi; konsolda da
+  404 yok. Dev sunucusu `/favicon.ico` için **404 döndürüyor** (`curl` ile
+  ölçüldü), yani istenseydi 404 olurdu.
+  **Kapanmayan ayrım:** "istek hiç yapılmadı" ile "istek yapıldı ama DevTools
+  Ağ paneline yazılmadı" bu ölçümle ayrılmıyor — Chrome favicon'u tarayıcı
+  sürecinden ister. Ayıracak şey bir sunucu erişim günlüğü; Vite dev
+  varsayılanda tutmuyor.
 
 İkinci makine şartı **kapandı**: Windows + node v24.15.0, Hakan, 18 Eylül 2026.
 Ayrıntı ve kapatmadıkları: `docs/evidence/sprint4-ok2-clean-clone.md`.
