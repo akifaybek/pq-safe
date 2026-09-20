@@ -1658,6 +1658,58 @@ ADIM 8 ELDE HESAPLANMAYACAK — 20 Eylül
   aynısı (21000 + 4×sıfır + 16×sıfır-dışı), YENİ MANTIK DEĞİL, yalnızca elle
   değil konsolda koşuyor. Kanca buna dokunmuyor.
 
+HANE KURALI — 20 Eylül, Akif. BU TURDA FİİLEN GEREKTİ
+  Adım 0 kapısının sonucu aktarılırken bakiye 17 haneden 14'e düştü:
+  50900000000000 (0,0000509 ETH) yazıldı, gerçek değer 50900000000000000
+  (0,0509 ETH). 1000 kat.
+  İKİ İHTİMAL MESAJIN KENDİSİYLE AYIRT EDİLEMİYORDU: (i) aktarımda hane
+  düştü; (ii) bakiye gerçekten düştü. İkincisi doğru olsaydı Task 6'nın
+  göndereceği 0,0001 ETH cüzdanda olmazdı ve GERÇEK TX KAYDIN ORTASINDA
+  ZİNCİRDE DÜŞERDİ. Akif ikisini ayırmadan Adım 4'e geçmeyi reddetti.
+  TEYİT, 20 Eylül 12:21 UTC blok 11744259: ham 50900000000000000 · 17 hane ·
+  cast balance --ether 0.050900000000000000. Üç gösterim birbirini tuttu,
+  (i) doğrulandı. Zincirde bir şey olmamıştı.
+  KURAL: her wei değeri kayda ÜÇ GÖSTERİMLE geçer — ham sayı · hane sayısı ·
+  ETH karşılığı. Üçü tutmuyorsa değer KABUL EDİLMEZ.
+  NEDEN KURAL GEREKLİ: gözle bakıldığında 14 hane ile 17 hane ayırt
+  edilmiyor, ama ikisi arasındaki fark ölçümün girdisi. Hane sayısı üçüncü
+  gösterim olarak yazılınca hata AKTARIM ANINDA yakalanıyor, üç gün sonra
+  formülün girdisi tutmadığında değil.
+  B0 = 50900000000000000 wei · 17 hane · 0,0509 ETH — kanıt notuna yazıldı.
+
+ADIM 8'İN ALAN ADLARI KANCADAN DOĞRULANDI — 20 Eylül, mnemonic'ten ÖNCE
+  Akif istedi, gerekçesi BigInt kusurunun aynı sınıfı olması: mnemonic
+  girildikten SONRA patlayan bir kayıt satırı. calldataBytes eksik olsaydı
+  sifirDisi NaN olur ve intrinsic tablosu SESSİZCE çöpe dönerdi — patlamadan,
+  yani fark edilmeden.
+  main.js:984 OKUNDU: return { from, to, est, calldataBytes: (calldata.length
+  - 2) / 2, calldata }. Adım 8 kodunun okuduğu beş alanın beşi de var.
+  Tipler: from string (getAddress) · to string (parametre) · est BIGINT
+  (abstract-provider.js:689) · calldataBytes number · calldata string.
+  KANCA DEĞİŞTİRİLMEDİ, KANCALI_MD5 AYNI KALDI: 714049c4373ac16f5534597c364560ab.
+
+ADIM 7'NİN YOLU DÜZELTİLDİ — 20 Eylül, ajan yanlıştı, Akif yakaladı
+  AJANIN ÖNERİSİ YANLIŞTI: "frontend/.env'de VITE_SEPOLIA_ARCHIVE_RPC_URL ile
+  Adım 6 tekrarlanır" dedim. O yoldan ölçüm HİÇ DEĞİŞMEZDİ.
+  KODDAN OKUNDU, iki ayrı yol var ve kesişmiyorlar:
+    MetaMask yolu — new BrowserProvider(window.ethereum).getSigner(),
+      sendTransaction.js:15 ve :24. Sağlayıcıyı MetaMask'in KENDİ AĞ TANIMI
+      belirliyor. Kanca bu yolu kullanıyor (connected.signer.estimateGas).
+    Uygulamanın salt-okunur yolu — new JsonRpcProvider(VITE_SEPOLIA_RPC_URL),
+      sepolia.js:18-24. .env bunu besliyor. Kanca bunu HİÇ çağırmıyor.
+  PLANIN KENDİSİ ZATEN YAZMIŞ: Task 9 tablosu (plan satır 1330-1338)
+  "VITE_SEPOLIA_RPC_URL'e proxy koymak HİÇBİR ŞEY YAPMAZ — hedef çağrı o
+  yoldan geçmiyor" diyor ve hedef çağrı olarak signer.estimateGas :201'i
+  gösteriyor. Yani bilgi plandaydı, ajan Adım 7'yi okurken Task 9'a bakmadı.
+  PLAN ADIM 7 YANLIŞ DEĞİL, EKSİK: env değişkenini DEĞERİN KAYNAĞI olarak
+  anıyor (tenderly URL'si), MEKANİZMA olarak değil. Yanlış okuma ajanınki.
+  DÜZELTME: ikinci endpoint MetaMask'in ağ ayarından değiştirilir.
+  BEDELİ DE ÖLÇÜLDÜ, tahmin değil: ağ değişikliği sayfayı YENİLEMİYOR.
+  chainChanged gelirse watchWalletChanges yalnızca connected = null yapıyor,
+  imzayı DÜŞÜRMÜYOR (main.js:539 yorumu) ve currentMnemonic modül kapsamında
+  duruyor. En kötü ihtimal "Bağlan"a bir tık — mnemonic İKİNCİ KEZ GİRİLMEZ.
+  .env yolu bu güvenceyi vermiyordu (Vite yeniden yükler, anahtar düşer).
+
 BEKLENEN DEĞERLER ÖLÇÜMDEN ÖNCE YAZILDI — 20 Eylül, plan Adım 9
   docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md bölüm 1:
   B − A = +2.500 · C − A = +27.500. Dosya Adım 6 koşulmadan, mnemonic
