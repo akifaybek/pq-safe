@@ -687,6 +687,9 @@ Canlı oracle dosya SONUNA taşındı (commit 3fa1477), 15 Eylül
 Plan/belge düzeltmeleri, 15 Eylül
   Task 5'e yeni Adım 0 NONCE KAPISI (mnemonic içe aktarmadan ÖNCE):
     cast nonce <PQWALLET> → 2 beklenir, değilse DUR, imza atılmaz.
+    [19 EYLÜL DÜZELTMESİ: BU KOMUT YANLIŞ, cast call ... "nonce()(uint256)"
+     kullanılacak. Satır tarihsel kayıt olarak duruyor; gerekçe aşağıda,
+     "PLANIN ADIM 0 KOMUTU YANLIŞ ŞEYİ ÖLÇÜYOR" başlığı.]
     Gerekçe: plan C adresine "faz 1'de boş olması haftaya boş olduğunu
     göstermez" deyip kontrolü tekrarlatıyordu; aynı şüphe cüzdanın KENDİ
     nonce'una uygulanmamıştı, oysa üç imza da nonce 2'ye bağlı. Sonradan fark
@@ -719,7 +722,8 @@ Plan/belge düzeltmeleri, 15 Eylül
     (0,0009 ETH) — Task 5'in nonce 2 varsayımı 16 Eylül itibarıyla HÂLÂ GEÇERLİ.
   ÖLÇÜLDÜ: 15 Eylül'de 7 commit (6722910 14:35 → 3fa1477 19:37).
   TEYİT EDİLMEDİ — Task 0'ın hiçbir maddesi kapanmadı (Akif'te):
-    ÖK-1 kağıttan mnemonic geri yükleme doğrulaması (Task 5 Adım 4'te bedava)
+    ÖK-1 kağıttan mnemonic geri yükleme doğrulaması — KAPANDI 20 Eylül,
+      Task 5 Adım 4'te bedavaya geldi (bkz. DEVİR — 20 Eylül akşamı).
     ÖK-2 temiz klon testi 🔴 BLOKÖR — Task 5/6 buna bağlı
     Teslim tarihi teyidi (sıra anahtarı A varsayılıyor, doğrulanmadı)
     Submodule pin dayanıklılığı TAZE klonda çekilebiliyor mu (yerelde var,
@@ -804,9 +808,11 @@ SIRA DEĞİŞTİ — K3 (Task 9), K4'ün (Task 10) ARKASINA alındı, 16 Eylül
   Ajan tarafında blokörsüz iş KALMADI. Sıradaki her şey Akif'e bağlı:
     ÖK-2 temiz klon testi 🔴 BLOKÖR — Task 5/6 buna bağlı
     Teslim tarihi teyidi (sıra anahtarı A varsayılıyor, doğrulanmadı)
-    ÖK-1 kağıttan mnemonic doğrulaması (Task 5 Adım 4'te bedava)
-  Task 5 Adım 0 NONCE KAPISI unutulmasın: mnemonic içe aktarmadan ÖNCE
-    cast nonce <PQWALLET> → 2 beklenir, değilse DUR.
+    ÖK-1 kağıttan mnemonic doğrulaması — KAPANDI 20 Eylül (Task 5 Adım 4).
+  Task 5 Adım 0 NONCE KAPISI — KOŞULDU 20 Eylül 12:21 UTC, nonce 2, geçti.
+  (Aşağısı Task 6 için hâlâ geçerli.) Mnemonic içe aktarmadan ÖNCE
+    cast call <PQWALLET> "nonce()(uint256)" → Task 6'da 2 beklenir, değilse DUR.
+    (cast nonce DEĞİL — kontrat hesabında her zaman 1 döner, 19 Eylül ölçüldü.)
   Task 9 KOŞULMAZ — Task 10'un diff kapısı kapanana kadar bekliyor.
 ÖK-2 TEMİZ KLON TESTİ KOŞTU — BLOKÖR KAPANDI, 17 Eylül
   Kanıt: docs/evidence/sprint4-ok2-clean-clone.md. Klonlanan commit 29e2c1d.
@@ -1710,8 +1716,251 @@ ADIM 7'NİN YOLU DÜZELTİLDİ — 20 Eylül, ajan yanlıştı, Akif yakaladı
   duruyor. En kötü ihtimal "Bağlan"a bir tık — mnemonic İKİNCİ KEZ GİRİLMEZ.
   .env yolu bu güvenceyi vermiyordu (Vite yeniden yükler, anahtar düşer).
 
+TASK 5 FAZ 1 ÖLÇÜLDÜ — 20 Eylül, ADIM 4-6-8 KOŞULDU
+  ÖK-1 KAPANDI: kağıttaki mnemonic elle girildi, "✓ Zincirdeki ownerPublicKey
+    ile AYNI" çıktı. Task 0 Adım 1'in doğrulaması plandaki gibi bedavaya geldi.
+  KAPI ÜÇ BAĞIMSIZ YIĞINDAN TEYİTLİ: cast (Foundry) · pqwallet-test.mjs
+    (Node+ethers JsonRpcProvider) · tarayıcıda uygulamanın kendi provider'ı.
+    Üçü de nonce 2 ve 50900000000000000 wei. Tarayıcı satırı hane kuralını
+    kendiliğinden karşılıyor: "50900000000000000 wei = 0.0509 ETH".
+  MetaMask ARC AĞINDAYDI, Sepolia'ya çevrildi. connectWallet() chainId
+    kontrolü (sendTransaction.js:18) bunu yakalardı; çevirmeden bağlanılsa
+    hata mesajı alınırdı. AĞ DEĞİŞİMİ SAYFAYI YENİLEMEDİ ve mnemonic düşmedi —
+    Adım 7 için yazılan "MetaMask yolu .env'den ucuz" iddiası böylece
+    FİİLEN ÖLÇÜLDÜ, tahmin olarak kalmadı.
+  PROVA ÇAĞRISI (döngüden önce tek çağrı): kancanın tüm yolu 20 saniyede
+    sınandı. Gerekçe buildTransaction.js:106 — buildAndSign'ın İLK satırı
+    mnemonic yokluğunda throw ediyor, yani anahtar düşmüşse imza beklemeden
+    anında patlar. Prova kayda GİRMEDİ, tekrar testine sayılmadı.
+  TEKRAR TESTİ: A→B→C iç içe beş tur, 15 çağrı. BEŞİ DE HER SATIRDA BİREBİR
+    AYNI, yayılım SIFIR. İKİ AYRI ŞEY GÖSTERİLDİ, ayrı yazıldı:
+    (i) C13 imzalama sabit girdide DETERMİNİSTİK — rastgele tuz olsaydı sıfır
+        bayt sayısı turdan tura oynardı, oynamadı;
+    (ii) estimateGas bu sağlayıcıda DETERMİNİSTİK.
+    Birincisi imzalayıcının, ikincisi node'un özelliği.
+  "BİTTİ" ÖLÇÜTÜ KARŞILANDI: from tekil 1, hepsi A.
+  TABLO: A ham 219189 / intrinsic 81092 / yürütme 138097 · B 221685 / 81068 /
+    140617 · C 246871 / 81056 / 165815. Bayt üçünde de 3908.
+
+BEKLENEN DEĞERLER TUTMADI — 20 Eylül, ÖLÇÜLDÜ
+  B − A beklenen +2.500, ÖLÇÜLEN +2.520 (sapma +20).
+  C − A beklenen +27.500, ÖLÇÜLEN +27.718 (sapma +218).
+  C − B türetilmemişti, kendiliğinden çıktı: beklenen +25.000, ölçülen
+    +25.198 (sapma +198).
+  YAPI TUTTU, SAYILAR TUTMADI — iki ayrı cümle. EIP-2929'un ŞEKLİ ayakta
+  (B ~2.500, C ~27.500 pahalı). Ama +2.500 ve +25.000 EVM spesifikasyonunda
+  KESİN sayılar, yaklaşık değil; sapma modelin dışından geliyor.
+  KAYNAK ÖLÇÜLMEDİ, ÜÇ ADAY: (1) doğrulayıcı gas'ı mesaja bağlı — üç satırın
+  to'su farklı, digest farklı, imza farklı, WOTS+ zincir uzunlukları farklı;
+  (2) eth_estimateGas ikili arama yapıyor, gerçek minimumu değil başarılı olan
+  en küçük denemeyi döndürüyor; (3) adlandırılmamış bir yürütme farkı.
+  n = 2, ÖRÜNTÜ ÇIKARILMADI. Sapma ikisinde de pozitif ama iki gözlem bir
+  yön göstermez.
+  AJANIN GERİ ALDIĞI TAHMİN: prova çağrısından önce "est kabaca 110-120 bin
+  bekle" demiştim. TÜRETMEMİŞTİM — doğrulayıcının 106.672 gas'ını (CLAUDE.md
+  C13 ölçümü) TÜM TX'in tahminiyle karıştırdım. İkisi ayrı: 106.672
+  doğrulayıcının kendi yürütmesi, estimateGas onun üstüne intrinsic'i, nonce
+  yazımını, value transferini ve çağrı masrafını da koyuyor. Ölçüm 219.189
+  ve doğru; yanlış olan bandımdı.
+
+SAPMA ÇARPIMSAL — 20 Eylül, AYNI VERİDEN BÖLME, Akif/cowork
+  +20 / +218 diye yazmak örüntüyü GİZLİYORDU. Beklenenlerine bölününce:
+  B-A 2520/2500 = 1,00800 · C-B 25198/25000 = 1,00792 · C-A 27718/27500 =
+  1,00793. Tek çarpan, eps ≈ +%0,79.
+  AJAN İKİNCİ BİR YOLDAN SINADI (cowork yapmamıştı): aynı model HAM sütuna
+  uygulandı. Ham farklar intrinsic farklarını da taşıyor, model yanlışsa
+  orada çatlardı. Ham B-A = 2496, taban (-24 + 2500) = 2476 → ×1,00808;
+  C-B 25186 / 24988 → ×1,00792; C-A 27682 / 27464 → ×1,00794.
+  HAM B-A = 2496 çıplak gözle BEKLENENİN ALTINDA görünüyor; çarpımsal model
+  bunu tam olarak öngörüyor (intrinsic farkı -24). İki sütun, iki ayrı
+  aritmetik, aynı çarpan.
+  63/64 ELEMESİ YAZILMADI — GEREKÇESİ KAYNAKLA ÇELİŞTİ. Cowork "2.500 dış
+  çerçevede, 25.000 iç çağrıda ödeniyor" dedi. PQWallet.sol:44 verifier
+  STATICCALL, :50 to.call{value}. 2.500 (EIP-2929 soğuk erişim) ve 25.000
+  (boş hesap) İKİSİ DE satır 50'deki CALL opcode'unun maliyet bileşeni ve
+  İKİSİ DE execute()'un KENDİ çerçevesinde ödeniyor — biri dışta biri içte
+  DEĞİL. Gerçek iç çerçeve satır 44 ve üç satırın da farklarının DIŞINDA.
+  Oranların eşitliği bu yoldan 63/64 hakkında hiçbir şey söylemiyor.
+  AYRI GEREKÇE, ÇIKARIM OLARAK YAZILDI: 63/64 satır 44'te bağlayıcı olsaydı
+  ikili arama zaten fazla gas'a ayarlanmış olurdu ve satır 50'ye 2.500
+  eklemek G'yi hiç artırmazdı — B-A ≈ 0 görürdük, 2.520 gördük.
+
+B-VARYANT KOŞULDU — 20 Eylül, YAYILIM 0, n = 6
+  TASARIM: to = B sabit, value = 100000000000000 + i (i 1..5). B yine soğuk
+  yine dolu → EVM model gas'ı beşinde de aynı; değişen tek şey digest.
+  BEKLENTİ ÖLÇÜMDEN ÖNCE DOSYAYA YAZILDI: yürütme yayılımı SIFIR beklenir,
+  gerekçe WOTS+C'nin zincir toplamını sabitlemesi. ÇIKARIM olduğu, şemanın
+  tasarım amacından türetildiği ve BİZİM doğrulayıcımızda ölçülmediği de
+  peşinen yazıldı. İki sonucun yorumu da önceden yazıldı ki sonradan
+  seçilmesin.
+  SONUÇ: yurutme_tekil [140617], yayilim 0, tabanla birlikte de 0 (n = 6).
+  GÜCÜ HAM SÜTUNDA: ham 221685-221733 arası 48 gas oynuyor, intrinsic
+  81068-81116 arası 48 gas oynuyor, ikisi birbirini TAM götürüyor. Ham
+  sütundaki tüm değişim value'nun sıfır bayt kompozisyonundan (201-205).
+  ADAY 1 ELENDİ — "doğrulayıcı gas'ı mesaja bağlı" ayakta değil.
+  BAĞIMSIZ BULGU: WOTS+C/FORS+C'nin sabit zincir toplamı BİZİM
+  SPHINCSVerifier.sol'umuzda gerçekten korunuyor. Gas'tan mesaj hakkında
+  bilgi SIZMIYOR — yan kanal tarafında da sonuç.
+  AYIRMADIĞI ŞEY PEŞİNEN YAZILDI: yayılımın sıfır olması +%0,79'un kaynağını
+  söylemiyor. Çarpımsal modelde yürütme = exec(1+eps) + intrinsic×eps;
+  intrinsic farkı 48, eps 0,0079 → sızıntı 0,38 gas, tam sayıda sıfıra
+  yuvarlanır. DENEYİN ÇÖZÜNÜRLÜĞÜ BU AYRIMA YETMİYOR ve yetmesi gerekmiyordu.
+
+ADIM 7 KOŞULDU — TERMİNAL TURU, PLANDAN SAPILARAK, 20 Eylül
+  YENİ ADAY 4 ÖNCE ADLANDIRILDI: şimdiye kadarki HER tahmin
+  connected.signer üzerinden, yani MetaMask'ten geçti. MetaMask'in RPC
+  cevabını aynen ilettiği VARSAYILDI, ölçülmedi. Bu aday adlandırılmamıştı
+  çünkü PLANIN TEK-YOL KURALI doğru uygulandı ve TEK YOL KULLANILDIĞINDA O
+  YOLUN KENDİSİ DEĞİŞKEN OLARAK GÖRÜNMEZ. Kural yanlış değil, kapsamı dar.
+  COWORK'ÜN TARİF ETTİĞİ ADIM 7 BUNU AYIRAMAZDI — iki ölçüm de MetaMask'ten
+  geçerdi. Bu yüzden terminal turu önerildi ve koşuldu.
+  AKTARIM BOZULMADI, ÖLÇÜLDÜ: panoya alınan üç calldata'nın bayt (3908) ve
+  sıfır bayt sayıları (203/205/206) tarayıcınınkiyle birebir aynı.
+  (Pano ilk denemede EZİLDİ — konsol çıktısı kopyalanınca üzerine yazıldı;
+  1080 bayt geldi, 23528 beklenirken. Sıra tersine çevrilip tekrarlandı.)
+  ÖLÇÜM: ham JSON-RPC fetch, ne ethers ne MetaMask, from açıkça verildi.
+    reth (publicnode): A 219189 · B 221685 · C 246871
+    Tenderly:          A 219189 · B 221685 · C 246871
+    MetaMask (ilk tur): A 219189 · B 221685 · C 246871
+    ALTISI DA BİREBİR AYNI.
+  İKİ UÇ FARKLI İSTEMCİ, web3_clientVersion ile ÖLÇÜLDÜ:
+    publicnode → reth/v2.5.2-5a6940e · tenderly → Tenderly/1.0, aynı blok
+    0xb337b4. İKİ GETH ÖRNEĞİ DEĞİL.
+  ADAY 4 ELENDİ — MetaMask şeffaf, payı eklemiyor.
+  eps DÜĞÜME BAĞLI DEĞİL — planın Adım 7'de sorduğu soru buydu, cevap hayır.
+  ADAY 2 ZAYIFLADI AMA ELENMEDİ: iki FARKLI UYGULAMANIN bit birebir aynı
+  sayıyı vermesi "bu düğümün eşiği" açıklamasını düşürüyor ama elemiyor —
+  reth açıkça geth uyumluluğunu hedefliyor, Tenderly de aynı uzlaşıyı
+  izliyor olabilir. PAYLAŞILAN UZLAŞI İLE GERÇEK MİNİMUM BU VERİYLE
+  AYIRT EDİLEMEZ.
+  ADAY 3 ÖNE ÇIKTI: tahminler kesinse +2.500/+25.000 MODELİ EKSİK demektir.
+  AYIRACAK TEK ÖLÇÜM Task 6'nın gerçek gasUsed'ı — bu zaten cowork'ün açtığı
+  ofset/oran kalemi. İki soru tek ölçümle kapanıyor.
+  FEDA EDİLEN, ADIYLA: MetaMask'in RPC borularının tenderly ucuyla sınanması.
+  Şeffaflık YALNIZCA publicnode üzerinde ölçüldü; tenderly'de de şeffaf
+  olduğu ÇIKARIM. MetaMask ağ turu artık bir şey EKLEMİYOR.
+
+KONSOL SAYACI — 20 Eylül, EKLENTİLİ PROFİL
+  Açılışta 21 hata, ölçüm sonunda 30. Tırmanış ÖLÇÜMDEN DEĞİL: bir eklentinin
+  Sentry istemcisi yeniden deneme yapıyor. Döngünün 15 çağrısı boyunca bizim
+  koddan TEK kayıt düşmedi.
+  PROJENİN KENDİ KODUNDAN 0 HATA. Sentry'nin bizim olmadığı ÖLÇÜLDÜ:
+  package.json/src/index.html'de sentry ve react HİÇ geçmiyor (bağımlılıklar
+  bip39, buffer, ethers), depoda content.js yok, kaydın kendi imzası
+  "sentry.javascript.react/7.61.0" ve React kullanmıyoruz.
+  BU KOŞU 20 EYLÜL MİSAFİR KOŞUSUNDAN FAZLASINI VERDİ: orada Sentry
+  kalemlerinin eklentiden geldiği KAYBOLMALARIYLA gösterilmişti, burada NE
+  OLDUKLARI görünüyor — dosya adı, satır numarası, istemci imzası.
+  MADDE 7'Yİ KAPATMAZ: madde 7'nin okunamayan ❌1'i EKLENTİSİZ Misafir
+  penceresinde çıkmıştı, eklentiler onu açıklayamaz. Bu koşu o soruya
+  hiç değmiyor.
+  KOŞUL DA BİREBİR AYNI DEĞİL: önceki koşularda DevTools sayfa yüklenmeden
+  ÖNCE açıktı, bunda sonradan açıldı. Chrome açılış kayıtlarını tamponluyor
+  ama "aynı şartta ölçüldü" YAZILMIYOR.
+
 BEKLENEN DEĞERLER ÖLÇÜMDEN ÖNCE YAZILDI — 20 Eylül, plan Adım 9
   docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md bölüm 1:
   B − A = +2.500 · C − A = +27.500. Dosya Adım 6 koşulmadan, mnemonic
   girilmeden önce yazıldı ve commit'e girecek; sonradan yazılsaydı "beklenti"
   olduğu gösterilemezdi.
+
+════════════════════════════════════════════════════════════════════════
+DEVİR — 20 Eylül akşamı
+════════════════════════════════════════════════════════════════════════
+AĞAÇ: Task 5B kapandı, kanca SİLİNDİ, main.js HEAD'le birebir aynı.
+  Commit'lenecek iki dosya: progress.md + kanıt notu. main.js DEĞİŞMEDİ.
+  Yeşil: vite build 190 modül · 83 · 21 · 9 assertion.
+
+TASK 5 FAZ 1 BİTTİ. Task 5B BİTTİ. Sırada Task 6 (22 Eylül, tek çekim).
+
+ADIM 7 YENİDEN TASARLANDI — plandan SAPILDI, gerekçesi:
+  Plan "MetaMask ağ ayarını tenderly'ye çevir" diyordu. Onun yerine
+  TERMİNAL TURU koşuldu: tarayıcıdaki calldata diske yazıldı, ham JSON-RPC
+  fetch ile iki uca gönderildi, MetaMask hiç araya girmedi.
+  SEBEP — ADAY 4: şimdiye kadarki HER tahmin connected.signer üzerinden,
+  yani MetaMask'ten geçmişti; MetaMask'in cevabı aynen ilettiği
+  VARSAYILMIŞTI. Planın MetaMask ağ turu bu adayı AYIRAMAZDI çünkü iki
+  ölçüm de MetaMask'ten geçerdi. Terminal turu ayırdı: aday 4 ELENDİ.
+  BU ADAY NEDEN GEÇ ADLANDIRILDI: planın TEK-YOL KURALI doğru bir kuraldır
+  ve doğru uygulandı; ama tek yol kullanıldığında O YOLUN KENDİSİ değişken
+  olarak görünmez. Kural yanlış değil, KAPSAMI DAR.
+  FEDA EDİLEN: MetaMask'in şeffaflığı YALNIZCA publicnode'da ölçüldü;
+  tenderly'de de şeffaf olduğu ÇIKARIM, ölçüm değil.
+
+BUGÜN ÖLÇÜLENLER (hepsi kanıt notunda, sayılar dosyadan doğrulandı):
+  · ÖK-1 KAPANDI — kağıttan mnemonic, ✓ ownerPublicKey AYNI.
+  · Kapı DÖRT bağımsız yoldan: cast · pqwallet-test.mjs · tarayıcıdaki
+    uygulama provider'ı · gece tekrar pqwallet-test.mjs. Hepsi nonce 2 ve
+    50900000000000000 wei.
+  · Tekrar testi: 15 çağrı, her satırda yayılım SIFIR. İki ayrı şey
+    gösterildi: C13 imzalama deterministik + estimateGas deterministik.
+  · from tekil 1, hepsi A — "bitti" ölçütü karşılandı.
+  · Adım 8 tablosu: A 219189/81092/138097 · B 221685/81068/140617 ·
+    C 246871/81056/165815.
+  · BEKLENEN DEĞERLER TUTMADI. Sapma TOPLAMSAL DEĞİL ÇARPIMSAL:
+    B-A ×1,00800 · C-B ×1,00792 · C-A ×1,00793. Üçü de +%0,79.
+    Çarpan HAM sütundan İKİNCİ KEZ ve bağımsız olarak doğrulandı.
+  · B-VARYANT: yayılım 0, n=6 → ADAY 1 ELENDİ. Yan bulgu: WOTS+C'nin
+    sabit zincir toplamı BİZİM verifier'ımızda korunuyor, gas'tan mesaj
+    bilgisi SIZMIYOR.
+  · ADIM 7 terminal turu: reth ve Tenderly bit birebir aynı, MetaMask'le
+    de aynı → ADAY 4 ELENDİ, eps DÜĞÜME BAĞLI DEĞİL.
+
+AYAKTA KALAN ADAYLAR — İKİSİ DE ÖLÇÜLMEDİ:
+  ADAY 2 (estimateGas bağıl kesme) ZAYIFLADI ama ELENMEDİ: iki FARKLI
+    uygulama (reth v2.5.2 / Tenderly 1.0) aynı sayıyı verdi, ama reth
+    geth uyumluluğunu hedefliyor — PAYLAŞILAN UZLAŞI ile GERÇEK MİNİMUM
+    bu veriyle ayırt edilemez.
+  ADAY 3 (adlandırılmamış yürütme farkı) ÖNE ÇIKTI: tahminler kesinse
+    +2.500/+25.000 MODELİ EKSİK demektir.
+  DÜZELTME — 63/64 ÇERÇEVE ARİTMETİĞİ "ELENDİ" DİYE YAZILMASIN: eleme
+    gerekçesi ("2.500 dışta, 25.000 içte ödeniyor") PQWallet.sol ile
+    ÇELİŞİYOR — ikisi de satır 50'deki CALL opcode'unun bileşeni ve
+    ikisi de execute()'un KENDİ çerçevesinde. Ayrı bir zayıflatıcı
+    gerekçe var ama o da ÇIKARIM, ölçüm değil (kanıt notu bölüm 3).
+
+AÇIK KALEM — OFSET Mİ ORAN MI (Task 7'nin modeli buna bağlı):
+  Δ₁ = 2.883 ofset olarak kayıtlı; aynı bölme 1,0133 yani +%1,33.
+  Bugünkü +%0,79 ile AYNI SAYI DEĞİL, karşılaştırılamaz (farklı gün,
+  farklı düğüm, nonce 1→2 SSTORE_SET vs 2→3 RESET).
+  TASK 6 ADIM 8'DE: gasUsed okunduğunda HEM FARK HEM ORAN hesaplanacak.
+  Model o zaman seçilecek, SEÇİLMEDEN TABLO YAZILMAYACAK.
+  Bu tek ölçüm aday 2 ile aday 3'ü de ayırıyor: gasUsed == estimate ise
+  aday 3, gasUsed ≈ estimate/1,0079 ise aday 2.
+
+KOŞULMAYANLAR — tek tek, hiçbiri "yapıldı" sanılmasın:
+  1. MetaMask ağ turu (plandaki Adım 7). Terminal turu onun sorusunu
+     cevapladı ve fazlasını verdi; ama MetaMask'in tenderly ucundaki
+     şeffaflığı ÖLÇÜLMEDİ.
+  2. Sprint 3'ün tarihsel estimateGas ölçümünün oran olarak yeniden
+     okunması. Δ₁'in bağlamı bugünkünden farklı; yapılmadı.
+  3. Adım 11'in kalan kısmı: kanıt notu bölüm 1-7 yazıldı, ama plan
+     Adım 11'in istediği "iki endpoint karşılaştırması" bölümü terminal
+     turuyla karşılandı — plan metniyle birebir aynı biçimde DEĞİL.
+  4. Calldata dosyaya alındı ama DEPOYA GİRMEDİ (scratchpad'de, 23 KB).
+     Girseydi sayılarımız altı ay sonra yeniden koşulabilirdi. Akif'in
+     kararı bekleniyor.
+
+MADDE 7 AÇIK. Eklentili profilde bugün 0 proje-kaynaklı hata çıktı ama bu
+  KAPATMAZ: madde 7'nin okunamayan hatası EKLENTİSİZ pencerede çıkmıştı.
+  KAPANIŞ ÖLÇÜTÜ: Task 6 oturumu Keep log AÇIK koşulacak; sayaç 0'dan
+  farklıysa sayfa YENİLENMEDEN kenar çubuğundan Errors okunacak.
+
+PLANIN BULUNAN DÖRT KUSURU — düzeltmeleri bu defterde, plan DONDURULMUŞ:
+  1. Adım 0'ın cast nonce komutu (19 Eylül) — cast call kullanılacak.
+  2. Adım 6'nın JSON.stringify'ı bigint'te patlıyor — replacer eklendi.
+  3. Adım 8 elde yapılamaz (117 KB) — sayım konsolda koşuyor.
+  4. Adım 7'nin yolu — .env değil MetaMask; sonra terminal turuna çevrildi.
+  Ayrıca Adım 9'un sırası KORUNDU: beklenen değerler ölçümden önce yazıldı
+  ve commit'lendi, yani "beklenti" olduğu tarihle gösterilebiliyor.
+
+WEI ÜÇ GÖSTERİM KURALI: her wei değeri ham sayı · HANE SAYISI · ETH
+  karşılığı olarak yazılır. Bu turda fiilen gerekti (17 hane 14'e düştü).
+
+ÖLÇÜM PENCERESİ SÜRÜYOR: nonce 2 YANMADI. PQWallet'a plan dışı execute()
+  YOK — gün boyu yalnızca estimateGas (eth_call sınıfı) çağrıldı, zincire
+  hiçbir şey yazılmadı. Hakan'a bu akşam hatırlatma gidiyor.
+
+TAKVİM: 22 Eylül Task 6 TEK ÇEKİM. 23'te Task 6 bitmemişse Task 9 ve
+  ÖK-2'nin ikinci makine ayağı BİRLİKTE düşer — ikisi de Task 6'nın
+  arkasında sıralı.
