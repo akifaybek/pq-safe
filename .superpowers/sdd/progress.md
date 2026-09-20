@@ -1608,3 +1608,58 @@ SIR TARAMASI HÜKMÜ — 18 Eylül, Akif
   commit'li. Çıkış 1 İNSAN HÜKMÜYLE ezildi; hükmü veren Akif, tarih 18 Eylül.
   Kayda geçiyor ki ileride "bu çıkış 1 neden yoksayıldı" sorusu cevapsız
   kalmasın.
+
+TASK 5 BAŞLADI — 20 Eylül, taban commit ae02020
+  ÖK-2 kapandığı için blokör yok. Adım 1-3 ajan tarafında koşuldu, Adım 0
+  kapısı ve Adım 4+ Akif'te.
+  ADIM 1: window.__m4 main.js sonuna eklendi, PLANDAKİ KODUN BİREBİRİ.
+    Beş referans YAZMADAN ÖNCE koddan doğrulandı, hatırlamaya dayanmıyor:
+    buildAndSign buildTransaction.js:105 · encodeExecute main.js:656 ile aynı
+    çağrı · estimateGas sendTransaction.js:201 · chainNonce main.js:46 ·
+    currentMnemonic main.js:31 · connected main.js:50. Beşi de tuttu.
+    npx vite build yeşil (190 modül). Kanca Task 5B Adım 2'de silinecek.
+  ADIM 2: KANCALI_MD5 = 714049c4373ac16f5534597c364560ab (988 satır).
+  ADIM 3: C = 0xD999e3B2e4bE3D3ECb7523b8Cb4F4Dc99e2734Fc, 20 Eylül 12:11 UTC,
+    blok 11744214 → balance 0 · nonce 0 · code 0x. Üçlü TUTTU.
+    Bu da tarihli: 19 Eylül'ün okuması bugünü göstermiyordu, bugünkü de
+    gönderim anını göstermez. C'ye fon girerse +25.000 kalemi düşer.
+  ADIM 0 ÖN-KONTROL, 20 Eylül 11:56 UTC, blok 11744141: nonce() = 2 ·
+    bakiye 50900000000000000 wei. Bakiye 17 Eylül'den beri değişmemiş.
+    KAPI DEĞİL. Kapı Adım 4'ten hemen önce yeniden okunacak — Adım 1-3 arada
+    zaman yiyor ve kapının koruduğu şey OTURUM ANI.
+    İKİNCİ YOLDAN TEYİT (aynı gün, ajan kurmadı, test kurdu):
+    pqwallet-test.mjs canlı okuması da readNonce() = 2 ve
+    readBalance() = 50900000000000000 wei verdi. Aynı iki sayı, cast ve
+    ethers olmak üzere iki ayrı yığından.
+
+PLANIN ADIM 6 KONSOL SATIRI PATLIYOR — 20 Eylül, ÖLÇÜLDÜ
+  Plan satır ~717: console.log(JSON.stringify(out)). BU SATIR TypeError ATAR
+  ve mnemonic GİRİLDİKTEN SONRA, yani kıt kaynak harcandıktan sonra patlar.
+  SEBEP: kanca est alanında bigint döndürüyor ve JSON.stringify bigint'i
+  serialize edemiyor.
+  İKİ UCU DA ÖLÇÜLDÜ, çıkarım değil:
+    (i) abstract-provider.js:689 → getBigInt(...) yani est BIGINT;
+    (ii) node -e ile kancanın dönüş ŞEKLİ serialize edildi →
+         "TypeError: Do not know how to serialize a BigInt".
+  DÜZELTME (plan dondurulmuş, oturumda buradaki satır kullanılacak):
+    JSON.stringify(out, (k, v) => typeof v === 'bigint' ? v.toString() : v)
+  KANCA DEĞİŞTİRİLMEDİ: est bigint kalıyor. Serileştirme kusuru kancada değil
+    kaydetme satırında; bigint'i kancada string'e çevirmek ölçülen değeri
+    raporlama biçimine feda ederdi.
+  NEDEN SINIFI ÖNEMLİ: bu cast nonce hatasının AYNISI DEĞİL. O yanlış bir
+    SAYI okuyordu (yanlış kırmızı/yeşil); bu hiç sayı okutmuyor, ham veri
+    konsola hiç yazılamadan tur ölüyor. İkisi de plan kuru provada
+    koşulmadığı için orada duruyor.
+
+ADIM 8 ELDE HESAPLANMAYACAK — 20 Eylül
+  Adım 6 ham dökümü 15 çağrı × ~3,9 KB calldata ≈ 117 KB. Sıfır/sıfır-dışı
+  bayt sayımı bu yığından ELLE çıkarılamaz. Sayım Adım 6'nın hemen ardından
+  konsolda yapılacak ve tablo oradan okunacak; aritmetik planın Adım 8'inin
+  aynısı (21000 + 4×sıfır + 16×sıfır-dışı), YENİ MANTIK DEĞİL, yalnızca elle
+  değil konsolda koşuyor. Kanca buna dokunmuyor.
+
+BEKLENEN DEĞERLER ÖLÇÜMDEN ÖNCE YAZILDI — 20 Eylül, plan Adım 9
+  docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md bölüm 1:
+  B − A = +2.500 · C − A = +27.500. Dosya Adım 6 koşulmadan, mnemonic
+  girilmeden önce yazıldı ve commit'e girecek; sonradan yazılsaydı "beklenti"
+  olduğu gösterilemezdi.
