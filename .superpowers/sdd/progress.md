@@ -1158,6 +1158,48 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
        pqwallet.js:41) ve UI'da nonce 2 · bakiye 50900000000000000 wei göründü.
        ADIM 0 KAPISIYLA TUTARLI AMA KAPININ YERİNE GEÇMEZ — kapı cast call ile,
        uygulamanın salt-okunur provider'ından bağımsız koşar.
+     KOŞU 3 — EKLENTİSİZ (Misafir pencere), aynı gün, madde 6 için koşuldu.
+       Üç sayfa oturumu. Ayrıntı kanıt dosyasında; buraya düşenler:
+       .wasm TEMBELLİĞİ TEMİZ PROFİLDE YENİDEN ÜRETİLDİ ve bu sefer liste
+         TEPEDEN görüldü (ilk satır localhost belge isteği, kaydırılmamış):
+         açılışta 25 istek, .wasm YOK; sign sonrası 26 istek, eklenen tek
+         satır sphincs_c13_signer_bg.wasm · 200 · wasm · 228 kB · başlatan
+         sphincs_c13_signer.js:293. Başlatan SATIR NUMARASI ilk kez okundu.
+       favicon bu listelerde de YOK. Koşu 2'nin belirsizliği ("istek
+         yapılmadı" mı "Ağ paneline yazılmadı" mı) AYNEN DURUYOR; değişen tek
+         şey gözlemin daha temiz bir listede yapılmış olması.
+       DOMContentLoaded 184 ve 179 msn (eklentili koşuda 329 ve 296'ydı).
+       SÜRE TABLOSU BEŞ SATIR OLDU, keygen / sign:
+         Node 18 Eylül        —        ~7.500 ms
+         eklentili koşu 1     628,5    11.008,8
+         eklentili koşu 2     379,1    24.213,6
+         Misafir oturum 1     392,2     6.746,7
+         Misafir oturum 2     400,2     8.573,3
+         İMZA BEŞİNDE DE 3688 BAYT, kontrol beş kez GEÇTİ.
+         ÖRÜNTÜ, HÜKÜM DEĞİL: keygen 0,38-0,63 sn arasında OTURAKLI; sign
+         6,7-24,2 sn arasında 3,6 KAT yayılıyor. Eklentisiz iki ölçüm,
+         eklentili ikisinden de hızlı; biri Node'dan da hızlı.
+         MEKANİZMA ÖLÇÜLMEDİ: n=2'ye 2, Misafir profili de değiştiriyor ve
+         makine yükü hiçbir koşuda kaydedilmedi. Ayakta kalanlar: eklenti
+         içerik betiklerinin ana iş parçacığını paylaşması · profil/önbellek
+         farkı · o andaki yük. BU ÖLÇÜMLER HİÇBİRİNİ AYIRT ETMİYOR. Ayıracak
+         olan: tek pencerede ard arda n>=5 imza + eşzamanlı yük kaydı.
+         KOŞU 1'İN "%47 YAVAŞ" CÜMLESİ ANLAMINI YİTİRDİ — tek koşunun
+         rakamıydı, artık tarayıcının Node'dan hızlı ölçüldüğü iki koşu var.
+     AJANIN GERİ ALDIĞI AÇIKLAMA — 20 Eylül, aynı tur:
+       Ajan Misafir oturum 1'in "8 issues" sayısını "3 (index.html:64,67,70)
+       + 4 (main.js:213-219, keygen çıktısı) + 1 (main.js:241, imza çıktısı)"
+       diye hesapladı ve "sayı birebir açıklandı, TAHMİN YOK" diye yazdı.
+       YANLIŞTI: tek gözleme uyan bir hesaptı, ikinci gözlem düşürdü —
+       oturum 2'de sayfada keygen çıktısı VARKEN sayaç yine 3. Üstelik iki
+       yakalama arasında Keep log ve Log XMLHttpRequests ayarları da
+       değişmişti, yani karşılaştırma zaten tek değişkenli değildi.
+       AYAKTA KALAN: açılıştaki 3 kalem BİZİM ve index.html:64/67/70 ile
+       eşleşiyor (dosyada 8 <label>, 5'i for= taşıyor, 3'ü çıplak).
+       AÇIKLANAMAYAN: sayacın sonradan davranışı (3 → 8 → 3). Chrome'un
+       denetimi dinamik eklenen DOM'u ne zaman tarıyor, ÖLÇÜLMEDİ.
+       BURAYA YAZILIYOR ki "uyan bir hesap" ile "ölçülmüş mekanizma"
+       arasındaki fark altı ay sonra da görünsün.
      ---- aşağısı KOŞU 1'in kaydı, SİLİNMEDİ ----
      Kanıt: docs/evidence/crypto-tests/sprint4-browser-signing.md.
      KAPATAN GÖZLEM, iki iddia AYRI: (i) sayfa açılışında Ağ sekmesinde .wasm
@@ -1190,8 +1232,21 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      hiçbir şey gitmedi (ölçüm penceresi ihlal EDİLMEDİ), Bölüm 4'ün
      build+sign yolu ve gerçek tx yolu koşulmadı.
      AJAN TARAYICIYI ÇALIŞTIRMADI — değerler Akif'in ekran görüntülerinden.
-  6. CSP / eval KALEMİ — KAYNAĞI ÖLÇÜLMEDİ (20 Eylül'de açıldı, madde 5'ten
-     devredildi). DevTools Sorunlar panelinde hata seviyesinde bir kalem:
+  6. CSP / eval KALEMİ — KAPANDI 20 Eylül, aynı gün, EKLENTİSİZ KOŞUYLA.
+     KAPATAN GÖZLEM: Misafir penceresinde (eklentiler yüklenmez) üç sayfa
+     oturumu koşuldu ve ÜÇÜNDE DE Sorunlar panelinde hata seviyesinde kalem
+     YOK; oturum 3'ün paneli acıkça 0 hata / 0 uyarı / 3 bilgi gösteriyor ve
+     tek kart "No label associated with a form field" (3 resources).
+     KONTROL KAYDI ÇALIŞTI — deney bu yüzden geçerli: contentscript.js:14083
+     uyarılarının altısı ve content.js:50'nin Sentry hataları da kayboldu,
+     yani eklentiler gerçekten kapalıydı. Kaybolmasalardı sonuç okunmayacaktı.
+     HÜKÜM: kalem EKLENTİ KAYNAKLI, projeyle ilgisi yok.
+     DENEY TEK DEĞİŞKENLİ DEĞİLDİ, kayda böyle giriyor: Misafir pencere
+     eklentileri VE profili birden değiştirdi. Sorunun iki olası cevabı
+     kaldığı için (bizim sayfamız — ölçümle elenmişti — ya da eklenti)
+     yetiyor; daha saf hâli eklentileri ana profilde tek tek kapatmaktı.
+     ---- aşağısı kalemin açıldığı gün yazılan gerekçe, SİLİNMEDİ ----
+     DevTools Sorunlar panelinde hata seviyesinde bir kalem:
      "Content Security Policy of your site blocks the use of eval in
      JavaScript", yönerge script-src, durum Engellendi, kaynak konumu BOŞ.
      BİZİM SAYFAMIZ OLMADIĞI ÖLÇÜLDÜ, üç ayrı kontrol:
@@ -1206,6 +1261,27 @@ AÇIK KALEMLER — 18 Eylül itibarıyla, tek yerde
      arama bize döner. ~2 dk, zincire dokunmaz.
      ÖK-2'Yİ BLOKLAMIYOR: konsolda değil ayrı yüzeyde, ve bizim sayfamızdan
      gelmediği ölçüldü. Madde 5 bu kalem olmadan kapatıldı, gerekçesi bu.
+  7. EKLENTİSİZ OTURUMDA OKUNAMAYAN BİR HATA — 20 Eylül, ÖLÇÜM KAYBI.
+     Misafir penceresinin 2. oturumunda araç çubuğu "1 hata" gösterdi.
+     Konsol All levels'daydı ve listede yalnızca [vite] connecting/connected
+     vardı; sağda "2 hidden" yazıyordu. YANİ HATA VARDI VE HANGİ KAYIT OLDUĞU
+     GÖRÜLEMEDİ. Gizleyenin ne olduğu ÖLÇÜLMEDİ: seviye filtresi değildi
+     (All levels), depoda Web Worker da yok (grep -rn "new Worker" src/ →
+     boş), yani başka yürütme bağlamı bizim kodumuzdan gelmiyor.
+     KAYIT ALINAMADAN SAYFA YENİLENDİ, hata GERİ GETİRİLEMEZ.
+     YENİDEN ÜRETME DENENDİ: Akif 2-3 kez daha yeniledi, sayaç hiçbirinde
+     0'dan farklı çıkmadı. Yani beş-altı açılışın YALNIZCA BİRİNDE görüldü —
+     ARALIKLI. Sınıf bu kadar; KAYNAĞI hakkında hiçbir şey söylemiyor.
+     Geçici bir ağ/RPC hatası da başka bir şey de aynı desende görünür ve
+     BU KOŞULAR İKİSİNİ AYIRT ETMİYOR.
+     NE DEMEK DEĞİL: "eklentisiz pencerede hata çıktı, demek ki proje
+     kodumuzdan hata var." Kaydın kaynağı HİÇ GÖRÜLMEDİ; bizim olduğu da
+     olmadığı da gösterilmedi.
+     NE DEMEK: "eklentisiz konsolda 0 hata" cümlesi beş-altı açılışın biri
+     hariç hepsi için doğru, HEPSİ İÇİN DEĞİL. Kanıta bu genişlikte girdi.
+     BİR SONRAKİ KOŞU İÇİN KURAL: Keep log AÇIK bırakılır; sayaç 0'dan
+     farklıysa sayfa yenilenmeden ÖNCE konsol kenar çubuğundan Errors okunur.
+     ÖK-2'Yİ BLOKLAMIYOR, Task 5/6'yı da bloklamıyor.
 YAN BULGU — index.html:30 BAYAT, TASK 2 İLE ÇELİŞİYOR, 20 Eylül
   Giriş paragrafı "Mnemonic ekranda gösterilir, hiçbir yere kaydedilmez" diyor.
   Task 2 (a64129b) mnemonic'in DOM'a yazılmasını KALDIRDI ve aynı sayfa birkaç
@@ -1399,6 +1475,19 @@ TASK 10 DİFF KAPISI BETİĞİ HAZIR — docs/tools/diff-gate.sh, 18 Eylül
   göreli ad kullanıyor. md5 yoksa md5sum'a düşüyor, ikisi de yoksa çıkış 2 —
   sessizce başka bir özete GEÇMİYOR, yoksa karşılaştırma anlamsızlaşır.
   KAPI KAYIT_COMMIT'e BAĞLANMADI, plandaki gerekçe betiğin başına yazıldı.
+SIR TARAMASI — 20 Eylül, eklentisiz koşu (koşu 3) kaydı
+  GENİŞLİK: 282 satır (bu kaydın kendisi dahil; kayıt öncesi 270'ti, tarama
+    son hâlde yeniden koşuldu, dört desenin sayıları değişmedi, token
+    2384 → 2520 oldu).
+  GİRDİ YÖNTEMİ: git diff.
+  HANGİ DEĞİŞİKLİK: commit ÖNCESİ çalışma ağacı, aynı dört dosya —
+    progress.md · sprint4-browser-signing.md · sprint4-ok2-clean-clone.md ·
+    FRONTEND-KURULUM.md. Komut bir önceki turdakiyle aynı.
+  SAYILAR: A 0 · B 0 · C 0 · D 0 · ÇIKIŞ 0. Token 2384, sözlükte 15 tekil.
+  A'DA HİÇ EŞLEŞME YOK — duruş hükmü bu turda tetiklenmedi.
+  TOKEN 2384 YAZILIYOR ki taramanın gerçekten girdi aldığı görünsün; bir
+    önceki turda betik bir kez girdisiz koşup dört desende de 0 basmıştı ve
+    ayırt eden satır buydu.
 SIR TARAMASI — 20 Eylül, tarayıcı koşusu 2 kaydı
   GENİŞLİK: 507 satır (bu kaydın kendisi dahil — ilk koşu 484 satırdaydı,
     kayıt yazılınca genişlik büyüdü ve tarama SON HÂLDE yeniden koşuldu;

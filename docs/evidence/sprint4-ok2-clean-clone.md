@@ -521,11 +521,20 @@ kalması ona zarar vermiyor.
      **bilgi** kaydı ve Sorunlar panelinde `index.html:64, 67, 70` için üç
      erişilebilirlik kalemi. İkisi de **hata seviyesinin altında**, bu yüzden
      *"konsolda proje kodundan 0 hata"* ayakta kalıyor.
-   - **AYRI KALEM OLARAK DEVREDİLDİ:** Sorunlar panelindeki
-     ``CSP `eval`i engelliyor`` kalemi. Bizim sayfamızdan gelmediği **ölçüldü**
-     (HTML'de CSP meta'sı yok; dev sunucusu CSP başlığı göndermiyor; kodda
-     `eval`/`new Function` yok), **kimin olduğu ölçülmedi**. Konsolda değil,
-     ayrı yüzeyde; tarayıcı maddesini bloklamıyor.
+   - **Koşu 3 — EKLENTİSİZ (Misafir pencere), aynı gün.** Sorunlar
+     panelindeki ``CSP `eval`i engelliyor`` kalemi **üç oturumun üçünde de
+     yok** → **kaynağı eklenti**, projeyle ilgisi yok. Kontrol kaydı da
+     çalıştı (MetaMask uyarıları ve Sentry hataları kayboldu), deney geçerli.
+     Aynı koşu iki şeyi daha verdi: `.wasm` tembelliği **temiz profilde
+     yeniden üretildi** — açılışta 25 istek ve `.wasm` yok, `sign` sonrası 26
+     istek ve `sphincs_c13_signer_bg.wasm` · 228 kB, başlatan
+     `sphincs_c13_signer.js:293`; liste bu kez **tepeden** görüldü. İmza yine
+     **3688 bayt** (beş koşunun beşinde de).
+   - **KAPANMAYAN GÖZLEM:** eklentisiz bir oturumda hata sayacı bir kez **1**
+     gösterdi, kayıt okunamadan sayfa yenilendi, 2-3 yeniden denemede tekrar
+     etmedi. Kaynağı **hiç görülmedi** — bizim olduğu da olmadığı da
+     gösterilmedi. *"Eklentisiz konsolda 0 hata"* beş-altı açılışın biri hariç
+     hepsi için doğru, hepsi için değil.
    - **Kapsanmayan:** owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
      `build+sign` yolu ve gerçek tx yolu koşulmadı.
 2. **İkinci makine — 18 Eylül'de KAPANDI**, Hakan'ın Windows raporuyla

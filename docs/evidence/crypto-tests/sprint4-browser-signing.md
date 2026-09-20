@@ -513,6 +513,160 @@ sınırlı; hata seviyesindeki tüm konsol kayıtları eklenti kaynaklı.*
 Bizim sayfamız olmadığı ölçüldü; kimin olduğu ölçülmedi. Eklentisiz tek
 değişkenli koşu bunu kapatır.
 
+---
+
+# KOŞU 3 — EKLENTİSİZ (Misafir pencere), 20 Eylül 2026
+
+**Amacı tek bir soruydu:** Koşu 2'de Sorunlar panelinde çıkan hata seviyesi
+``CSP of your site blocks the use of `eval` `` kalemi kimin? Bizim sayfamız
+olmadığı ölçülmüştü; kalan aday eklentiydi.
+
+**Kurulum:** Chrome **Misafir** penceresi — eklentiler yüklenmez. Tek sekme.
+Aynı makine, aynı Chrome (153.0.8010.48 / macOS 26.6.2). DevTools taze profilde
+açıldığı için arayüz İngilizce. **Değerler Akif'in ekran görüntülerinden.**
+
+> **BU TEK DEĞİŞKENLİ BİR DENEY DEĞİL, İKİ ŞEY BİRDEN DEĞİŞTİ:** eklentiler
+> **ve** profil (taze, önbelleksiz, ayarsız). Sorunun iki olası cevabı
+> kaldığı (bizim sayfamız — ölçümle elendi — ya da eklenti) için Misafir
+> pencere yanıtlamaya yetiyor; yine de kayda böyle giriyor.
+
+**Beklentiler ölçümden ÖNCE yazılmıştı:** CSP kalemi kaybolacak · üç `label`
+kalemi kalacak · `contentscript.js` uyarıları ve Sentry hataları kaybolacak
+(**kontrol kaydı** — kaybolmazsa eklentiler kapanmamıştır ve deney geçersizdir).
+
+## Üç sayfa oturumu koşuldu
+
+| Oturum | Ne yapıldı | Hata rozeti | Sorunlar |
+|---|---|---|---|
+| 1 | açılış → `keygen` → `sign` | **yok** | 3 → 8 (`Keep log` açıktı) |
+| 2 | açılış → `keygen` → `sign` | **1** ← aşağı bak | 3 |
+| 3 | yalnızca açılış | **yok** | 3 (`❌0 ⚠0 💬3`) |
+
+## SONUÇ — CSP kalemi ELEKTENDİ, kaynağı eklenti
+
+**Üç oturumun üçünde de Sorunlar panelinde hata seviyesinde kalem YOK.**
+Oturum 3'ün paneli açıkça `❌0 · ⚠0 · 💬3` gösteriyor ve tek kart
+`No label associated with a form field` · **3 resources**.
+
+Eklentili koşuda o panelde `CSP … blocks the use of eval` · yönerge
+`script-src` · durum **Engellendi** kalemi vardı. Eklentisiz pencerede **yok**.
+
+**Kontrol kaydı da çalıştı:** `contentscript.js:14083` uyarılarının altısı ve
+`content.js:50`'nin Sentry hataları kayboldu — yani eklentiler gerçekten
+kapalıydı ve deney geçerli.
+
+**HÜKÜM:** CSP/`eval` kalemi **eklenti kaynaklıdır**. Projeyle ilgisi yok.
+
+## Üç `label` kalemi — bizim, ama SAYININ DAVRANIŞI AÇIKLANAMADI
+
+Sayfa açılışında, hiçbir etkileşimden önce **3 kalem** var ve `index.html`'de
+tam olarak **3 çıplak `<label>`** bulunuyor: satır **64, 67, 70**
+(*PQWallet adresi*, *Zincirdeki nonce*, *Cüzdan bakiyesi*), üçü de bir form
+alanına değil `<div class="field">`e eşlik ediyor. Dosyadaki 8 `<label>`'ın
+kalan 5'i `for=` taşıyor. **Bu eşleşme sağlam.**
+
+> **ÖNCE YANLIŞ BİR AÇIKLAMA YAZILMIŞTI, GERİ ALINIYOR.** Ajan, Oturum 1'in
+> `8 issues` sayısını *"3 (index.html) + 4 (`main.js:213-219`, keygen çıktısı)
+> + 1 (`main.js:241`, imza çıktısı)"* diye hesapladı ve **"tahmin yok"** diye
+> yazdı. **Tek gözleme uyan bir hesaptı ve ikinci gözlem düşürdü:** Oturum 2'de
+> sayfada keygen çıktısı **varken** sayaç yine **3**. Ayrıca iki yakalama
+> arasında `Keep log` ve `Log XMLHttpRequests` ayarları da değişmişti, yani
+> karşılaştırma zaten tek değişkenli değildi.
+>
+> **Ayakta kalan:** açılıştaki 3 kalem bizimdir ve `index.html:64/67/70` ile
+> eşleşir. **Açıklanamayan:** sayacın sonradan nasıl davrandığı (3 → 8 → 3).
+> Chrome'un denetimi dinamik eklenen DOM'u ne zaman tarıyor, ölçülmedi.
+
+Kalemlerin hepsi **bilgi seviyesinde**; erişilebilirlik, işlevsel etkisi yok.
+`index.html` ve `main.js` Task 10 diff kapısının dosyaları — **düzeltilmedi**,
+Sprint 5'e ait.
+
+## OTURUM 2'DE BİR HATA VARDI VE OKUNAMADI — kapanmayan gözlem
+
+Oturum 2'nin araç çubuğu **`❌1`** gösteriyordu ve konsol `All levels`'dayken
+listede yalnızca `[vite] connecting…` (`client:859`) ve `[vite] connected.`
+(`client:968`) vardı; sağda **`2 hidden`** yazıyordu. Yani bir hata vardı ve
+**hangi kayıt olduğu görülemedi**.
+
+Gizleyenin ne olduğu **ölçülmedi**. Seviye filtresi değildi (`All levels`
+seçiliydi). Depoda Web Worker da yok (`grep -rn "new Worker" src/` → boş), yani
+başka bir yürütme bağlamı bizim kodumuzdan gelmiyor.
+
+**KAYIT ALINAMADAN SAYFA YENİLENDİ.** Oturum 3 temiz açıldı (`❌0`) ve o hata
+**artık geri getirilemez**. Bu bir ölçüm kaybıdır ve öyle yazılıyor.
+
+**YENİDEN ÜRETME DENENDİ, OLMADI:** Akif sayfayı **2-3 kez daha** yeniledi,
+hata sayacı hiçbirinde 0'dan farklı çıkmadı. Yani eklentisiz pencerede
+**toplam beş-altı sayfa açılışının yalnızca birinde** hata sayacı 1
+göstermiştir. Bu, kaydı **aralıklı (intermittent)** sınıfına koyuyor — ama
+sınıf, kaynağı hakkında hiçbir şey söylemiyor. Geçici bir ağ/RPC hatası da,
+başka bir şey de aynı desende görünür; **bu koşular ikisini ayırt etmiyor.**
+
+> **Bunun ne anlama GELDİĞİ ve GELMEDİĞİ, ayrı ayrı:**
+>
+> - *Gelmiyor:* "eklentisiz pencerede hata çıktı, demek ki proje kodumuzdan
+>   hata var." Kaydın kaynağı **hiç görülmedi**; bizim olduğu da, olmadığı da
+>   gösterilmedi.
+> - *Geliyor:* **"eklentisiz konsolda 0 hata"** cümlesi üç oturumun **ikisi**
+>   için doğru, **üçü için değil**. Kanıta bu genişlikte giriyor.
+>
+> **BİR SONRAKİ KOŞUDA:** `Keep log` **açık** bırakılacak ve sayaç 0'dan
+> farklıysa sayfa yenilenmeden önce konsol kenar çubuğundan `Errors` okunacak.
+
+## Ağ — `.wasm` tembelliği temiz profilde YENİDEN ÜRETİLDİ
+
+Oturum 1'in açılış listesi **tepeden görünüyor** (ilk satır `localhost` belge
+isteği, liste kaydırılmamış) — bu, Koşu 2'de yapılamayan şeydi:
+
+| An | İstek | Aktarılan | `.wasm` var mı |
+|---|---|---|---|
+| Oturum 1, açılış | **25** | 4,3 MB | **YOK** |
+| Oturum 1, `sign` sonrası | **26** | 4,5 MB | **VAR** |
+| Oturum 3, yalnızca açılış | **25** | 4,3 MB | **YOK** |
+
+Eklenen tek satır: `sphincs_c13_signer_bg.wasm` · `200` · tür **wasm** ·
+başlatan **`sphincs_c13_signer.js:293`** · **228 kB** · 13 msn.
+Başlatan satır numarası ilk kez okundu.
+
+`sphincs_c13_signer.js` yine `200` · script · `signer.js:5` · **54,1 kB**.
+
+`DOMContentLoaded`: Oturum 1 **184 msn**, Oturum 3 **179 msn**
+(eklentili koşuda 329 ve 296 msn'di).
+
+**`/favicon.ico` bu listelerde de YOK** — eklentisiz, önbelleksiz, taze
+profilde ve liste tepeden görünürken. Koşu 2'deki belirsizlik (*"istek
+yapılmadı" mı, "Ağ paneline yazılmadı" mı*) **aynen duruyor**; değişen tek şey
+gözlemin daha temiz bir listede yapılmış olması.
+
+## Süre ölçümleri — tablo beş satır oldu
+
+| Ortam | `keygen` | `sign` |
+|---|---|---|
+| Node (18 Eylül) | — | ~7.500 ms |
+| Tarayıcı, eklentili, koşu 1 | 628,5 ms | 11.008,8 ms |
+| Tarayıcı, eklentili, koşu 2 | 379,1 ms | 24.213,6 ms |
+| **Misafir, oturum 1** | 392,2 ms | **6.746,7 ms** |
+| **Misafir, oturum 2** | 400,2 ms | **8.573,3 ms** |
+
+**İmza beş koşunun beşinde de 3688 bayt**, `C13 beklenen` kontrolü **beş kez
+geçti**.
+
+> **GÖZLENEN ÖRÜNTÜ, HÜKÜM DEĞİL:** `keygen` beş ölçümde **0,38–0,63 sn**
+> arasında oturaklı; `sign` **6,7–24,2 sn** arasında **3,6 kat** yayılıyor.
+> Eklentisiz iki ölçüm, eklentili iki ölçümün ikisinden de hızlı ve biri
+> Node'dan da hızlı.
+>
+> **Bu tablo mekanizmayı ölçmüyor.** n = 2'ye 2, Misafir pencere profili de
+> değiştiriyor ve makine yükü hiçbir koşuda kaydedilmedi. Ayakta kalan
+> açıklamalar: eklenti içerik betiklerinin ana iş parçacığını paylaşması ·
+> profil/önbellek farkı · o andaki makine yükü. **Bu ölçümler hiçbirini ayırt
+> etmiyor.** Ayıracak olan: tek pencerede ard arda n ≥ 5 imza ve eşzamanlı yük
+> kaydı. Sprint 4'ün işi değil.
+>
+> Koşu 1'in *"tarayıcı Node'dan %47 yavaş"* cümlesi bu tabloyla birlikte
+> **anlamını yitirdi** — tek koşunun rakamıydı ve artık tarayıcı Node'dan
+> hızlı ölçülen iki koşu da var.
+
 ## ÖK-2 için anlamı — MADDE KAPANDI
 
 Teknik çekirdek **kanıtlandı**: derlenmiş imzalayıcı, depodan gelen çıktıyla,
@@ -530,10 +684,14 @@ depodan gelen iki kalem de hata seviyesinin **altında** (bir `💬` konsol kayd
 üç `💬` erişilebilirlik sorunu). "Proje kodundan 0 hata" artık varsayıma değil
 bu satırlara dayanıyor.
 
-**Maddeyle birlikte kapanmayan, ayrı kalem olarak devrediliyor:** Sorunlar
-panelindeki CSP/`eval` kaleminin kaynağı. ÖK-2'nin tarayıcı maddesini
-bloklamıyor — hata konsolda değil, ayrı bir yüzeyde ve bizim sayfamızdan
-gelmediği ölçüldü.
+**CSP/`eval` kalemi de KAPANDI** — Koşu 3, eklentisiz pencere: kalem üç
+oturumun üçünde de yok, kontrol kaydı (MetaMask uyarıları + Sentry hataları)
+da kaybolduğu için deney geçerli. **Kaynağı eklenti.**
+
+**Kapanmayan tek gözlem:** eklentisiz bir oturumda hata sayacı bir kez **1**
+gösterdi ve kayıt okunamadan sayfa yenilendi; 2-3 yeniden denemede tekrar
+etmedi. *"Eklentisiz konsolda 0 hata"* cümlesi bu yüzden **beş-altı açılışın
+biri hariç hepsi için** doğru, **hepsi için değil**. Ayrıntı Koşu 3'te.
 
 ## Yan bulgu — `index.html:30` bayat, Task 2 ile ÇELİŞİYOR
 

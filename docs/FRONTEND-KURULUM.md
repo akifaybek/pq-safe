@@ -175,11 +175,22 @@ cast rpc eth_getTransactionReceipt <hash> --rpc-url <arşiv-url>
 - **Tarayıcı adımı KOŞULDU — 20 Eylül 2026.** macOS + Chrome'da `npx vite` ile
   sayfa açıldı, `keygen` ve `İmzala` elle çalıştırıldı: `.wasm` sayfa açılışında
   **istenmedi**, `keygen`'de indi (228 kB), imza **3688 bayt** çıktı. Ölçümler:
-  `keygen` 628,5 ms · `sign` 11.008,8 ms. **Aynı gün ikinci bir koşu daha
-  yapıldı** (filtresiz konsol, Chrome 153.0.8010.48 / macOS 26.6.2): imza yine
-  **3688 bayt**, `keygen` 379,1 ms · `sign` 24.213,6 ms. **Süre yayılımı geniş
-  ve sebebi ölçülmedi** — Node 7,5 sn, tarayıcı 11,0 ve 24,2 sn; iki tarayıcı
-  ölçümü arasında 2,2 kat fark var, ikisi de aynı makinede aynı gün alındı.
+  `keygen` 628,5 ms · `sign` 11.008,8 ms. **Aynı gün iki koşu daha yapıldı**
+  (Chrome 153.0.8010.48 / macOS 26.6.2) — biri filtresiz konsolla, biri
+  **eklentisiz Misafir penceresinde**. İmza **beşinin beşinde de 3688 bayt**.
+
+  | Ortam | `keygen` | `sign` |
+  |---|---|---|
+  | Node (18 Eylül) | — | ~7.500 ms |
+  | Tarayıcı, eklentili | 628,5 ms | 11.008,8 ms |
+  | Tarayıcı, eklentili | 379,1 ms | 24.213,6 ms |
+  | Misafir (eklentisiz) | 392,2 ms | 6.746,7 ms |
+  | Misafir (eklentisiz) | 400,2 ms | 8.573,3 ms |
+
+  **`keygen` oturaklı (0,38–0,63 sn), `sign` 3,6 kat yayılıyor (6,7–24,2 sn)
+  ve sebebi ölçülmedi.** Eklentisiz iki ölçüm eklentili ikisinden de hızlı —
+  bu bir örüntü, ama mekanizma ölçülmedi: Misafir pencere profili de
+  değiştiriyor ve makine yükü hiçbir koşuda kaydedilmedi.
   Kanıt: `docs/evidence/crypto-tests/sprint4-browser-signing.md`.
   **Kapsanmayan:** owner mnemonic girilmedi, MetaMask bağlanmadı, Bölüm 4'ün
   `build+sign` yolu ve gerçek tx yolu koşulmadı.
