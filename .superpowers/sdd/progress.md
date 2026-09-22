@@ -2033,3 +2033,8 @@ cümlesi ölçümle ÇÜRÜDÜ. Geçerli ifade:
     Bash(cat*)/Bash(cp*) kapsamında; joker dizin ayıracını da aşıyor.)
     Adaylar: Read kurallarının Bash'e uygulanması ·
     ~/.claude/settings.json · managed settings · hook.
+
+DEFTER KURALI — 22 Eyl: ölçüm sonuçları, çürüyen iddialar ve hükümler
+EKLEMELİDİR (üzerine tarihli düzeltme yazılır). Açık kalem tarifi ve yön
+gösteren işaretler YERİNDE düzeltilebilir; commit mesajı neyin
+değiştiğini söyler.
