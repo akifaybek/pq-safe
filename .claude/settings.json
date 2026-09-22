@@ -5,7 +5,7 @@
       "Bash(cast publish:*)",
       "Bash(cast rpc eth_sendRawTransaction:*)",
       "Bash(forge create:*)",
-      "Bash(forge script:*--broadcast*)",
+      "Bash(forge script*--broadcast*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(git add:*)",
@@ -16,8 +16,8 @@
       "Bash(git stash:*)",
       "Read(./.env.pqwallet-owner-key*)",
       "Read(./frontend/.env)",
-      "Bash(cat:*.env.pqwallet-owner-key*)",
-      "Bash(cp:*.env.pqwallet-owner-key*)"
+      "Bash(cat*.env.pqwallet-owner-key*)",
+      "Bash(cp*.env.pqwallet-owner-key*)"
     ]
   }
 }
