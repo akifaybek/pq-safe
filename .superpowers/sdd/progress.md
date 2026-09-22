@@ -2028,7 +2028,8 @@ cümlesi ölçümle ÇÜRÜDÜ. Geçerli ifade:
     node -e, < yönlendirmesi, source, değişkenden gelen yol).
 
   AÇIK KALEM (Task 6 sonrası, salt okuma): yol tabanlı engelin KAYNAĞI
-    BİLİNMİYOR. settings.json'da contracts/ altını kapsayan kural yok,
-    ama contracts/.env.pqwallet-owner-key-* engellendi. Adaylar: Read
-    kurallarının Bash'e uygulanması · ~/.claude/settings.json · managed
-    settings · hook.
+    BİLİNMİYOR. ls ve head için settings.json'da kapsayan kural YOK,
+    yine de engellendiler — açıklanması gereken budur. (cat/cp zaten
+    Bash(cat*)/Bash(cp*) kapsamında; joker dizin ayıracını da aşıyor.)
+    Adaylar: Read kurallarının Bash'e uygulanması ·
+    ~/.claude/settings.json · managed settings · hook.
