@@ -553,6 +553,15 @@ hesaplanacak, yalnızca farkı değil.
 seçenek olmadığını gösterdi. Kalem açılmazsa Task 7 ofset modelini varsayılan
 sanıp devam eder ve seçimin hiç yapılmadığı görünmez olur.
 
+**DÜZELTME — 22 Eylül.** Yukarıdaki paragrafta (bu bölümün 4. satırı)
+`nonce 1→2 SSTORE_SET` yazıyor. **Bu YANLIŞ.** Doğrusu `nonce 1→2` =
+**`SSTORE_RESET`** (2.900). `SSTORE_SET` (20.000) olan, Hakan'ın tx'indeki
+`nonce 0→1`'dir. Kaynak: `sprint3-end-to-end-transaction.md:147` tablosu ve
+`progress.md:374`. Karşılaştırılamazlık gerekçesi **ayakta kalıyor** — bu
+turun tx'i `nonce 2→3`, Sprint 3'ünki `1→2`; ikisi de RESET olduğundan
+depolama yazma maliyeti farkı bu kalemde gerekçe DEĞİL, gerekçe "farklı gün,
+farklı düğüm"dür. Yani hüküm değişmiyor, dayanağı daralıyor.
+
 
 ---
 
@@ -598,3 +607,110 @@ pqwallet-test.mjs                →  9 assertion (CAST_EXPECTED oracle'ıyla)
 
 `pqwallet-test.mjs` canlı okumaları kapıyı **dördüncü kez** teyit etti, saatler
 sonra: `readNonce() = 2`, `readBalance() = 50900000000000000 wei`.
+
+
+---
+
+## 8. BEKLENTİ — Task 6'dan ÖNCE yazıldı: estimateGas algoritma modeli
+
+Bu bölüm Task 6 Adım 4 koşulmadan yazıldı ve commit'lendi. Amacı: ölçüm
+geldiğinde beklentinin geriye dönük ayarlanamaz olması.
+
+### Model
+
+**ÇIKARIM** — geth'in `gasestimator` mantığı. `reth` ve Tenderly'nin aynısını
+uyguladığı **VARSAYIM**; doğrulanmadı, yalnızca üçünün aynı sayıyı vermesiyle
+uyumlu (§5).
+
+```
+hi = (U + R + 2300) * 64 // 63          # 2300 = CallStipend
+lo = U - 1                              # bilinen başarısız sınır
+(hi - lo) / hi < 0.015 olana kadar:     # 0.015 = estimateGasErrorRatio
+    mid = (hi + lo) // 2
+    mid'te çalışıyorsa hi = mid, değilse lo = mid
+dönen = hi
+```
+
+`U` = gerçek `gasUsed`, `R` = refund (bu tx'lerde 0 alındı).
+
+### Kayıtlı veriye uyum — ÖLÇÜM (aritmetik, betik aşağıda)
+
+| girdi | model çıktısı | kayıtlı değer | tuttu mu |
+|---|---|---|---|
+| `U = 216.221` (Sprint 3) | **219.104** | 219.104 | **EVET** |
+
+Üç tahminin **ters çözümü tek** — taranan aralıkta (180.000–260.000) her biri
+için **yalnızca bir** `U` değeri o tahmini üretiyor:
+
+| satır | tahmin `E` | tek ters çözüm `U` | çözüm sayısı |
+|---|---|---|---|
+| A | 219.189 | **216.305** | 1 |
+| B | 221.685 | **218.781** | 1 |
+| C | 246.871 | **243.769** | 1 |
+
+Ters çözümler arası farklar:
+`218.781 − 216.305 = 2.476 = 2.500 − 24`
+`243.769 − 216.305 = 27.464 = 27.500 − 36`
+
+### İlişki afin — ofset de değil, oran da değil
+
+Tek ikili arama adımından sonra `hi ≈ (U·64/63 + U)/2`, yani katsayı
+`127/126 = 1,0079365…`. Buradan:
+
+> **Δ ≈ U/126 + 1168**
+
+| `U` | ölçülen Δ | formül | kalan |
+|---|---|---|---|
+| 216.221 | 2.883 | 2.884,04 | −1,04 |
+| 216.305 | 2.884 | 2.884,71 | −0,71 |
+| 218.781 | 2.904 | 2.904,36 | −0,36 |
+| 243.769 | 3.102 | 3.102,67 | −0,67 |
+
+Kalanların tamamı negatif ve 1'den küçük — tamsayı bölmesinin (`//`) aşağı
+yuvarlamasıyla uyumlu. **ÖLÇÜM.**
+
+Bu yüzden ne saf ofset (`Δ` sabit değil: 2.883 → 3.102) ne saf oran
+(`E/U` sabit değil) modeli doğru. Bölüm 6'nın "ofset mi oran mı" ikilemi
+**yanlış kurulmuş olabilir**; üçüncü seçenek afin ilişkidir.
+
+### Task 6 tahmini — ölçümden ÖNCE
+
+> **`gasUsed_2` = 216.305**, dolayısıyla **Δ₂ = 2.884**.
+
+Koşul: calldata'nın **203 sıfır baytı** olması (A satırı). Her **ek** sıfır
+bayt `gasUsed`'ı **−12** düşürür (sıfır olmayan bayt 16, sıfır bayt 4 gas).
+
+**Çürütme ölçütleri:**
+
+- `gasUsed_2 = 216.305` → model tuttu, **aday 2** (ortak tahmin uzlaşısı).
+- `gasUsed_2 = 219.189` (yani tahminin kendisi) → tahminler kesin,
+  **aday 3**, model eksik.
+- **Başka herhangi bir değer** → açıklanamayan kalan. **Yuvarlanmaz,
+  "yaklaşık tuttu" denmez**, kalem açık yazılır.
+
+**Bölüm 5'e şerh:** §5'te aday 2'nin ölçütü `gasUsed ≈ estimate / 1,0079`
+diye yazılmıştı; bu `217.471` verir. Afin ilişkinin tam tersi ise `216.305`.
+İkisi arasında **~1.166 gas** fark var. Bu bölümdeki keskin sayı (216.305)
+geçerlidir; §5'teki kaba bölme `+1168` terimini ihmal ettiği için sapar.
+
+### Doğrulama betiği
+
+Aşağıdaki betik bu bölümdeki **her** sayıyı yeniden üretir.
+
+```python
+def est(U, R=0):
+    hi, lo = (U + R + 2300) * 64 // 63, U - 1
+    while lo + 1 < hi and (hi - lo) / hi >= 0.015:
+        mid = (hi + lo) // 2
+        if mid >= U: hi = mid
+        else: lo = mid
+    return hi
+
+assert est(216221) == 219104                      # Sprint 3 çapası
+inv = {}
+for U in range(180000, 260001): inv.setdefault(est(U), []).append(U)
+assert inv[219189] == [216305] and inv[221685] == [218781]
+assert inv[246871] == [243769]                     # ters çözümler TEK
+assert est(216305) - 216305 == 2884                # Δ₂ beklentisi
+assert (12 * 219189) // 10 == 263026                # LIMIT_2 (madde 3)
+```

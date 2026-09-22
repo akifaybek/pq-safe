@@ -1923,6 +1923,11 @@ AÇIK KALEM — OFSET Mİ ORAN MI (Task 7'nin modeli buna bağlı):
   Δ₁ = 2.883 ofset olarak kayıtlı; aynı bölme 1,0133 yani +%1,33.
   Bugünkü +%0,79 ile AYNI SAYI DEĞİL, karşılaştırılamaz (farklı gün,
   farklı düğüm, nonce 1→2 SSTORE_SET vs 2→3 RESET).
+  DÜZELTME 22 Eyl: "nonce 1→2 SSTORE_SET" YANLIŞ. nonce 1→2 = SSTORE_RESET
+    (2.900); SSTORE_SET (20.000) olan Hakan'ın nonce 0→1'i. Kaynak:
+    sprint3-end-to-end-transaction.md:147 ve bu dosyada satır 374.
+    Karşılaştırılamazlık AYAKTA, ama dayanağı daraldı: iki tx de RESET,
+    dolayısıyla gerekçe depolama maliyeti değil, "farklı gün/düğüm".
   TASK 6 ADIM 8'DE: gasUsed okunduğunda HEM FARK HEM ORAN hesaplanacak.
   Model o zaman seçilecek, SEÇİLMEDEN TABLO YAZILMAYACAK.
   Bu tek ölçüm aday 2 ile aday 3'ü de ayırıyor: gasUsed == estimate ise
@@ -2038,3 +2043,19 @@ DEFTER KURALI — 22 Eyl: ölçüm sonuçları, çürüyen iddialar ve hükümle
 EKLEMELİDİR (üzerine tarihli düzeltme yazılır). Açık kalem tarifi ve yön
 gösteren işaretler YERİNDE düzeltilebilir; commit mesajı neyin
 değiştiğini söyler.
+
+DEFTER DÜZELTMESİ — 22 Eyl, Task 6 Adım 6: EST_A_F2 = LIMIT_2 / 1,2
+KULLANILMAZ. sendTransaction.js:202 AŞAĞI YUVARLIYOR, dolayısıyla bölme
+ters çözüm vermez. Doğrusu: floor(1,2·E) = LIMIT_2 koşulunu sağlayan EN
+KÜÇÜK E.
+  Beklenen LIMIT_2 = 263.026 → E = 219.189.
+  ÖLÇÜM (aritmetik): floor(1,2·219.189) = 263.026 ✓ ; floor(1,2·219.188)
+    = 263.025 ✗ — yani 219.189 bu koşulu sağlayan tek ve en küçük değer.
+  Kaba bölme yapılsaydı: 263.026/1,2 = 219.188,33 → yanlış yuvarlamayla
+    219.188 çıkardı, bir gas aşağı.
+
+TASK 6 BEKLENTİSİ YAZILDI VE COMMIT'LENDİ — Adım 4'ten ÖNCE:
+  sprint4-gas-table-and-second-tx.md §8. gasUsed_2 = 216.305, Δ₂ = 2.884
+  (calldata 203 sıfır bayt koşuluyla). Çürütme ölçütleri ve doğrulama
+  betiği aynı bölümde. Model ÇIKARIM (geth gasestimator), reth/Tenderly
+  uyumu VARSAYIM.
