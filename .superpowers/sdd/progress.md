@@ -2014,3 +2014,21 @@ GÜVENLİK SINIRI NOTU (Akif'in 22 Eylül talimatı, deftere aynen):
   Kalan kalemler SINANMADI — bugünkü talimat .env* dosyalarına dokunmayı
   yasakladığı için kasten bırakıldı. "Yanından geçer" iddiası deftere
   ÖLÇÜLMEMİŞ olarak girer, kapanmış sayılmaz.
+
+DÜZELTME — 22 Eyl, Blok A commit'ine: madde 6'daki "head … yanından geçer"
+cümlesi ölçümle ÇÜRÜDÜ. Geçerli ifade:
+
+  cat/cp deny kuralı GÜVENLİK SINIRI OLARAK GÖSTERİLMEDİ.
+
+  ÖLÇÜM: kanarya yoluna dokunan cat, cp, ls ve head engellendi. Engel
+    komut adına değil YOL DESENİNE bağlı. Bash(cat*)/Bash(cp*)
+    kurallarının kendi katkısı izole edilemedi.
+
+  SINANMADI: yolu komut içinde gömülü taşıyan biçimler (python -c,
+    node -e, < yönlendirmesi, source, değişkenden gelen yol).
+
+  AÇIK KALEM (Task 6 sonrası, salt okuma): yol tabanlı engelin KAYNAĞI
+    BİLİNMİYOR. settings.json'da contracts/ altını kapsayan kural yok,
+    ama contracts/.env.pqwallet-owner-key-* engellendi. Adaylar: Read
+    kurallarının Bash'e uygulanması · ~/.claude/settings.json · managed
+    settings · hook.
