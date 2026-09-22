@@ -1964,3 +1964,53 @@ WEI ÜÇ GÖSTERİM KURALI: her wei değeri ham sayı · HANE SAYISI · ETH
 TAKVİM: 22 Eylül Task 6 TEK ÇEKİM. 23'te Task 6 bitmemişse Task 9 ve
   ÖK-2'nin ikinci makine ayağı BİRLİKTE düşer — ikisi de Task 6'nın
   arkasında sıralı.
+
+═══ BLOK A — 22 Eylül: deny kuralı sözdizimi düzeltmesi ve sınaması ═══
+
+Düzeltilen üç kural: `:*` ortada kaldığı için parser üçünü de ATIYORDU,
+  yani dosyada duruyorlardı ama hiçbir şeyi engellemiyorlardı.
+    forge script:*--broadcast*  →  forge script*--broadcast*
+    cat:*.env.pqwallet-owner-key*  →  cat*.env.pqwallet-owner-key*
+    cp:*.env.pqwallet-owner-key*   →  cp*.env.pqwallet-owner-key*
+  forge kuralında seçenek 1 alındı: yalnızca --broadcast bloklanır,
+  yayın yapmayan simülasyon koşusu serbest kalır.
+
+FORGE SINAMASI — biçim · beklenen · gözlenen
+  forge script --broadcast --help                        · ENGELLE · ENGELLENDİ
+  forge script --help --broadcast                        · ENGELLE · ENGELLENDİ
+  cd contracts && forge script --help --broadcast        · ENGELLE · ENGELLENDİ
+  FOUNDRY_PROFILE=default forge script --help --broadcast · ENGELLE · ENGELLENDİ
+  forge script --help   (kontrol, --broadcast yok)       · ÇALIŞ   · ÇALIŞTI
+  ÖLÇÜM: 4/4 biçim tuttu, kontrol yanlış pozitif vermedi. Geçen biçim YOK.
+  ÇIKARIM: env-değişkeni önekli biçimin de tutması, eşleşmenin komut
+    başına çıpalı olmadığını düşündürüyor. Mekanizma DOĞRULANMADI.
+
+CAT/CP SINAMASI — SONUÇ KİRLİ, kurallara atfedilemez
+  cat contracts/.env.pqwallet-owner-key-KANARYA-YOK       · ENGELLE  · ENGELLENDİ
+  cp  contracts/.env.pqwallet-owner-key-KANARYA-YOK /dev/null · ENGELLE · ENGELLENDİ
+  ls  ./.env.pqwallet-owner-key-KANARYA-YOK               · kural yok · ENGELLENDİ
+  head -c 1 contracts/.env.pqwallet-owner-key-KANARYA-YOK · kural yok · ENGELLENDİ
+  head -c 1 contracts/.env-KANARYA-YOK-kontrol            · —        · ÇALIŞTI
+  head -c 1 contracts/duz-KANARYA-YOK-kontrol             · —        · ÇALIŞTI
+  ÖLÇÜM: adı `.env.pqwallet-owner-key` ile başlayan yola dokunan her komut
+    (ls/cat/cp/head) engellendi; genel `.env-` biçimli yol ve alakasız yol
+    engellenmedi. Hiçbir kanarya dosyası yok, hiçbiri oluşturulmadı.
+  ÇIKARIM: engelleme KOMUT ADINI değil YOL DESENİNİ izliyor. Mekanizmanın
+    ne olduğu — Read(./.env.pqwallet-owner-key*) kuralının Bash çağrılarına
+    uzanması mı, başka bir katman mı — DOĞRULANMADI.
+  SONUÇ: Bash(cat*…) ve Bash(cp*…) kurallarının iş yaptığı GÖSTERİLEMEDİ.
+    Aynı iki komutu zaten yol tabanlı bir engel kapsıyor, dolayısıyla bu
+    kuralların katkısı bu dosya adıyla izole edilemez. Kurallar yanlış
+    değil; ETKİLERİ ÖLÇÜLMEDİ.
+
+GÜVENLİK SINIRI NOTU (Akif'in 22 Eylül talimatı, deftere aynen):
+  cat/cp deny kuralı GÜVENLİK SINIRI DEĞİL, kaza önleyicidir. Gerçek sınır
+  Task 6 SONRASINA ertelendi. Sıra: (a) emekli anahtar dosyalarını repo
+  dışına taşıma kararı Akif'te, (b) sandbox ayarı. Ayar adı resmi
+  dokümandan kaynakla doğrulanacak.
+  ŞERH — talimattaki "head/less/strings/source/mv/yönlendirme/python -c/
+  node -e yanından geçer" listesi bu turda doğrulanmadı ve İLK KALEMİ
+  ÖLÇÜMLE ÇÜRÜTÜLDÜ: head, bu yol deseninde ENGELLENDİ (yukarıdaki tablo).
+  Kalan kalemler SINANMADI — bugünkü talimat .env* dosyalarına dokunmayı
+  yasakladığı için kasten bırakıldı. "Yanından geçer" iddiası deftere
+  ÖLÇÜLMEMİŞ olarak girer, kapanmış sayılmaz.
