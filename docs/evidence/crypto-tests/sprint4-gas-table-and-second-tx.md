@@ -29,6 +29,49 @@ kapı olarak yalnızca son satır girer; ilk ikisi ön-kontroldür.
 B0 = 50900000000000000 wei · 17 hane · 0,050900000000000000 ETH
 ```
 
+#### EK — 22 Eylül: Task 6'nın KENDİ kapısı
+
+Yukarıdaki tablo **Task 5'in** kapısıdır; son satırındaki **KAPI** etiketi Task 5
+faz 1'e aittir ve **öyle kalır**. Task 6 aynı okumayı devralamaz: kapının
+koruduğu şey **oturum anı**dır, araya giren bir `execute()` herhangi bir
+okumadan *sonra* da girebilir. Bu yüzden Task 6 kendi kapısını koştu.
+
+| zaman (UTC) | blok | `nonce()` | bakiye (wei) | hane | Task 6 açısından ne |
+|---|---|---|---|---|---|
+| 2026-09-19 08:46 | 11736605 | 2 | 50900000000000000 | 17 | ön-kontrol |
+| 2026-09-20 11:56 | 11744141 | 2 | 50900000000000000 | 17 | ön-kontrol |
+| 2026-09-20 12:21 | 11744259 | 2 | 50900000000000000 | 17 | ön-kontrol (Task 5'in kapısıydı) |
+| **2026-09-22 19:51** | **11760035** | **2** | **50900000000000000** | **17** | **TASK 6 KAPISI** |
+
+Koşulan komut — `cast nonce` **değil**, kontratın storage'ındaki değişken:
+
+```bash
+cast call 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB "nonce()(uint256)" \
+  --rpc-url https://sepolia.gateway.tenderly.co
+cast balance 0x2EafA294C14b6752128bfd4f5873D1EA39f000BB \
+  --rpc-url https://sepolia.gateway.tenderly.co
+```
+
+```
+B0 (Task 6) = 50900000000000000 wei · 17 hane · 0,050900000000000000 ETH
+```
+
+**BEKLENTİ — ölçümden ÖNCE yazıldı, 22 Eylül 2026 19:51 UTC:**
+
+> Adım 8'de beklenen bakiye = `B0 − value`
+> = `50900000000000000 − 100000000000000`
+> = **`50800000000000000` wei · 17 hane · 0,0508 ETH**
+
+Düşüş **tam `value` kadardır**: gas cüzdandan değil, gönderen EOA'dan ödenir.
+Bu satır Adım 8 koşulmadan yazıldı ve commit'lendi; sonradan ayarlanamaz.
+
+**ÖLÇÜM PENCERESİ İHLAL EDİLMEDİ.** 19 Eylül 00:00'da açılan pencere boyunca
+`nonce()` **2**'de kaldı — dört okumanın dördü de 2. Pencere, PQWallet'a plan
+dışı hiçbir `execute()` girmediği iddiasını taşıyor ve bu okuma onu **22 Eylül
+19:51'e kadar** uzatıyor. **Hakan'ın 22 Eylül teyidi de aynı yönde:** PQWallet'a
+plan dışı `execute()` yok. İki kaynak bağımsız — biri zincir okuması, biri
+Hakan'ın beyanı — ve **çelişmiyorlar**.
+
 Task 6 Adım 8'in `B0 - value` formülünün girdisi budur.
 
 > **HANE KURALI — bu turda fiilen gerekti.** Kapı sonucu sohbete aktarılırken
