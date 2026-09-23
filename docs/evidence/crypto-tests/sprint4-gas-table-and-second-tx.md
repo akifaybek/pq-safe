@@ -42,6 +42,7 @@ okumadan *sonra* da girebilir. Bu yüzden Task 6 kendi kapısını koştu.
 | 2026-09-20 11:56 | 11744141 | 2 | 50900000000000000 | 17 | ön-kontrol |
 | 2026-09-20 12:21 | 11744259 | 2 | 50900000000000000 | 17 | ön-kontrol (Task 5'in kapısıydı) |
 | **2026-09-22 19:51** | **11760035** | **2** | **50900000000000000** | **17** | **TASK 6 KAPISI** |
+| **2026-09-23 12:43** | **11764958** | **2** | **50900000000000000** | **17** | **TASK 6 KAPISI — koşu günü** |
 
 Koşulan komut — `cast nonce` **değil**, kontratın storage'ındaki değişken:
 
@@ -83,6 +84,35 @@ Task 6 Adım 8'in `B0 - value` formülünün girdisi budur.
 > ETH karşılığı.** Üçü birbirini tutmuyorsa değer kabul edilmez.
 > Teyit ikinci bir okumayla alındı: `cast balance --ether` →
 > `0.050900000000000000`.
+
+**DÜZELTME — 23 Eylül 2026 12:43 UTC: 22 Eylül kapısı KULLANILMADAN bayatladı.**
+
+22 Eylül'ün kapısı koşuldu ama Adım 1'e geçilmedi — tarayıcıda hiçbir şey
+yapılmadı, kayıt başlamadı. Kapının koruduğu şey **oturum anı** olduğundan
+(yukarıdaki EK'in gerekçesi) o okuma bir gün sonraki koşuya devredilemez;
+bu yüzden kapı 23 Eylül'de **baştan** koşuldu. 22 Eylül satırı **olduğu gibi
+kalır** — o gün doğru okunmuş bir ölçümdür, yalnızca kullanılmadan süresi
+dolmuştur.
+
+Bugünkü okuma dört değerin dördünde de kapıyı geçti; `git status --porcelain`
+boş döndü. **B0 değişmedi:**
+
+```
+B0 (Task 6, 23 Eylül) = 50900000000000000 wei · 17 hane · 0,0509 ETH
+```
+
+Bu yüzden §8'deki `B0 − value = 50800000000000000` beklentisi **aynen geçerli**;
+üzerine yazılacak ya da yeniden türetilecek bir şey yok.
+
+**ÖLÇÜM PENCERESİ UZADI.** `nonce()` artık **beş** okumanın beşinde de 2:
+19 Eylül 08:46'dan 23 Eylül 12:43'e kadar PQWallet'a plan dışı `execute()`
+girmedi. Pencere 4 gün 4 saate çıktı.
+
+> **Hane kuralı bu turda nasıl karşılandı — sınırı yazılıyor.** Ham sayının
+> 17 hanesi **sayılarak** doğrulandı, ETH karşılığı bundan **türetildi**.
+> 22 Eylül'deki gibi ikinci bir bağımsız okuma (`cast balance --ether`)
+> **koşulmadı**. Yani bu satır bir aktarım hatasını ham sayının kendi hane
+> sayısı kadar yakalar, daha fazlasını değil.
 
 ### Adım 3 — C adresinin boşluğu
 
