@@ -868,6 +868,14 @@ kanıt için yeterli. *(Bu satır 23 Eylül'de açık kalemdi, aynı gün kapand
 > olarak yazılmıştı. Infura geth ailesi çalıştırır, yani tahminin oradan
 > gelmesi modelle **çelişmiyor**. Çelişmemek ile doğrulanmak ayrı şeylerdir.
 
+**DÜĞÜM İSTEMCİSİ ÖĞRENİLEMEDİ — denendi, yöntem yetersiz çıktı.**
+Tarayıcı konsolunda `ethereum.request({method:'web3_clientVersion'})`
+koşuldu; dönen değer **`MetaMask/v13.48.0`**, yani **MetaMask'in kendi sürümü**.
+Çağrı MetaMask katmanında yakalandı, Infura'ya **ulaşmadı**. Bu ne bir dönüş
+ne bir rettir — **yanlış katmandan gelen bir yanıttır** ve sorulan soruyu
+cevaplamaz. Arkadaki istemcinin geth mi reth mi olduğu **BİLİNMİYOR**;
+yukarıdaki şerh olduğu gibi geçerli.
+
 ### KARŞILAŞTIRILMAYAN: `gasUsed` = 321.713
 
 Gönderim öncesi konan kural: `n ≠ 3908` → "calldata yapısı değişti" bulgusu,
@@ -932,6 +940,40 @@ ikisi de `HTTP 429 · {"code":-32005,"message":"rate limit exceeded"}` döndü.
 **Bu hız sınırıdır, "yöntem desteklenmiyor" DEĞİLDİR** — ikisi farklı şeydir ve
 bu ayrım burada yazılıdır. `PQWallet.execute` frame'inin kendi `gasUsed`'ı
 **ölçülmedi**; 138.097 ile karşılaştırma yapılmadı.
+
+**NONCE 3'E BIRAKILDI.** Bu koşuda alınamadı; nonce 3 tx'i temiz gelirse
+(tip `0x2`, `to` = PQWallet) trace orada denenir ve **bu kalemi geçersiz
+kılar** — çünkü o zaman `gasUsed`'ın tamamı zaten PQWallet'ın kendi
+çağrısıdır ve ayrı bir frame ölçümüne ihtiyaç kalmaz.
+
+> **Erteleme YALNIZ trace içindir.** Aynı paketten çıkarılan `n_iç` = 3908 ve
+> `z_iç` = 203 **ölçüldü**, ertelenmedi; nonce 3 onları geçersiz kılmaz,
+> teyit eder ya da çürütür.
+
+### Ekran kaydı — 7702 koşusunun kaydı, JÜRİ VİDEOSU DEĞİL
+
+| | |
+|---|---|
+| SHA-256 | `c375474d741d9fc40349663c1db3e576c671cef3656b6b3bfacb9fb8ca3adc31` |
+| Boyut | **13.290.678 bayt** (~13,3 MB) |
+| Süre | **54,77 saniye** |
+| Konum | `~/Desktop/Ekran Kaydı 2026-09-23 19.54.18.mp4` — **repo DIŞINDA** |
+
+**Dosya repoya girmez.** Kimliği SHA-256'dır; adı değişebilir. Sprint 3
+kaydının (`f7be0790…`) yerine geçmez, onun yanına konur.
+
+**NE DEĞİLDİR:** bu, Task 10'un aradığı jüri videosu **değildir**. Kaydedilen
+koşu 7702 paketiyle gitti, yani `gasUsed` ölçümü kirli. Task 10 Adım 3'ün
+*"imza → negatif kanıt reddi → aynı imzayla gönderim → receipt, kesintisiz"*
+ölçütünü de karşılamaz: negatif kanıt bu koşuda **kayıt dışında** bir kez
+koşulmuştu, kayıt yeniden imzalamayla başladı.
+
+**NE İÇİN SAKLANIYOR:** EIP-7702 bulgusunun ve PQWallet'ın uçtan uca
+çalıştığının görsel kaydı.
+
+> **İçeriği bu notu yazan tarafından DOĞRULANMADI.** Yukarıdaki dört satır
+> dosyanın kendisinden ölçüldü (`shasum`, `stat`, `mdls`); videoda hangi
+> karelerin olduğu **izlenerek** kontrol edilmedi.
 
 ### BULGU — Task 9'un ortam değişkeni sınıfına eklenir
 
