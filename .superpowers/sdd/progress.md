@@ -2208,3 +2208,58 @@ NONCE 4 ÖN KAYDI YAZILDI — gönderimden ÖNCE. §12.
     karşılaştırma YAPILMADI — o yürütme bileşeniydi, bu toplam gasUsed).
   AÇIK: kayıtlı demo koşusu YAPILMADI. Task 6'nın kayıt ayağı duruyor,
     nonce 5 ile çekilecek.
+
+BLOK B — HAKAN'IN 22 EYLÜL RAPORU. 23 Eylül'de deftere girdi.
+  KAYNAK: Hakan'ın git dışı mesajı, Akif aktardı. Rapor DEPODA YOK —
+  Hakan'ın git'teki son commit'i 2faafc6, 18 Eylül. Kaynak etiketi budur;
+  aşağıdaki Hakan satırları bize aktarılan değerlerdir, bizim okumamız değil.
+
+  ÖLÇÜLDÜ (Hakan, Windows / PowerShell Get-FileHash):
+    wasm-pkg-web/sphincs_c13_signer_bg.wasm
+      → a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
+    wasm-pkg/sphincs_c13_signer_bg.wasm
+      → a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
+  ÖLÇÜLDÜ (Akif makinesi, 23 Eylül, shasum -a 256, bu oturumda YENİDEN hesaplandı):
+    frontend/src/crypto/wasm-pkg-web/sphincs_c13_signer_bg.wasm
+      a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
+    frontend/src/crypto/wasm-pkg/sphincs_c13_signer_bg.wasm
+      a0f1f0cb76a429098325601d49642aa045c7dbae8aad7c3b26fa38ef67c4d9cd
+    boyut: ikisi de 227.416 bayt. İki dizin AYNI ikiliyi taşıyor.
+    Dört değerin dördü de eşit.
+
+  HÜKÜM: depodaki ikili Windows checkout'ta BOZULMADAN geliyor — satır sonu
+    dönüşümü, LFS ya da başka bir checkout dönüşümü uygulanmıyor.
+  YAN ÖLÇÜM: repoda .gitattributes YOK; git check-attr text/eol = unspecified.
+    ÇIKARIM: bozulmama yazılı bir kuralla değil, git'in kendi ikili sezimiyle
+    sağlanıyor. Gözlenmiş durumdur, garanti edilmiş davranış DEĞİL.
+
+  ŞERH — HAKAN'IN SONUCU YANLIŞ, DEFTERE ÖYLE GİRMEZ.
+    Hakan mesajında "cross-machine/cross-platform determinizm ölçülmüş oldu"
+    yazdı. ÇÜRÜK: Hakan DERLEMEDİ — rustc/wasm-pack kendisinde yok, bunu
+    aynı mesajda bildirdi. Hash'lenen dosya depodan gelen ikilidir.
+    Ölçülen şey git'in aktarım sadakatidir; aynı baytların kopyası iki
+    makinede aynı çıkmıştır, o kadar.
+    Determinizm ölçümü şu olurdu: iki makinede aynı kaynaktan BAĞIMSIZ
+    derleme → aynı hash. BU YAPILMADI.
+    MAKİNELER ARASI DERLEME DETERMİNİZMİ KALEMİ AÇIK KALIR.
+    Aynı ayrım verify-wasm.sh'ın kendi başlığında zaten yazılı (satır 17-19):
+    "NE KANITLAMAZ: cross-machine / cross-sürüm determinizm ÖLÇÜLMEDİ."
+
+  verify-wasm.sh WINDOWS YOL HATASI — KAPANDI, kapsamıyla:
+    Düzeltme 72b030a (Akif, 19 Eylül, manifest göreli yolla okunuyor).
+    Hakan'ın koşusu: "manifest okunamadı" hatası YOK · kaynak kimliği
+    kontrolleri GEÇTİ · hash karşılaştırması toolchain yokluğundan ATLANDI ·
+    çıkış 0.
+    ÇIKIŞ 0 TASARLANMIŞ YOLDUR, kaza değil: betik satır 126-139, toolchain
+    farklıysa uyarı basıp exit 0 veriyor. Yani yeşil çıkış "hash'ler eşleşti"
+    DEMEK DEĞİLDİR — bu koşuda eşleşme hiç denenmedi. Kapanan şey yol hatası,
+    doğrulanan şey kaynak kimliği.
+    AÇIK SORU: hangi kabukta koştu — Git Bash, WSL ya da başkası? Hakan
+    bildirmedi, sorulacak. .sh betiği PowerShell'de koşmaz, Get-FileHash ise
+    PowerShell'dir; yani en az iki ayrı kabuk kullanılmış. Hangisi olduğu
+    ÖLÇÜLMEDİ, ÇIKARIMLA da atanmayacak.
+
+  HAKAN'IN BİLDİRİMİ (aynen aktarılıyor, doğrulanmadı): "Pencere kuralına
+    uyuyorum, 22'ye kadar PQWallet'a dokunmuyorum." "22" tarih mi task no mu
+    BELİRSİZ. ÖLÇÜM: contracts/src/PQWallet.sol'un son commit'i f4cdff7,
+    24 Ağustos — o tarihten beri dosyaya dokunulmamış.
