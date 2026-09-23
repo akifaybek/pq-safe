@@ -1137,3 +1137,96 @@ Bir fazla sıfır bayt → tam **12 gas** daha az. Düzeltme formülünün
 > beklenen budur. Yani gözlem **"sabit yürütme + 12 gas/sıfır bayt"** ikilisiyle
 > **TUTARLI**, ama ikisini birbirinden **AYIRMIYOR**. Tek başına
 > "yürütme gazı sabittir" hükmü bu iki ölçümden çıkarılamaz.
+
+### §11'E EK — 12 gas nereden geldi, ve yürütme sabitliği
+
+İki tx'in **iç** calldata'sı da paketten çıkarıldı:
+
+| | tx 1 `0x62d09094…` | tx 2 `0x8f40543a…` |
+|---|---|---|
+| dış `n` · `z` | 5028 · **1060** | 5028 · **1061** |
+| **iç `n` · `z`** | 3908 · **203** | 3908 · **203** |
+| imzadaki sıfır bayt | 16 | 16 |
+| imzanın son baytı | `0xc3` | `0xa3` |
+
+**DÜZELTME:** §11'de "bir fazla sıfır bayt" denirken kaynağı yazılmamıştı.
+Fazladan sıfır bayt **bizim calldata'mızda DEĞİL** — iç `z` iki koşuda da
+203. Fark MetaMask'in sarmalayıcı baytlarında.
+
+Bunun ölçülebilir bir sonucu var:
+
+> İki koşu **farklı imzalar** kullandı (son baytlar `0xc3` ve `0xa3`), ama iç
+> calldata'nın `n`'i ve `z`'si özdeş — yani bizim kısmımızın intrinsic
+> maliyeti iki koşuda **aynı**. Toplam `gasUsed` farkı 12 ve bu farkın
+> **tamamı** dış paketin sıfır baytıyla açıklanıyor. Geriye kalan fark:
+> **sıfır.**
+>
+> **Yani yürütme gazı, iki farklı C13 imzasıyla tam olarak aynı çıktı.**
+> Bu, "WOTS+C'nin sabit checksum toplamı yürütmeyi sabit tutar"
+> **çıkarımına iki örnekli destek**tir.
+>
+> **KANIT DEĞİL:** tek bir karşılaştırma, iki örnek, ve sarmalayıcının kendi
+> yürütmesinin de iki koşuda özdeş olduğunu **varsayıyor**. Sarmalayıcı
+> imzanın içeriğine göre farklı davransaydı bu akıl yürütme çökerdi;
+> davranmadığı **ölçülmedi**.
+
+---
+
+## 12. ÖN KAYIT — nonce 4 koşusu, ölçümden ÖNCE yazıldı
+
+§10 **nonce 3** için yazılmıştı; nonce 3 ikinci paketlenmiş tx tarafından
+tüketildi (§11). Bu bölüm §10'un yeniden ifadesi değil, **nonce 4'e özgü
+tarihli bir ektir**. §10'un çürütme ölçütleri ve karşılaştırma-yapılmama
+koşulları **aynen geçerlidir**; burada yalnız koşuya özgü sayılar ve yeni
+öğrenilen ön koşul yazılıdır.
+
+### SEBEP BULUNDU — "Added protection"
+
+MetaMask onay ekranında, `Interacting with 0x2EafA…000BB` satırının hemen
+üstünde:
+
+> 🛡 **Added protection** `Optional` ☑️ *(işaretliydi)*
+> *"Because you're interacting with an unknown address, protection can
+> prevent some malicious transactions."*
+
+PQWallet MetaMask için **bilinmeyen bir adres**; koruma yolu işlemi kendi
+kontratı üzerinden geçiriyor ve bunun için 7702 yetkilendirmesi gerekiyor.
+İlk iki koşuda bu kutu işaretliydi ve okunmadan onaylandı.
+
+**Bu bir ADAY olarak yazıldı, ölçüm sonucu değil.** Ayıracak olan şey nonce 4
+tx'inin tipidir: kutu kaldırılmış haldeyken tx `0x2` çıkarsa aday doğrulanır,
+yine `0x4` çıkarsa aday çürür ve sebep başka yerdedir.
+
+**Ekrandan okunan yan gözlem:** kutu kaldırılınca `Network fee` **0,0009 →
+0,0005 SepoliaETH**. Yön olarak koruma yolunun pahalı olmasıyla tutarlı, ama
+bu **ölçüm değildir** — MetaMask tek anlamlı haneye yuvarlıyor, oran
+çıkarılamaz.
+
+### Beklenen
+
+| | beklenen |
+|---|---|
+| tx tipi | **`0x2`** |
+| `to` | **PQWallet** `0x2EafA294…f000BB` |
+| `authorizationList` | **YOK** |
+| `n` | **3908** |
+| `z` | **ölçülecek.** İki koşuda da 203 gözlendi, ama imza her koşuda değişiyor — sabit varsayılmaz |
+| **`gasUsed_4`** | **216.305 − 12·(z − 203)** · `z = 203` ise **216.305** |
+| `LIMIT` | `floor(1,2 · EST)` |
+| `nonce()` | 4 → 5 |
+| bakiye | `50700000000000000` → **`50600000000000000`** wei · 17 hane · 0,0506 ETH |
+
+`z` için tek bir sayı ön kayda YAZILMIYOR: iç `z` iki koşuda 203 çıktı ama
+imza gövdesi her imzalamada değişiyor. Ön kayıt **formüldür**, sayı değil.
+
+### Yeni ön koşul — eskisinin yerine
+
+§10'un 1. ön koşulu (`cast code <EOA> == 0x`) **yetersiz çıktı**: yükseltme
+gönderimden önce değil, gönderimin **içinde** oluyor (§11). Yerine:
+
+1. **Onay ekranında "Added protection" kutusu İŞARETSİZ** olmalı — gözle
+   doğrulanır, her gönderimde yeniden bakılır.
+2. Onay ekranında `Interacting with` satırı **PQWallet adresini** göstermeli.
+3. "Account update" / "Smart account" / "Upgrade" ibaresi görülürse
+   **Confirm'e basılmaz, Cancel'a basılır.** Reddetmenin maliyeti sıfırdır.
+4. *Account details → Smart account → Sepolia* şalteri kapalı olmalı.

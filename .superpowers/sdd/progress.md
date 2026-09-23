@@ -2147,3 +2147,38 @@ NONCE 3 KOŞULDU — 7702 GERİ GELDİ, ÖLÇÜM YİNE KİRLİ. 23 Eylül.
   EKRAN KAYDI: Ekran Kaydı 2026-09-23 22.14.37.mov, 77.333.153 bayt, 99,38 sn,
     sha256 ee809b29f6704d9aadf667e3f9e43576eb7342ad1da2738b621b6c6628f78023.
     REPO DIŞINDA. İçeriği izlenerek DOĞRULANMADI.
+
+SEBEP ADAYI BULUNDU — "Added protection". 23 Eylül gece.
+  MetaMask onay ekranında, Interacting with 0x2EafA…000BB satırının üstünde
+  "Added protection · Optional" kutusu İŞARETLİYDİ: "you're interacting with
+  an unknown address". PQWallet MetaMask için bilinmeyen adres; koruma yolu
+  islemi kendi kontratindan geciriyor ve 7702 yetkilendirmesi gerektiriyor.
+  İlk iki koşuda okunmadan onaylandı.
+  ADAY olarak yazıldı, ÖLÇÜM DEĞİL. Ayıracak olan: nonce 4 tx'inin tipi.
+    Kutu kaldırılmışken 0x2 çıkarsa aday doğrulanır; yine 0x4 çıkarsa çürür.
+  YAN GÖZLEM: kutu kaldırılınca Network fee 0,0009 → 0,0005 SepoliaETH.
+    YÖN olarak tutarlı ama ÖLÇÜM DEĞİL — MetaMask tek haneye yuvarlıyor.
+  Cancel'a basıldı, tx gönderilmedi. nonce() hâlâ 4.
+
+§11 DÜZELTMESİ — 12 gas'ın kaynağı, ve yürütme sabitliği
+  İki tx'in İÇ calldata'sı da çıkarıldı: ikisinde de n_iç = 3908, z_iç = 203,
+  imzadaki sıfır bayt 16. İmzalar FARKLI (son baytlar 0xc3 / 0xa3).
+  Yani fazladan sıfır bayt BİZİM calldata'mızda DEĞİL, MetaMask'in
+  sarmalayıcı baytlarında. §11'de kaynağı yazılmamıştı, düzeltildi.
+  SONUÇ: bizim kısmımızın intrinsic maliyeti iki koşuda özdeş; toplam 12 gas
+  farkının TAMAMI dış sıfır baytla açıklanıyor; geriye kalan fark SIFIR.
+  Yani yürütme gazı iki FARKLI C13 imzasıyla tam olarak aynı çıktı —
+  "WOTS+C sabit checksum" çıkarımına İKİ ÖRNEKLİ DESTEK.
+  KANIT DEĞİL: tek karşılaştırma, ve sarmalayıcının kendi yürütmesinin de
+  özdeş olduğunu VARSAYIYOR; bu ölçülmedi.
+
+NONCE 4 ÖN KAYDI YAZILDI — gönderimden ÖNCE. §12.
+  Beklenen: tip 0x2, to = PQWallet, authorizationList YOK, n = 3908,
+  gasUsed_4 = 216.305 − 12·(z−203), nonce 4→5,
+  bakiye 50700000000000000 → 50600000000000000.
+  z için TEK SAYI yazılmadı: iç z iki koşuda 203 çıktı ama imza her
+  imzalamada değişiyor. Ön kayıt FORMÜLDÜR.
+  YENİ ÖN KOŞUL (eski cast code kapısının yerine): onay ekranında
+  "Added protection" İŞARETSİZ · Interacting with = PQWallet ·
+  Account update/Smart account ibaresi görülürse CANCEL ·
+  Account details → Smart account → Sepolia şalteri kapalı.
