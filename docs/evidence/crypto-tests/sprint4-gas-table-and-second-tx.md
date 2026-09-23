@@ -859,7 +859,14 @@ beklenen: B0 − value = 50900000000000000 − 100000000000000 = 508000000000000
 
 **KAYNAK:** `sendTransaction.js:15` → `new BrowserProvider(window.ethereum)`.
 Yani tahmin **MetaMask'in kendi provider'ından** geldi, Tenderly'den değil.
-MetaMask'in Sepolia için yapılandırdığı uç **kaydedilmedi** — açık kalem.
+**MetaMask'in Sepolia ucu = Infura (`sepolia.infura.io`)** — 23 Eylül'de
+MetaMask ağ ayarlarından okundu. API anahtarı kaydedilmedi, sağlayıcı adı
+kanıt için yeterli. *(Bu satır 23 Eylül'de açık kalemdi, aynı gün kapandı.)*
+
+> **Bu modeli DOĞRULAMAZ, yalnız bir sapma kaynağını eler.** §8'in modeli
+> geth'in `gasestimator`'ına dayanıyor ve reth/Tenderly uyumu **varsayım**
+> olarak yazılmıştı. Infura geth ailesi çalıştırır, yani tahminin oradan
+> gelmesi modelle **çelişmiyor**. Çelişmemek ile doğrulanmak ayrı şeylerdir.
 
 ### KARŞILAŞTIRILMAYAN: `gasUsed` = 321.713
 
@@ -979,3 +986,27 @@ karşılaştırılmaz, "calldata/işlem yapısı değişti" bulgusu yazılır:
 2. MetaMask akıllı hesap ayarı **kapalı**, kayıttan önce gözle doğrulanır.
 3. Adım 4 yeniden koşulur: `KAYIT_COMMIT`, beş md5, `5df85ef` ata mı,
    kapı (`nonce()` = 3, bakiye = `50800000000000000`).
+
+### Ön koşulların sağlanışı — 23 Eylül 2026
+
+**Ayarı kapatmak yetmedi.** 17:51 UTC'de MetaMask'in *"Smart account requests
+from dapps"* ve *"Smart Transactions"* anahtarları kapatıldıktan **sonra**
+okunan `cast code <EOA>` hâlâ `0xef010063c0c19a…dae32b` döndü. Ayar
+**gelecekteki** yükseltmeyi engelliyor, **zincire yazılmış** delegasyonu
+silmiyor — bu ikisi ayrı şey ve ölçümle ayrıldı.
+
+Geri alma, MetaMask'te *Account details → Smart account* bölümünden ağ başına
+yapıldı; hedefi sıfır adres olan bir yetkilendirme işlemi gönderiyor ve gaz
+istiyor.
+
+| zaman (UTC) | blok | `cast code <EOA>` | ön koşul 1 |
+|---|---|---|---|
+| 2026-09-23 17:51 | 11766449 | `0xef010063c0c19a…dae32b` | ✗ |
+| **2026-09-23 18:00** | **11766494** | **`0x`** | **✓ SAĞLANDI** |
+
+Aynı okumada PQWallet §10'un başlangıç durumunda: `nonce()` = **3**,
+bakiye = **`50800000000000000`** wei · 17 hane · 0,0508 ETH.
+EOA bakiyesi `48708450739561606` wei — gaz için yeterli.
+
+Geri alma işlemi PQWallet'a **dokunmadı**: iki okuma arasında `nonce()` 3'te,
+bakiye `50800000000000000`'de kaldı.
