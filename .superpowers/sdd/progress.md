@@ -2197,6 +2197,8 @@ NONCE 4 ÖN KAYDI YAZILDI — gönderimden ÖNCE. §12.
     z farkı hem gasUsed'i hem tahmini AYNI miktarda kaydırdı (−36 = 12×3) ✓
     inv[219153] = [216269], ters çözüm TEK ✓
     §8 doğrulama betiğindeki dört assert hâlâ geçiyor ✓
+  DÜZELTME 23 Eyl: "dört bağımsız kontrol" → iki bağımsız gözlem,
+    bkz. kanıt dosyası §13 eki.
   "ADDED PROTECTION" ADAYI DOĞRULANDI ama TEK DEĞİŞKENLİ DEĞİLDİ: aynı turda
     Account details → Smart account → Sepolia şalteri de kapatılmıştı.
     Hangisinin belirleyici olduğu AYRILMADI. Ayıracak deney: şalter kapalıyken

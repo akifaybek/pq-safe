@@ -1340,3 +1340,94 @@ ama güvenlik payı diye yazılan şey zincire gitmiyor.
   ile çekilecek.
 - "Added protection" ile Sepolia şalterinin hangisinin belirleyici olduğu
   ayrılmadı.
+
+---
+
+### TARİHLİ EK — 23 Eylül 2026
+
+Defter kuralı gereği yukarısı **silinmedi**; düzeltme buraya eklendi.
+**Hüküm değişmiyor: aday 2.** Değişen, hükmün kaç bağımsız ayak üstünde
+durduğu ve hangi sayının ölçüm, hangisinin çıkarım olduğudur.
+
+#### 1. "Dört bağımsız kontrol" → dört EŞİTLİK, İKİ bağımsız gözlem
+
+Yukarıdaki tablo dört satır gösteriyor; dördü **bağımsız değil.** Bağımsız
+olan iki gözlem şudur:
+
+| | bağımsız gözlem |
+|---|---|
+| **(a)** | `gasUsed` = ön kayıtlı `216.305 − 12·(z − 203)`, `z` zincirden sayıldı |
+| **(b)** | zincirdeki tx gaz limiti = `est(gasUsed)` |
+
+Kalan iki satır bunlardan **türer**, ayrıca doğrulamaz:
+
+- `est(216269) = 219.153` ile `inv[219153] = [216269]` **aynı fonksiyonun iki
+  yönüdür.** Ters çözümün TEK olması, `est`'in o aralıkta birebir olmasının
+  sonucudur — ikinci bir gözlem değil, (b)'nin yeniden ifadesidir.
+- `Δ₄ = 2.884` ve `−36 / −36` satırları **tahmin fonksiyonunun yerel
+  eğiminden** türer. (a) ve (b) verildiğinde bu iki satır başka bir değer
+  alamazdı; tutmaları yeni bilgi taşımaz.
+
+> **Ne çürüdü, ne çürümedi.** Çürüyen: "dört bağımsız kontrol" ifadesi.
+> Çürümeyen: modelin kapanması. İki bağımsız gözlemin **ikisi de** tuttu ve
+> §8'in doğrulama betiğindeki dört `assert` hâlâ geçiyor. **Aday 2 hükmü
+> yerinde kalır**, ama arkasındaki bağımsız ayak sayısı dört değil **iki**.
+
+Aynı ifade `progress.md:2194`'te de geçiyordu; oraya bu eke işaret eden tek
+satırlık tarihli not düşüldü. **Düzeltme metni yalnız burada.**
+
+#### 2. 219.153'ün "MetaMask'in kendi tahmini" olduğu — ÇIKARIM
+
+| | |
+|---|---|
+| **ÖLÇÜLEN** | zincirdeki tx'in gaz limiti = **219.153** |
+| **ÇIKARIM** | bu sayının MetaMask'in **ham tahmininin kendisi** olduğu |
+
+Yukarıda iki yerde — `(ham tahminin kendisi)` ve *"MetaMask limitimizi yine
+değiştirdi — bu sefer aşağı, ham tahmine"* — bu çıkarım ölçüm gibi ifade
+edilmişti. **MetaMask'e ne sorulduğu ve ne döndüğü kaydedilmedi;** elimizde
+yalnız zincire yazılmış limit var.
+
+Çıkarımı destekleyen şey `est(216269)`'un aynı sayıyı vermesidir. Bu güçlü
+bir tutarlılıktır ama ölçüm değildir: aynı sayıyı üreten başka bir yol
+(örneğin MetaMask'in kendi payını uygulayıp sonra kırpması) bu koşuda
+**elenmedi.**
+
+> **YAN BULGUNUN HÜKMÜ DEĞİŞMİYOR.** *"Bizim `gasLimit`'imiz zincire
+> ulaşmıyor"* hükmü, hangi sayının ham tahmin olduğuna **dayanmıyor**;
+> gönderdiğimiz değerle zincirdeki değerin farklı olmasına dayanıyor. Üç
+> koşuda da farklılar.
+
+#### 3. `sendTransaction.js` — iki satır, iki ayrı rol
+
+| satır | ne yapıyor |
+|---|---|
+| **202** | `gasLimit = (estimated * 12n) / 10n` — %20 payının **hesaplandığı** yer |
+| **211** | `signer.sendTransaction({ … gasLimit })` — limitin MetaMask'e **gönderildiği** yer |
+
+**Yan bulgu 211'e dayanır:** gönderilen değer zincire ulaşmıyor. 202 yalnız
+payın nereden geldiğini söyler; bulgunun dayanağı değildir. Daha önce yalnız
+202 yazılmıştı, bu ayrım eksikti.
+
+#### 4. TX SONRASI ZİNCİR OKUMASI — bu ek yazılırken alındı
+
+**Etiket: tx'ten SONRA okundu.** §13 bu okumayı tx anında kaydetmemişti;
+eksik burada kapanıyor, kapsamıyla.
+
+| | ölçülen |
+|---|---|
+| okuma anı | blok **11767361** · **2026-09-23 20:53:48 UTC** |
+| `nonce()` | **5** |
+| bakiye | **50600000000000000** wei · 17 hane · **0,0506 ETH** |
+| uç | `ethereum-sepolia-rpc.publicnode.com` (`cast call` / `cast balance`) |
+
+§12'nin **ön kayıtlı** beklentisi — `nonce()` 4 → **5**, bakiye
+`50700000000000000` → **`50600000000000000`** — **BİREBİR TUTTU.**
+
+> **ŞERH — okuma tx anında değil, 175 blok sonra alındı.** §13'ün tx'i blok
+> 11767186'daydı; bu okuma blok 11767361, arada **175 blok (~35 dakika)** var.
+> Değerlerin tutması, o aralıkta PQWallet'a başka bir işlem gitmediğini
+> **doğrudan ölçmez** — bu bir **ÇIKARIM**dır. Doğrudan ölçüm blok aralığının
+> taranması olurdu, **yapılmadı**. Çıkarımı güçlü kılan şey iki değerin
+> **birlikte** tutmasıdır: araya giren bir işlem hem nonce'u hem bakiyeyi
+> beklenen noktada bırakmak zorunda kalırdı.
