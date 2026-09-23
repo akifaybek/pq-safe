@@ -2059,3 +2059,62 @@ TASK 6 BEKLENTİSİ YAZILDI VE COMMIT'LENDİ — Adım 4'ten ÖNCE:
   (calldata 203 sıfır bayt koşuluyla). Çürütme ölçütleri ve doğrulama
   betiği aynı bölümde. Model ÇIKARIM (geth gasestimator), reth/Tenderly
   uyumu VARSAYIM.
+
+TASK 6 FAZ 2 KOŞULDU — 23 Eylül. TX GİTTİ, GAS ÖLÇÜMÜ KİRLENDİ.
+  Kanıt: sprint4-gas-table-and-second-tx.md §9.
+  tx 0x62d09094…de0b8f · blok 11766174 · status 1 · KAYIT_COMMIT d07bb1f
+  TUTAN İKİ BEKLENTİ (ikisi de 5df85ef'te, ölçümden önce yazılıydı):
+    (i) bakiye B0 − value = 50800000000000000 wei · 17 hane · 0,0508 ETH ✓
+        nonce() 2→3 ✓ — PQWallet uçtan uca çalıştı, C13 imzası zincirde
+        doğrulandı.
+    (ii) EST_A_F2 = 219.189 ✓ — UI'daki limit 263.026'nın TEK ters çözümü.
+        KAYNAĞI: sendTransaction.js:15 BrowserProvider(window.ethereum),
+        yani MetaMask'in kendi ucu. MetaMask'in Sepolia RPC ucu KAYDEDİLMEDİ,
+        AÇIK KALEM.
+  KARŞILAŞTIRILMADI: gasUsed = 321.713. Gönderim öncesi konan kural
+    (n ≠ 3908 → karşılaştırma yok) uygulandı. Dış paket n = 5028, z = 1060.
+    SEBEP ÖLÇÜLDÜ, atanmadı: cast code <EOA> = 0xef010063c0c19a…dae32b,
+    yani MetaMask EIP-7702 akıllı hesap modu. tx tipi 0x4, to PQWallet değil.
+    §8'İN ASIL SORUSU (aday 2 mi aday 3 mü) KAPANMADI, AÇIK.
+  ÇIKARIM ÖLÇÜME DÖNDÜ: iç execute() calldata'sı paketten çıkarıldı —
+    n_iç = 3908, z_iç = 203, selector 0xda0980c7, imza 3688 bayt.
+    Sınır kanıtlı: imzanın son baytı 0xc3, ardından tam 24 sıfır dolgu
+    (3712 − 3688); yapı aritmetiği 4+128+32+32+3712 = 3908 kapanıyor.
+    Yani "C13 imza uzunluğu sabit, n = 3908" artık VARSAYIM DEĞİL.
+    z_iç = 203 olduğu için düzeltme formülü nötr: beklenti 216.305.
+  ALINAMADI: trace. debug_traceTransaction ve tenderly_traceTransaction
+    ikisi de HTTP 429 rate limit. BU HIZ SINIRIDIR, "yöntem desteklenmiyor"
+    DEĞİL — ayrım önemli, sonra anahtarlı uçla denenebilir.
+    PQWallet.execute frame'inin gasUsed'ı ÖLÇÜLMEDİ; 138.097 ile
+    karşılaştırma YAPILMADI.
+  DÜZELTME (aynı gün, ajan hatası): "delegasyon kontratının dağıtım
+    maliyeti" diye bir kalem YOK. 7702'de kod dağıtılmaz; doğru ad
+    "7702 yetkilendirme maliyeti", yetkilendirme başına sabit ücret.
+    Rakamı ATANMADI.
+  BULGU — TASK 9 ORTAM DEĞİŞKENİ SINIFINA EKLENİR: MetaMask akıllı hesap
+    modu tx tipini değiştiriyor ve gas ölçümünü kirletiyor. Task 10'un md5
+    kapısı bunu GÖREMEZ, repo dosyası değil. Aynı sınıf: "MetaMask'in RPC ucu".
+  İKİNCİ BULGU: bizim gasLimit'imiz zincire gitmedi. sendExecute 263.026
+    verdi, zincirdeki limit 355.384. Farkın (92.358) kaynağı ÖLÇÜLMEDİ.
+  SPRINT 3'TEN SAPMA: kayıt DevTools AÇIK alındı (Keep log kuralı,
+    progress.md:1288). Başlangıçta Console Errors = 2 (favicon 404 +
+    runtime.lastError). Sorunlar paneli 6 = 1 CSP eval + 5 bağlanmamış
+    <label>; 3 statik + 2 dinamik hesabı sayıya UYUYOR ama düğümler
+    TEK TEK GÖRÜLMEDİ — açık kalem.
+  KAYIT ÖNCESİ İKİ METİN DÜZELTMESİ: index.html:30 ("Mnemonic ekranda
+    gösterilir" — main.js:196-225 ile çelişiyordu, Task 2 o yazmayı
+    kaldırmıştı) ve index.html:55 ("henüz kontrat adresi yok" — bölüm 4
+    aynı sayfada adresi gösteriyor). KAYIT_COMMIT iki kez geçersiz kılındı:
+    524e7cf → 1420508 → d07bb1f.
+  ÇÜRÜYEN İDDİA: sprint3-end-to-end-transaction.md:333 "mnemonic'in DOM'a
+    yazıldığı tek yer btn-keygen yolu" — Task 2 o yazmayı kaldırdı, satır
+    BAYAT. Bugün grep'le ölçüldü: main.js'te ${currentMnemonic} hiç yok,
+    localStorage/sessionStorage/indexedDB/cookie hiç yok, tarayıcıya giden
+    console.* üç adet ve üçü de wasm-bindgen tutkalında sabit metin.
+
+NONCE 3 ÖN KAYDI YAZILDI VE COMMIT'LENDİ — gönderimden ÖNCE:
+  sprint4-gas-table-and-second-tx.md §10. Beklenen: tip 0x2, to = PQWallet,
+  n = 3908, gasUsed_3 = 216.305 − 12·(z−203), EST 219.189, LIMIT 263.026,
+  bakiye 50800000000000000 → 50700000000000000, nonce 3→4.
+  KARŞILAŞTIRMA YAPILMAMA KOŞULLARI: tip ≠ 0x2 · to ≠ PQWallet · n ≠ 3908.
+  ÖN KOŞUL: cast code <EOA> == 0x olmadan gönderilmez (şu an dolu).

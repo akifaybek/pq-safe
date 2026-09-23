@@ -787,3 +787,195 @@ assert inv[246871] == [243769]                     # ters çözümler TEK
 assert est(216305) - 216305 == 2884                # Δ₂ beklentisi
 assert (12 * 219189) // 10 == 263026                # LIMIT_2 (madde 3)
 ```
+
+---
+
+## 9. Task 6 faz 2 — 23 Eylül koşusu: tx gitti, gas ölçümü 7702 paketiyle kirlendi
+
+### Kayıt kimliği
+
+| | |
+|---|---|
+| `KAYIT_COMMIT` | `d07bb1f41e57c00eb9e3ee43c7af5e1106a9c111` |
+| `index.html` | `3b701338fe6107e0a241501ab261da73` |
+| `src/main.js` | `10e02c8bfa36531d55d581747a9a7ee9` |
+| `src/tx/sendTransaction.js` | `98a45cf795400dacbeefc35d95c10319` |
+| `src/crypto/digest.js` | `fd93a71edd1f27b664414195c0cbaf3f` |
+| `src/tx/buildTransaction.js` | `c4a061dedc27b7339738d2bc42eb3038` |
+
+Kayıt öncesi iki metin düzeltmesi yapıldı (`index.html` satır 30 ve 55, bayat
+iddialar); `KAYIT_COMMIT` ve `index.html` md5'i bu yüzden iki kez geçersiz
+kılındı. Eskiler: `524e7cf`/`c7fe9ba…`, sonra `1420508`/`126e153…`.
+
+**SPRINT 3'TEN SAPMA — DevTools AÇIK koşuldu.** Sprint 3 kaydı "DevTools
+kapalı" diye tutanağa geçmişti; bu koşu `progress.md:1288`'in Keep log
+kuralını uyguladı. Kayıt başlangıcında Console **Errors = 2**
+(`favicon.ico` 404 · `Unchecked runtime.lastError`). Sorunlar paneli 6 =
+1 CSP `eval` + 5 bağlanmamış `<label>`; ayrıştırma ekrandaki `6 sorun: 1 + 5`
+rozetiyle doğrulandı. **5 label'ın hangi düğümler olduğu DOĞRULANMADI** —
+3 statik (`index.html` 64/67/70) + 2 dinamik (`main.js` 476/478) hesabı sayıya
+uyuyor ama düğümler tek tek görülmedi.
+
+### Gönderim öncesi bağımsız digest doğrulaması
+
+`cast` ile, CLAUDE.md'deki dondurulmuş formülden yeniden hesaplandı:
+
+```
+DOMAIN_SEPARATOR = 0xa6238098b5d49d6e94eb134fa1e5ce7f888c5a9f870626079776fb42874c228b
+digest           = 0xebe1c8d442c4018d45a299a4ec1d08eb37f8da1c9f564c525bd286e56775c5be
+```
+
+İkisi de ekrandakiyle **birebir**. Sayfanın kendi hesabına güvenilmedi.
+
+Gönderim öncesi kapı (16:53 UTC, blok 11766167): `nonce()` = 2,
+bakiye = `50900000000000000` wei · 17 hane · 0,0509 ETH.
+
+### Tx
+
+| | |
+|---|---|
+| hash | `0x62d0909440b9f6e3afd8ab79913fa9a4e00688b62912c57badc752f067de0b8f` |
+| blok | 11766174 · `status 0x1` |
+| **tip** | **`0x4` — EIP-7702** |
+| `to` | `0xdb9b1e94b5b69df7e401ddbede43491141047db3` — **PQWallet DEĞİL** |
+| `gasUsed` | **321.713** (`0x4e8b1`) |
+| tx gaz limiti | **355.384** — bizim kodumuzun hesapladığı 263.026 DEĞİL |
+
+### TUTAN İKİ BEKLENTİ
+
+**1. Bakiye.** §0'un 22 Eylül'de commit'lenmiş beklentisi (`5df85ef`):
+
+```
+beklenen: B0 − value = 50900000000000000 − 100000000000000 = 50800000000000000
+ölçülen : 50800000000000000 wei · 17 hane · 0,0508 ETH   ✓
+```
+
+`nonce()` 2 → 3 ✓. Gaz cüzdandan değil EOA'dan ödendi ✓.
+**PQWallet uçtan uca çalıştı: C13 imzası zincirde doğrulandı, `execute()` yürüdü.**
+
+**2. `EST_A_F2` = 219.189.** UI'daki `limit: 263026`, `sendTransaction.js:202`'deki
+`(estimated * 12n) / 10n`'in çıktısı; ters çözümü TEK (`219188 → 263025`).
+22 Eylül'de ölçümden önce yazılan sayının kendisi.
+
+**KAYNAK:** `sendTransaction.js:15` → `new BrowserProvider(window.ethereum)`.
+Yani tahmin **MetaMask'in kendi provider'ından** geldi, Tenderly'den değil.
+MetaMask'in Sepolia için yapılandırdığı uç **kaydedilmedi** — açık kalem.
+
+### KARŞILAŞTIRILMAYAN: `gasUsed` = 321.713
+
+Gönderim öncesi konan kural: `n ≠ 3908` → "calldata yapısı değişti" bulgusu,
+**karşılaştırma yapılmaz**, önce sebep bulunur.
+
+Dış paket: **n = 5028 · z = 1060** (`bytes.count(0)`, hex taramasından bağımsız
+ikinci yöntemle teyit edildi; `z = 1060` ile `offset 1060`'ın aynı çıkması
+rastlantı).
+
+**SEBEP BULUNDU — MetaMask EIP-7702 akıllı hesap modu.** Zincirden okundu:
+
+```
+cast code <EOA> = 0xef010063c0c19a282a1b52b07dd5a65b58948a07dae32b
+                  └ef0100┘└──── delege adresi ────┘
+```
+
+`authorizationList` EOA'yı `0x63c0c19a…dae32b`'ye delege ediyor; tx bu yüzden
+tip `0x4` ve `to` bir dağıtım kontratı.
+
+**Bu yüzden 321.713 ile 216.305 KARŞILAŞTIRILMADI.** Yuvarlanmadı, "yaklaşık
+tuttu" denmedi, aday sıralamasına sokulmadı. **§8'in asıl sorusu — aday 2 mi
+aday 3 mü — bu tx ile KAPANMADI, AÇIK.**
+
+321.713'ün içinde en az iki ayrı kalem var ve bu koşu onları **ayırmıyor**:
+
+- **7702 yetkilendirme maliyeti** — yetkilendirme başına sabit ücret.
+  *(7702'de kod dağıtılmaz; "dağıtım maliyeti" diye bir kalem YOKTUR.)*
+  **Rakamı atanmadı.**
+- **dış paketin intrinsic calldata maliyeti** — tek hesaplanabilen kalem:
+  ```
+  dış: 16·3968 + 4·1060 = 67.728
+  iç : 16·3705 + 4·203  = 60.092
+  fark                  =  7.636
+  ```
+
+Kalan **ölçülmedi, atanmayacak.**
+
+### BU TX'TEN ÇIKARILAN SIFIR MALİYETLİ ÖLÇÜMLER
+
+**İç `execute()` calldata'sı — paketin içinden çıkarıldı** (offset 1112):
+
+| | ölçülen | beklenen (A satırı) |
+|---|---|---|
+| `n_iç` | **3908** | 3908 ✓ |
+| `z_iç` | **203** | 203 ✓ |
+| selector | `0xda0980c7` = `execute(address,uint256,bytes,bytes)` | ✓ |
+| `data` uzunluğu | 0 (`data = 0x`) | ✓ |
+| imza uzunluğu | 3688 | ✓ |
+
+**Dilim keyfi değil, sınırı kapanıyor:** imzanın son baytı `0xc3` (sıfır değil),
+ardından tam 24 sıfır dolgu = `3712 − 3688`. Yapı aritmetiği kendi içinde
+kapanıyor: `4 + 128 + 32 + 32 + 3712 = 3908`. Bir bayt kayma olsa tutmazdı.
+
+> **`n = 3908` ARTIK ÇIKARIM DEĞİL, ÖLÇÜM.** Gönderim öncesi *"ABI deterministik,
+> `data = 0x`, C13 imza uzunluğu sabit"* gerekçesiyle **varsayım** olarak
+> yazılmıştı; zincire yazılan baytlardan sayılarak doğrulandı. `z_iç = 203`
+> olduğu için düzeltme formülü `216.305 − 12·(203−203)` = **216.305**,
+> yani temiz tx'in beklentisi **düzeltmesiz**.
+
+**Trace — ALINAMADI.** `debug_traceTransaction` ve `tenderly_traceTransaction`
+ikisi de `HTTP 429 · {"code":-32005,"message":"rate limit exceeded"}` döndü.
+**Bu hız sınırıdır, "yöntem desteklenmiyor" DEĞİLDİR** — ikisi farklı şeydir ve
+bu ayrım burada yazılıdır. `PQWallet.execute` frame'inin kendi `gasUsed`'ı
+**ölçülmedi**; 138.097 ile karşılaştırma yapılmadı.
+
+### BULGU — Task 9'un ortam değişkeni sınıfına eklenir
+
+**MetaMask'in akıllı hesap modu tx tipini değiştiriyor ve gas ölçümünü
+kirletiyor.** Task 10'un md5 kapısı bunu **göremez**, çünkü bir repo dosyası
+değil. Task 9 kutusundaki "MetaMask'in RPC ucu" kalemiyle aynı sınıf.
+
+İkinci, ayrı bulgu: **bizim kodumuzun hesapladığı `gasLimit` zincire gitmedi.**
+`sendExecute` 263.026 verdi, zincirdeki limit 355.384. MetaMask değiştirdi.
+Farkın (92.358) nereden geldiği **ölçülmedi.**
+
+---
+
+## 10. ÖN KAYIT — nonce 3 koşusu, ölçümden ÖNCE yazıldı
+
+Bu bölüm nonce 3 tx'i gönderilmeden **önce** commit'lenmiştir; geriye dönük
+ayarlanamaz.
+
+### Beklenen
+
+| | beklenen |
+|---|---|
+| tx tipi | **`0x2`** |
+| `to` | **`0x2EafA294C14b6752128bfd4f5873D1EA39f000BB`** (PQWallet) |
+| `n` | **3908** |
+| `z` | 203 |
+| `EST` | **219.189** (`z = 203` ise) |
+| `LIMIT` | **263.026** |
+| **`gasUsed_3`** | **216.305 − 12·(z − 203)**, yani `z = 203` ise **216.305** |
+| `nonce()` | 3 → 4 |
+| bakiye | `50800000000000000` → **`50700000000000000`** wei · 17 hane · 0,0507 ETH |
+
+### Çürütme ölçütleri
+
+- `gasUsed_3 = 216.305` → model tuttu, **aday 2**.
+- `gasUsed_3 = 219.189` → tahminler kesin, **aday 3**, model eksik.
+- **başka değer** → açıklanamayan kalan, **yuvarlanmaz**.
+
+### KARŞILAŞTIRMA YAPILMAMA KOŞULLARI
+
+Şunlardan **biri** bile çıkarsa `gasUsed_3` hiçbir beklentiyle
+karşılaştırılmaz, "calldata/işlem yapısı değişti" bulgusu yazılır:
+
+- tip ≠ `0x2`
+- `to` ≠ PQWallet
+- `n` ≠ 3908
+
+### Gönderim ön koşulları — sağlanmadan gönderilmez
+
+1. **`cast code <EOA>` == `0x`** — 7702 delegasyonu geri alınmış olmalı.
+   Şu an `0xef010063c0c19a…dae32b`. **Boş değilse gönderilmez.**
+2. MetaMask akıllı hesap ayarı **kapalı**, kayıttan önce gözle doğrulanır.
+3. Adım 4 yeniden koşulur: `KAYIT_COMMIT`, beş md5, `5df85ef` ata mı,
+   kapı (`nonce()` = 3, bakiye = `50800000000000000`).
