@@ -2255,9 +2255,11 @@ BLOK B — HAKAN'IN 22 EYLÜL RAPORU. 23 Eylül'de deftere girdi.
     DEMEK DEĞİLDİR — bu koşuda eşleşme hiç denenmedi. Kapanan şey yol hatası,
     doğrulanan şey kaynak kimliği.
     AÇIK SORU: hangi kabukta koştu — Git Bash, WSL ya da başkası? Hakan
-    bildirmedi, sorulacak. .sh betiği PowerShell'de koşmaz, Get-FileHash ise
-    PowerShell'dir; yani en az iki ayrı kabuk kullanılmış. Hangisi olduğu
-    ÖLÇÜLMEDİ, ÇIKARIMLA da atanmayacak.
+    bildirmedi, sorulacak.
+    ÇIKARIM (ölçüm DEĞİL, Hakan'ın mesaj içeriğinden türetildi; bu tarafta
+    hiçbir şey ölçülmedi): .sh betiği PowerShell'de koşmaz, Get-FileHash ise
+    PowerShell'dir — mesajda ikisi de geçtiğine göre en az iki ayrı kabuk
+    kullanılmış olmalı. Hangisi olduğu ÖLÇÜLMEDİ, atanmayacak.
 
   HAKAN'IN BİLDİRİMİ (aynen aktarılıyor, doğrulanmadı): "Pencere kuralına
     uyuyorum, 22'ye kadar PQWallet'a dokunmuyorum." "22" tarih mi task no mu
