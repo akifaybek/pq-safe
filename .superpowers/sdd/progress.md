@@ -2118,3 +2118,32 @@ NONCE 3 ÖN KAYDI YAZILDI VE COMMIT'LENDİ — gönderimden ÖNCE:
   bakiye 50800000000000000 → 50700000000000000, nonce 3→4.
   KARŞILAŞTIRMA YAPILMAMA KOŞULLARI: tip ≠ 0x2 · to ≠ PQWallet · n ≠ 3908.
   ÖN KOŞUL: cast code <EOA> == 0x olmadan gönderilmez (şu an dolu).
+
+NONCE 3 KOŞULDU — 7702 GERİ GELDİ, ÖLÇÜM YİNE KİRLİ. 23 Eylül.
+  Kanıt: sprint4-gas-table-and-second-tx.md §11.
+  tx 0x8f40543a…0e2cc3 · blok 11766873 · status 1 · KAYIT_COMMIT 5fa5ce5
+  tip 0x4, to 0xdb9b1e94… (PQWallet değil), n = 5028, authorizationList VAR.
+  §10'un ÜÇ koşulu da ihlal → 321.701 KARŞILAŞTIRILMADI. §8 AÇIK.
+  ÇÜRÜYEN İDDİA: "§10 ön koşul 1 SAĞLANDI" (18:00, cast code = 0x).
+    Geri alma TUTMADI. MEKANİZMA ÖLÇÜLDÜ: tx'in kendisi authorizationList
+    taşıyor, yani delegasyon GÖNDERİMİN İÇİNDE yeniden kuruldu. Ayarlar
+    (Smart account requests from dapps + Smart Transactions) kapatılmıştı ve
+    delegasyon 18:00'de silinmişti; ikisi de yetmedi.
+  ÖN KOŞUL 1 ARTIK YETERSİZ: cast code gönderimden ÖNCE okunuyor, yükseltme
+    gönderimin İÇİNDE oluyor — kapı yanlış anı ölçüyor. Gönderim anında
+    yükseltmenin istenmediği NASIL ÖLÇÜLÜR, BİLİNMİYOR. Nonce 4'ün ön koşulu
+    yeniden yazılmadan koşulmaz.
+  ÖLÇÜM — 12 GAS / SIFIR BAYT, iki gerçek tx ile:
+    tx1 z=1060 gasUsed=321.713 · tx2 z=1061 gasUsed=321.701 · fark tam −12.
+    Düzeltme formülünün katsayısı artık zincirde ölçülü.
+    AYIRMADIĞI: yürütme gazının sabitliği. Gözlem "sabit yürütme +
+    12 gas/sıfır bayt" ikilisiyle TUTARLI ama ikisini AYIRMIYOR.
+  TUTAN: bakiye 50800000000000000 → 50700000000000000 ✓ · nonce() 3→4 ✓ ·
+    LIMIT 263.026 ✓ (zincire giden limit yine başka: 355.372).
+    PQWallet ikinci kez uçtan uca çalıştı.
+  USUL EKSİĞİ: Adım 4 bu koşudan ÖNCE koşulmadı; kayıt kimliği geriye dönük
+    belirlendi (ağaç temiz, beş md5 değişmemiş). Sonuç aynı çıksa da kapı
+    zamanında koşulmadı, böyle yazıldı.
+  EKRAN KAYDI: Ekran Kaydı 2026-09-23 22.14.37.mov, 77.333.153 bayt, 99,38 sn,
+    sha256 ee809b29f6704d9aadf667e3f9e43576eb7342ad1da2738b621b6c6628f78023.
+    REPO DIŞINDA. İçeriği izlenerek DOĞRULANMADI.

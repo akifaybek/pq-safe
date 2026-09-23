@@ -1052,3 +1052,88 @@ EOA bakiyesi `48708450739561606` wei — gaz için yeterli.
 
 Geri alma işlemi PQWallet'a **dokunmadı**: iki okuma arasında `nonce()` 3'te,
 bakiye `50800000000000000`'de kaldı.
+
+---
+
+## 11. Nonce 3 koşusu — 7702 GERİ GELDİ, karşılaştırma yine yapılmadı
+
+### Kayıt kimliği
+
+`KAYIT_COMMIT` = `5fa5ce5425c28bd2263d26f22f0d1e0030cf48c6` · ağaç temiz.
+Beş md5 §9'dakiyle **birebir aynı** — aradaki commit'ler yalnız `docs/` ve
+`.superpowers/`'a dokundu, frontend değişmedi.
+
+> **Adım 4 bu koşudan ÖNCE koşulmadı.** Kayıt kimliği geriye dönük belirlendi:
+> ağaç temizdi ve beş dosyanın hash'i değişmemişti. Usul olarak eksiktir ve
+> öyle yazılıyor; sonuç aynı çıksa da kapı zamanında koşulmadı.
+
+### Ekran kaydı
+
+| | |
+|---|---|
+| SHA-256 | `ee809b29f6704d9aadf667e3f9e43576eb7342ad1da2738b621b6c6628f78023` |
+| Boyut | **77.333.153 bayt** (~77 MB) |
+| Süre | **99,38 saniye** |
+| Konum | `~/Desktop/Ekran Kaydı 2026-09-23 22.14.37.mov` — **repo DIŞINDA** |
+
+İçeriği izlenerek doğrulanmadı; dört satır dosyadan ölçüldü.
+
+### Tx — yine paketlendi
+
+| | |
+|---|---|
+| hash | `0x8f40543a3851e9327342a8948aabb863367185b146c9a2b078a54889fd0e2cc3` |
+| blok | 11766873 · `status 0x1` |
+| **tip** | **`0x4`** — beklenen `0x2` DEĞİL |
+| `to` | `0xdb9b1e94…047db3` — PQWallet DEĞİL |
+| `authorizationList` | **VAR** |
+| `n` · `z` | **5028** · **1061** |
+| `gasUsed` | **321.701** |
+| tx gaz limiti | 355.372 |
+
+**§10'un ön kayıtlı kuralı uygulandı: üç koşulun üçü de ihlal edildi
+(tip ≠ `0x2`, `to` ≠ PQWallet, `n` ≠ 3908), dolayısıyla `321.701` hiçbir
+beklentiyle KARŞILAŞTIRILMADI.** §8'in sorusu hâlâ AÇIK.
+
+### ÇÜRÜYEN İDDİA — geri alma TUTMADI
+
+18:00'de `cast code <EOA>` = `0x` ölçülmüştü ve §10'un 1. ön koşulu
+"SAĞLANDI" diye yazılmıştı. **O cümle bu koşuyla çürüdü:** gönderim sonrası
+aynı okuma yine `0xef010063c0c19a…dae32b` veriyor.
+
+**Mekanizma ölçüldü, atanmadı:** tx 2'nin kendisi bir `authorizationList`
+taşıyor. Yani delegasyon "geri gelmedi" — **bu gönderim sırasında yeniden
+kuruldu**. MetaMask yükseltmeyi tekrar istedi ve onaylandı.
+
+> **Ön koşul 1 ARTIK YETERLİ DEĞİL.** `cast code <EOA> == 0x` gönderimden
+> *önce* okunuyor, ama yükseltme gönderimin *içinde* oluyor. Kapı yanlış anı
+> ölçüyor. Nonce 4 koşusu için ön koşul yeniden yazılmalı — gönderim anında
+> MetaMask'in yükseltme istemediğinin doğrulanması gerekiyor, bunun nasıl
+> ölçüleceği **BİLİNMİYOR**.
+
+### TUTAN BEKLENTİLER
+
+- bakiye `50800000000000000` → **`50700000000000000`** wei · 17 hane · 0,0507 ETH ✓
+- `nonce()` 3 → **4** ✓
+- `LIMIT` = **263.026** ✓ (UI'da okundu; zincire giden limit yine başka: 355.372)
+
+PQWallet ikinci kez uçtan uca çalıştı: C13 imzası zincirde doğrulandı.
+
+### ÖLÇÜM — 12 gas/sıfır bayt, iki gerçek tx ile
+
+İki koşu aynı yolu izledi, aynı sarmalayıcıya gitti, `n` ikisinde de 5028:
+
+| | tx 1 `0x62d09094…` | tx 2 `0x8f40543a…` | fark |
+|---|---|---|---|
+| `z` | 1060 | 1061 | **+1** |
+| `gasUsed` | 321.713 | 321.701 | **−12** |
+
+Bir fazla sıfır bayt → tam **12 gas** daha az. Düzeltme formülünün
+(`216.305 − 12·(z − 203)`) katsayısı artık zincirde ölçülü.
+
+> **AYIRMADIĞI ŞEY — sınır peşinen yazılıyor.** Bu fark, yürütme gazının iki
+> koşuda **aynı** olduğu varsayılırsa tamamen sıfır bayta düşer. İki imza
+> farklıdır; WOTS+C'nin sabit checksum toplamı yürütmeyi sabit tutuyorsa
+> beklenen budur. Yani gözlem **"sabit yürütme + 12 gas/sıfır bayt"** ikilisiyle
+> **TUTARLI**, ama ikisini birbirinden **AYIRMIYOR**. Tek başına
+> "yürütme gazı sabittir" hükmü bu iki ölçümden çıkarılamaz.
