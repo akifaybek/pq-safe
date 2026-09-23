@@ -1230,3 +1230,113 @@ gönderimden önce değil, gönderimin **içinde** oluyor (§11). Yerine:
 3. "Account update" / "Smart account" / "Upgrade" ibaresi görülürse
    **Confirm'e basılmaz, Cancel'a basılır.** Reddetmenin maliyeti sıfırdır.
 4. *Account details → Smart account → Sepolia* şalteri kapalı olmalı.
+
+---
+
+## 13. §8 KAPANDI — temiz tip-`0x2` tx, ön kayıtlı beklenti birebir tuttu
+
+**Kayıt alınmadı** — bu koşu, "Added protection" adayını sınamak için
+bilerek kayıtsız yapıldı.
+
+### Tx
+
+| | |
+|---|---|
+| hash | `0x0fd4b9b3c992053c7a3c8b3133cfbfdcefacf0242e42b88750b921c718c3e71c` |
+| blok | 11767186 · `status 0x1` |
+| digest | `0x8aa46c4218015c05323e2c09cd82ab191fc664d7563c7573e5c76dbacd67c76f` |
+
+### ÖN KAYDIN SIRASI — marjıyla birlikte
+
+Beklentinin gerçekten ölçümden önce yazıldığı, iki bağımsız zaman damgasıyla:
+
+```
+§12 ön kaydının commit'i (3acb421) : 2026-09-23 23:18:02 +03:00
+tx'in blok zamanı (11767186)       : 2026-09-23 23:18:48 +03:00
+                                     commit 46 saniye ÖNDE
+```
+
+> **Marjın sınırı yazılıyor.** Blok zamanı tx'in **kazıldığı** andır, kullanıcının
+> MetaMask'te Confirm'e **bastığı** an değil; o an hiçbir yerde kayıtlı değil.
+> Gönderim kazılmadan yaklaşık bir blok (~12 sn) önce olur, yani tıklama
+> muhtemelen 23:18:36 civarındaydı — commit'ten sonra. **"Muhtemelen" bir
+> çıkarımdır.** Kanıtlanabilir olan tek şey commit'in bloktan 46 saniye önce
+> olduğudur; bu, beklentinin geriye dönük ayarlanmadığını gösterir ama
+> marj dardır ve öyle yazılmıştır.
+
+### §12'nin üç kapısı — gönderimden önce yazılmıştı, üçü de geçti
+
+| kapı | ölçülen | |
+|---|---|---|
+| tip | **`0x2`** | ✓ |
+| `to` | `0x2eafa294…f000bb` = PQWallet | ✓ |
+| `authorizationList` | **YOK** | ✓ |
+| `n` | **3908** | ✓ |
+| `cast code <EOA>` (gönderimden sonra) | **`0x`** | ✓ delegasyon kurulmadı |
+
+Üç kapı da geçtiği için **karşılaştırma yapıldı.**
+
+### ADAY DOĞRULANDI — "Added protection"
+
+§12'de aday olarak yazılan şey sınandı ve **tuttu**: kutu kaldırılmış haldeki
+gönderim tip `0x2` üretti, `to` PQWallet oldu, hiçbir yetkilendirme
+kurulmadı. İlk iki koşuyu paketleyen şey **MetaMask'in "Added protection"
+özelliğiydi.**
+
+> **Sınırı:** tek koşuluk bir sınama ve tek değişkenli değildi — aynı turda
+> *Account details → Smart account → Sepolia* şalteri de kapatılmıştı.
+> İkisinin **hangisinin** belirleyici olduğu **AYRILMADI**. Ayıracak deney:
+> şalter kapalıyken kutuyu işaretli bırakıp göndermek. Yapılmadı.
+
+### ÖN KAYITLI BEKLENTİ — BİREBİR TUTTU
+
+```
+z (zincirden ölçüldü) = 206
+beklenti = 216.305 − 12·(206 − 203) = 216.269
+ölçülen  gasUsed      = 216.269                  ✓
+```
+
+**§8'İN SORUSU KAPANDI: ADAY 2.** Model tuttu. `gasUsed` tahminin kendisi
+(219.153) çıkmadı, yani **aday 3 çürüdü**.
+
+### Modelin kendi içinde kapanması — dört bağımsız kontrol
+
+| kontrol | sonuç |
+|---|---|
+| `est(216269)` | **219.153** = zincirdeki tx gaz limiti ✓ |
+| `Δ₄ = EST − gasUsed` | **2.884** = ön kayıtlı `Δ₂` ✓ |
+| `z` farkının etkisi | `gasUsed` −36 **ve** tahmin −36; `12 × 3 = 36` ✓ |
+| `inv[219153]` | `[216269]` — ters çözüm TEK, ölçülen `gasUsed`'a eşit ✓ |
+
+§8'in doğrulama betiğindeki dört `assert` hâlâ geçiyor.
+
+> **Çapraz kontrolün gücü buradan geliyor:** `z` beklenenden **üç** sıfır bayt
+> fazla çıktı ve bu, hem harcanan gazı hem tahmini **aynı miktarda** (36 gas)
+> aşağı kaydırdı. Düzeltme formülü ile afin ilişki aynı anda sınandı; biri
+> tutup diğeri tutmasa fark açılırdı.
+
+### YAN BULGU — %20 payı zincire ulaşmıyor
+
+```
+sendExecute'un hesapladığı gasLimit : 262.983   (UI'da görünen)
+zincirdeki tx gaz limiti            : 219.153   (ham tahminin kendisi)
+```
+
+MetaMask limitimizi yine değiştirdi — bu sefer **aşağı**, ham tahmine.
+`sendTransaction.js:202`'deki `(estimated * 12n) / 10n` payı, MetaMask
+imzalayıcıyken **pratikte ölü**. Bu koşuda sorun çıkmadı (216.269 < 219.153)
+ama güvenlik payı diye yazılan şey zincire gitmiyor.
+
+**Üç koşuda da aynı desen:** bizim verdiğimiz `gasLimit` hiç kullanılmadı
+(263.026 → 355.384 · 263.026 → 355.372 · 262.983 → 219.153).
+
+### AÇIK KALANLAR
+
+- **Trace hâlâ alınmadı.** §9'da nonce 3'e bırakılmıştı; bu tx temiz geldiği
+  için `gasUsed`'ın tamamı zaten PQWallet'ın kendi çağrısıdır ve ayrı frame
+  ölçümüne gerek kalmadı. **`138.097` ile karşılaştırma yine YAPILMADI** —
+  o sayı yürütme bileşeniydi, bu ölçüm toplam `gasUsed`.
+- **Kayıtlı demo koşusu yapılmadı.** Task 6'nın kayıt ayağı açık; nonce 5
+  ile çekilecek.
+- "Added protection" ile Sepolia şalterinin hangisinin belirleyici olduğu
+  ayrılmadı.

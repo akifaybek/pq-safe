@@ -2182,3 +2182,29 @@ NONCE 4 ÖN KAYDI YAZILDI — gönderimden ÖNCE. §12.
   "Added protection" İŞARETSİZ · Interacting with = PQWallet ·
   Account update/Smart account ibaresi görülürse CANCEL ·
   Account details → Smart account → Sepolia şalteri kapalı.
+
+§8 KAPANDI — ADAY 2. 23 Eylül gece, kayıtsız koşu. §13.
+  tx 0x0fd4b9b3…c3e71c · blok 11767186 · status 1 · KAYITSIZ (aday sınaması)
+  §12'nin ÜÇ KAPISI DA GEÇTİ: tip 0x2 · to = PQWallet · authorizationList YOK ·
+    n = 3908. Gönderim sonrası cast code <EOA> = 0x.
+  ÖN KAYITLI BEKLENTİ BİREBİR TUTTU:
+    z = 206 (zincirden) → 216.305 − 12·(206−203) = 216.269
+    ölçülen gasUsed = 216.269 ✓
+  ADAY 3 ÇÜRÜDÜ: gasUsed tahminin kendisi (219.153) çıkmadı.
+  MODEL KENDİ İÇİNDE DE KAPANDI, dört bağımsız kontrol:
+    est(216269) = 219.153 = zincirdeki tx gaz limiti ✓
+    Δ₄ = 2.884 = ön kayıtlı Δ₂ ✓
+    z farkı hem gasUsed'i hem tahmini AYNI miktarda kaydırdı (−36 = 12×3) ✓
+    inv[219153] = [216269], ters çözüm TEK ✓
+    §8 doğrulama betiğindeki dört assert hâlâ geçiyor ✓
+  "ADDED PROTECTION" ADAYI DOĞRULANDI ama TEK DEĞİŞKENLİ DEĞİLDİ: aynı turda
+    Account details → Smart account → Sepolia şalteri de kapatılmıştı.
+    Hangisinin belirleyici olduğu AYRILMADI. Ayıracak deney: şalter kapalıyken
+    kutuyu işaretli bırakıp göndermek. YAPILMADI.
+  YAN BULGU: bizim gasLimit'imiz zincire HİÇ ulaşmıyor. Üç koşu:
+    263.026 → 355.384 · 263.026 → 355.372 · 262.983 → 219.153.
+    sendTransaction.js:202'deki %20 payı MetaMask imzalayıcıyken PRATİKTE ÖLÜ.
+  AÇIK: trace hiç alınmadı (temiz tx'te gerek kalmadı ama 138.097 ile
+    karşılaştırma YAPILMADI — o yürütme bileşeniydi, bu toplam gasUsed).
+  AÇIK: kayıtlı demo koşusu YAPILMADI. Task 6'nın kayıt ayağı duruyor,
+    nonce 5 ile çekilecek.
