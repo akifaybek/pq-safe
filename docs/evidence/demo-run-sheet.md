@@ -27,18 +27,19 @@ gereği kayıttan önce bir **nonce 5 ön kaydı yazılıp commit'lenmelidir**;
 yoksa ölçüm, beklentisi olmayan bir ölçüm olur.
 
 **Bu boşluk kapatıldı:** `docs/evidence/demo-nonce5-prerecord.md` yazıldı
-(24 Eylül). İçinde `<ALICI>` ve ondan türeyen digest **eksik** — ADIM 0.
+(24 Eylül). Alıcı ve beklenen digest **dolduruldu ve doğrulandı**; geriye
+yalnızca commit + push kaldı — ADIM 0.
 
 ### ADIM 0 — kayıttan ÖNCE yapılacak (kayıt değil, hazırlık)
 
 Ön kayıt yazıldı: **`docs/evidence/demo-nonce5-prerecord.md`** (24 Eylül).
 Kapanması gereken üç şey var:
 
-- [ ] `<ALICI>` belirlenecek (KARAR: Akif) ve ön kaydın § 1'indeki dört
-      kontrolden geçirilecek
-- [ ] Beklenen digest hesaplanacak (ön kayıt § 5, komut hazır ve **nonce 4
-      koşusuna karşı doğrulandı**) ve kontratın `_computeDigest`'iyle
-      eşleştiği görülecek
+- [x] Alıcı belirlendi: `0x7268a7c3d52baa50486930e6ed25d29804d075b6` — ön kaydın
+      § 1'indeki dört kontrolden geçti (ÖLÇÜM)
+- [x] Beklenen digest hesaplandı ve **iki bağımsız kaynak eşleşti** (elle
+      `cast` + kontratın `_computeDigest`'i) — ön kayıt § 5:
+      `0xed8dbe64719ce54ca447fcc2e92a60934ca3110a4e9a6a2a42c55b01c6bdf066`
 - [ ] Ön kayıt **commit + PUSH** edilecek, commit saati not edilecek
       (§13'ün 46 saniyelik marj deseni, `:1249-1265`)
 
@@ -54,19 +55,19 @@ ve var olan (boş olmayan)** bir adrese gidecek. Böylece demo tx'i aynı zamand
 **Task 7'nin B satırının ölçümü** olur.
 
 ```
-to    = <ALICI>
+to    = 0x7268a7c3d52baa50486930e6ed25d29804d075b6
 value = 100000000000000
 data  = 0x
 ```
 
 | alan | değer | not |
 |---|---|---|
-| `to` | **`<ALICI>`** | **KARAR: Akif** — adres henüz verilmedi. Şartları ve kontrol komutları: `demo-nonce5-prerecord.md` § 1 |
+| `to` | **`0x7268a7c3d52baa50486930e6ed25d29804d075b6`** | Hakan'ın EOA'sı. Dört şartı ÖLÇÜLDÜ: bakiye 0,0471 ETH · kod `0x` · nonce 8 · ödeyen ve PQWallet değil (`demo-nonce5-prerecord.md` § 1) |
 | `value` | `100000000000000` | 0,0001 ETH. Ekranda `100.000.000.000.000 wei = 0,0001 ETH` görünecek |
 | `data` | `0x` | Alıcı EOA + boş data → B satırının etiketi ("alıcı EOA, `data = 0x`") |
 | PQWallet | `0x2EafA294C14b6752128bfd4f5873D1EA39f000BB` | yapılandırmadan gelir, girilmez |
 
-> **`<ALICI>` dört şartı sağlamalı** (ayrıntı ve `cast` komutları ön kayıtta):
+> **Alıcının dört şartı** (ayrıntı ve `cast` komutları ön kayıtta):
 > bakiye > 0 · kod yok (EOA) · **gas'ı ödeyen hesap değil**
 > (`0xe0BF2D19…B7351`) · **PQWallet değil**. İlk ikisi "var olan", son ikisi
 > "soğuk" şartını karşılıyor.
@@ -187,9 +188,9 @@ ulaşmıyor. **KARAR (24 Eylül, Akif): negatif kanıt demoda VAR**, sahne 8.
 | 2 | Sepolia bağlantı testi | **Bağlantıyı test et** | `Chain ID 11155111` · son blok · `Sepolia'ya bağlantı doğrulandı` | ~2 sn | okuma |
 | 3 | Owner anahtarını içe aktar | mnemonic gir → **İçe aktar** | `Mnemonic içe aktarıldı (ekranda gösterilmiyor)` · `✓ Zincirdeki ownerPublicKey ile AYNI` · *"Yeni anahtar çifti üret" kapatıldı* | ~1 sn | okuma |
 | 4 | Zincirden yenile (nonce'u kadrajda göster) | **Zincirden yenile** | nonce **5**, bakiye | ~2 sn | okuma |
-| 5 | Alanları doldur | `to` = **`<ALICI>`** · `value` · `data` yapıştır | girilen değerler kadrajda okunur | ~10 sn | — |
+| 5 | Alanları doldur | `to` = **`0x7268a7c3d52baa50486930e6ed25d29804d075b6`** · `value` · `data` yapıştır | girilen değerler kadrajda okunur | ~10 sn | — |
 | 6 | Cüzdanı bağla | **Cüzdanı bağla** → MetaMask **Connect** | `MetaMask bağlandı, ağ Sepolia (11155111)` · bağlı hesap | ~5 sn | — |
-| 7 | **İmzala** | **Digest hesapla ve imzala** | `Digest hesaplanıyor ve imzalanıyor… (~10 sn)` → DOMAIN_SEPARATOR, digest, `value geri okuma`, `✓ imza uzunluğu 3688 bayt`, `imzalama tamamlandı (…ms)` | **~10 sn** (ÖLÇÜM: 9.303,4 ms) | — |
+| 7 | **İmzala** | **Digest hesapla ve imzala** | `Digest hesaplanıyor ve imzalanıyor… (~10 sn)` → DOMAIN_SEPARATOR `0xa6238098…4c228b`, **digest `0xed8dbe64…c6bdf066`** (ön kayıtla aynı olmalı — değilse DUR), `value geri okuma`, `✓ imza uzunluğu 3688 bayt`, `imzalama tamamlandı (…ms)` | **~10 sn** (ÖLÇÜM: 9.303,4 ms) | — |
 | 8 | **Negatif kanıt** | **Bozuk imzayla dene** | `✓ Kontrat bozuk imzayı reddetti — imza gerçekten doğrulanıyor.` + `PQWallet: invalid signature` + *"Gaz harcanmadı… Saklanan gerçek imza değişmedi"* | ~2 sn | **eth_call, tx YOK** |
 | 9 | **GERÇEK TX** | **Zincire gönder** | `DURUM: KONTROL` → `DURUM: KONTROL` (ön-uçuş) → `DURUM: MetaMask ONAYI BEKLENİYOR` | ~3 sn | kalkan 1-2-3 okuma |
 | 10 | MetaMask onayı | **§4'ü oku, sonra Confirm** | — | okuma süresi kadar | — |
@@ -225,6 +226,7 @@ sahne 10 (Confirm). Üçüncü bir pencere beklenmiyor — açılırsa § 4 uygu
 > - Beklenmeyen bir DURUM etiketi
 > - Herhangi bir kırmızı hata satırı
 > - `Zincirdeki nonce` **5'ten farklı**
+> - Ekrandaki `digest` **`0xed8dbe64…c6bdf066` değil** (ön kayıt § 5)
 > - MetaMask'te **"Added protection" kutusu İŞARETLİ** (§12 ön koşul 1)
 > - MetaMask'te `Interacting with` **PQWallet değil** (§12 ön koşul 2)
 > - MetaMask'te **"Account update" / "Smart account" / "Upgrade"** ibaresi
@@ -293,14 +295,14 @@ satır doldur:
 
 | kalem | ön kayıt | ölçülen | eşit mi |
 |---|---|---|---|
-| **digest** | ön kayıt § 5 | ............ | ☐ |
+| **digest** | `0xed8dbe64719ce54ca447fcc2e92a60934ca3110a4e9a6a2a42c55b01c6bdf066` | ............ | ☐ |
 | tx tipi | `0x2` | ............ | ☐ |
 | tx `to` | PQWallet `0x2EafA…f000BB` | ............ | ☐ |
 | `authorizationList` | YOK | ............ | ☐ |
 | `n` | 3908 | ............ | ☐ |
 | `nonce()` | 5 → **6** | ............ | ☐ |
 | PQWallet bakiye | `50600000000000000` → **`50500000000000000`** | ............ | ☐ |
-| `<ALICI>` bakiyesi | **+`100000000000000`** | ............ | ☐ |
+| alıcı bakiyesi | **+`100000000000000`** (fark) | ............ | ☐ |
 | `receipt.status` | **1** | ............ | ☐ |
 | `cast code <ödeyen EOA>` | `0x` | ............ | ☐ |
 | ön kayıt commit saati | ............ | blok saati: ............ | commit önde mi ☐ |
@@ -317,7 +319,9 @@ satır doldur:
 > "yaklaşık tuttu" denmez (`plans/…-demo-measurement-report.md:1099-1103`).
 >
 > **Tahmin nonce 2 ile ve `to` = `0x7268a7c3…` ile üretildi** (ön kayıt § 3).
-> `<ALICI>` o adres değilse iki tahmin **doğrudan karşılaştırılamaz** — adres
+> Alıcı **aynı adres seçildi**, yani adres kaynaklı sapma YOK; geriye tek
+> fark nonce (2 → 5) kalıyor ve etkisi `z` üzerinden raporlanır. Farklı bir
+> adres seçilseydi iki tahmin karşılaştırılamazdı — adres
 > baytları `z`'yi değiştirir (ÖLÇÜM: A/B/C'de `z` 203/205/206) ve fark iki
 > ayrı kaynaktan gelir. O durumda karşılaştırma **yapılmaz** ve yapılmadığı
 > yazılır.
@@ -377,7 +381,7 @@ Ayrıca **TARİHLİ EK** olarak (defter kuralı — yukarısı silinmez):
 
 | # | konu | karar |
 |---|---|---|
-| 2+3 | demo tx'in alıcısı | gas'ı ödeyen hesaba **DEĞİL**; **soğuk + var olan** bir adrese. Demo tx'i = **Task 7 B ölçümü** |
+| 2+3 | demo tx'in alıcısı | gas'ı ödeyen hesaba **DEĞİL**; **soğuk + var olan** bir adrese → `0x7268a7c3…d075b6` (Hakan EOA). Demo tx'i = **Task 7 B ölçümü** |
 | 4 | negatif kanıt sahnesi | **VAR** (sahne 8) |
 | 5 | MetaMask REDDET sahnesi | **YOK** |
 | 6 | rastgele anahtarlı ön-uçuş sahnesi | **YOK** |
@@ -386,9 +390,12 @@ Ayrıca **TARİHLİ EK** olarak (defter kuralı — yukarısı silinmez):
 
 ## AÇIK — kayıttan önce kapatılacak
 
-1. **`<ALICI>` adresi** belirlenecek (KARAR: Akif) ve ön kaydın § 1'indeki
-   dört kontrolden geçirilecek
-2. **Beklenen digest** hesaplanacak (ön kayıt § 5) ve kontratın
-   `_computeDigest`'iyle eşleştiği görülecek
+1. ~~Alıcı adresi~~ **TAMAM** — `0x7268a7c3…d075b6`, dört kontrolden geçti
+2. ~~Beklenen digest~~ **TAMAM** —
+   `0xed8dbe64719ce54ca447fcc2e92a60934ca3110a4e9a6a2a42c55b01c6bdf066`,
+   elle `cast` ile hesaplanan ve kontratın `_computeDigest`'i **eşleşti**
 3. **Ön kayıt commit + PUSH** edilecek, commit saati not edilecek — **bu
-   yapılmadan kayda başlanmaz**
+   yapılmadan kayda başlanmaz** ← tek kalan
+
+> **Kayıt sırasında ekrandaki `digest` alanı
+> `0xed8dbe64…c6bdf066` göstermeli.** Farklıysa DUR (§ 4).
