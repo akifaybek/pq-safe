@@ -124,6 +124,7 @@ baytların çıkacağını göstermez. Ölçüm Hakan'ın teyidiyle gelecek.
 npm script'i yoktur, doğrudan çalıştırılır. `cwd: frontend/`:
 
 ```bash
+node src/format-test.mjs                   # 8 assertion — gas/wei biçimi
 node src/tx/send-transaction-test.mjs      # 83 assertion
 node src/tx/build-transaction-test.mjs     # 21 assertion
 node src/crypto/wasm-signer-test.mjs       # keygen + sign
@@ -137,7 +138,7 @@ cd ../frontend
 CAST_EXPECTED="$EXPECTED" node src/contracts/pqwallet-test.mjs   # 9 assertion
 ```
 
-Beklenen: **83 · 21 · 9**. `cast` için Foundry gerekir (README § Kurulum).
+Beklenen: **8 · 83 · 21 · 9**. `cast` için Foundry gerekir (README § Kurulum).
 
 ## `.env`
 

@@ -30,6 +30,15 @@ import {
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// Gönderim akışının DURUM satırı. Dört durum (kontrol / onaylandı / reddedildi /
+// ön-uçuş başarısız) sahnede tek bakışta ayrılsın diye mevcut metinlerin ÖNÜNE
+// eklenir — hiçbir metin silinmez, hiçbir metin değişmez.
+//
+// YENİ SINIF, YENİ RENK, YENİ ELEMAN TÜRÜ YOK: sayfada zaten tanımlı
+// .ok / .err / .warn kullanılıyor, sınıfsız çağrı da mevcut "iş sürüyor"
+// satırlarının düz görünümünü koruyor.
+const statusLine = (label, cls) => `<p${cls ? ` class="${cls}"` : ''}><strong>DURUM: ${label}</strong></p>`;
+
 let currentMnemonic = null;
 let currentKeys = null;
 
@@ -618,7 +627,20 @@ btnSend.addEventListener('click', async () => {
   for (const el of txInputs) el.disabled = true;
   btnBuildSign.disabled = true;
   chainWarn.innerHTML = '';
-  sendOut.innerHTML = '<p>Kontroller yapılıyor…</p>';
+
+  // Akışın NEREDE olduğunu tutar; aşağıdaki dış catch hangi DURUM etiketini
+  // basacağını YALNIZCA buradan okur.
+  //
+  // Hata NESNESİNE alan yazılmıyor (`e.pqStage = …` gibi). Modül strict mode:
+  // donmuş ya da genişletilemez bir hata nesnesine atama TypeError fırlatır ve
+  // o TypeError orijinal hatayı EZER — teşhis, teşhisi taşıyan mekanizma
+  // yüzünden kaybolurdu. Bu değişken hata nesnesine hiç dokunmuyor.
+  //
+  // Değerler akışın kendi adımları: 'kontrol' → 'preflight' → 'son-kontrol'
+  // → 'metamask' → 'zincir'. Koruma sırasının kendisi DEĞİŞMİYOR; bu yalnızca
+  // nerede olduğumuzun kaydı.
+  let stage = 'kontrol';
+  sendOut.innerHTML = statusLine('KONTROL') + '<p>Kontroller yapılıyor…</p>';
 
   try {
     // İMZANIN FOTOĞRAFI — `conn`un imza karşılığı. Akışın tamamı bunu kullanır,
@@ -656,8 +678,15 @@ btnSend.addEventListener('click', async () => {
     // KALKAN 3 — eth_call ön-uçuşu. En genel kalkan, gaz harcamaz.
     // calldata YALNIZCA `fields`'tan kurulur, DOM'dan yeniden okunmaz.
     const calldata = encodeExecute({ ...fields, signature });
-    sendOut.innerHTML = '<p>Ön-uçuş (eth_call) yapılıyor… (gaz harcanmaz)</p>';
+    sendOut.innerHTML = statusLine('KONTROL') + '<p>Ön-uçuş (eth_call) yapılıyor… (gaz harcanmaz)</p>';
+    stage = 'preflight';
     await preflight({ signer: conn.signer, calldata });
+    // Ön-uçuş GEÇTİ. Etiket hemen bırakılır, çünkü buradan sonraki iki kontrol
+    // (bağlantı ve imza) ön-uçuşla ilgisiz: stage 'preflight'ta kalsaydı onların
+    // hatası ekrana "ÖN-UÇUŞ (eth_call) BAŞARISIZ" diye basılır ve kullanıcı
+    // kontratta olmayan bir sorunu ararken asıl sebebi (ağ/hesap değişimi ya da
+    // düşmüş imza) kaçırırdı.
+    stage = 'son-kontrol';
 
     // Üç kalkanın ağ çağrıları bitti; gönderimden HEMEN ÖNCE bağlantı yeniden
     // kontrol edilir. Handler'ın başındaki kontrol bu noktada bayattır.
@@ -684,11 +713,13 @@ btnSend.addEventListener('click', async () => {
       );
     }
 
-    sendOut.innerHTML = '<p>MetaMask onayı bekleniyor…</p>';
+    stage = 'metamask';
+    sendOut.innerHTML = statusLine('MetaMask ONAYI BEKLENİYOR') + '<p>MetaMask onayı bekleniyor…</p>';
     const { hash, receipt, gasLimit, gasEstimated } = await sendExecute({
       signer: conn.signer,
       calldata,
     });
+    stage = 'zincir';
 
     // Tx zincire yazıldı. BAŞARILI OLDUĞU ANLAMINA GELMEZ — ayırt edici alan
     // receipt.status (1 = başarılı, 0 = revert).
@@ -708,7 +739,7 @@ btnSend.addEventListener('click', async () => {
     `;
 
     if (receipt.status === 1) {
-      sendOut.innerHTML = `<p class="ok">İşlem zincire gönderildi ve onaylandı.</p>${receiptHtml}`;
+      sendOut.innerHTML = `${statusLine('ONAYLANDI', 'ok')}<p class="ok">İşlem zincire gönderildi ve onaylandı.</p>${receiptHtml}`;
       // İmza TÜKETİLDİ: execute() geçtiğine göre kontratın nonce'u arttı
       // (PQWallet.sol:48) ve aynı imza artık hiçbir digest'e uymaz.
       signed = null;
@@ -724,6 +755,7 @@ btnSend.addEventListener('click', async () => {
       // eder. Buraya YEŞİL yazmak, jüriye başarılı gösterilen ama Etherscan'de
       // kırmızı çıkan bir tx demektir — sahnede olabilecek en kötü hata.
       sendOut.innerHTML = `
+        ${statusLine('ZİNCİRDE REVERT', 'err')}
         <p class="err">İşlem zincire alındı ama REVERT ETTİ (receipt.status = ${esc(receipt.status)}). Harcanan gas iade EDİLMEZ.</p>
         ${receiptHtml}
         <p class="warn">İmzanız hâlâ geçerli, yeniden imzalamanız gerekmiyor: execute() revert ettiyse
@@ -781,6 +813,7 @@ btnSend.addEventListener('click', async () => {
     // metni göstermek demoda gereksiz panik yaratır.
     if (e.code === 'ACTION_REJECTED') {
       sendOut.innerHTML =
+        statusLine('REDDEDİLDİ (MetaMask)', 'warn') +
         '<p class="warn">İşlem MetaMask\'te iptal edildi. İmza hâlâ geçerli, tekrar gönderebilirsiniz.</p>';
     } else {
       // ethers revert sebebini `reason` alanında verir (kontrattaki require
@@ -803,7 +836,11 @@ btnSend.addEventListener('click', async () => {
       // "Gönderilemedi" demek yanlış olur — kullanıcı tx'in hiç çıkmadığını
       // sanıp tekrar gönderir, aynı nonce'a ikinci bir tx daha yollar.
       const headline = e.txHash ? 'Gönderim sonrası hata' : 'Gönderilemedi';
-      sendOut.innerHTML = `<p class="err">${headline}: ${esc(reason)}</p>${sentHtml}`;
+      // DURUM etiketi `stage`'den, mevcut `headline: reason` satırı AYNEN kalıyor.
+      // İkisi farklı soruları cevaplıyor ve biri diğerinin yerine geçmez:
+      // etiket "akış nerede koptu", headline "tx yayınlandı mı" (e.txHash).
+      const durum = stage === 'preflight' ? 'ÖN-UÇUŞ (eth_call) BAŞARISIZ' : 'GÖNDERİLEMEDİ';
+      sendOut.innerHTML = `${statusLine(durum, 'err')}<p class="err">${headline}: ${esc(reason)}</p>${sentHtml}`;
     }
     // Kilit tek kaynaktan: imza hâlâ duruyorsa buton açılır, tüketildiyse
     // açılmaz. BUTONLAR için koşulsuz `= false` YOK.
