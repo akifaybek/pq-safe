@@ -859,7 +859,26 @@ btnSend.addEventListener('click', async () => {
       // DURUM etiketi `stage`'den, mevcut `headline: reason` satırı AYNEN kalıyor.
       // İkisi farklı soruları cevaplıyor ve biri diğerinin yerine geçmez:
       // etiket "akış nerede koptu", headline "tx yayınlandı mı" (e.txHash).
-      const durum = stage === 'preflight' ? 'ÖN-UÇUŞ (eth_call) BAŞARISIZ' : 'GÖNDERİLEMEDİ';
+      //
+      // ÜÇÜNCÜ DAL — `stage === 'zincir'`: tx YAYINLANDI (hash doğdu), sonra
+      // bir şey patladı. Buraya "GÖNDERİLEMEDİ" yazmak ekranı kendisiyle
+      // çelişkiye sokuyordu: hemen altındaki satırlar "Gönderim sonrası hata",
+      // "zincirde gerçekleşmiş OLABİLİR" ve tx hash'i basıyor. Kullanıcı üstteki
+      // etikete bakıp tx'in hiç çıkmadığını sanır ve aynı nonce'a ikinci bir tx
+      // yollar — `headline`ın `e.txHash` ile önlemek için var olduğu hata.
+      //
+      // Etiket `stage`den okunuyor, `e.txHash`ten DEĞİL: `stage` 'zincir'e
+      // yalnızca onSubmitted içinde, yani hash doğduktan sonra geçiyor. Hatanın
+      // nesne olmaması gibi bir kenar durumda `e.txHash` iliştirilemez
+      // (sendTransaction.js:258 `typeof e === 'object'` koşulu) ama `stage`
+      // yine doğrudur. Hash ve Etherscan linki zaten yukarıdaki `sentHtml`den
+      // geliyor; burada tekrarlanmıyor.
+      const durum =
+        stage === 'preflight'
+          ? 'ÖN-UÇUŞ (eth_call) BAŞARISIZ'
+          : stage === 'zincir'
+            ? 'SONUÇ ALINAMADI (tx gönderildi)'
+            : 'GÖNDERİLEMEDİ';
       sendOut.innerHTML = `${statusLine(durum, 'err')}<p class="err">${headline}: ${esc(reason)}</p>${sentHtml}`;
     }
     // Kilit tek kaynaktan: imza hâlâ duruyorsa buton açılır, tüketildiyse

@@ -237,13 +237,20 @@ export async function sendExecute({ signer, calldata, onSubmitted }) {
     // ÇAĞRI SIRASI: hash var, receipt YOK. Bu satır `await tx.wait()`ten önce
     // ve senkron çalışır, yani çağıran ekranı tazelemeyi garanti eder.
     //
-    // try'ın İÇİNDE olması bilerek: callback bir DOM yazması ve prensipte
-    // fırlatabilir. Dışarıda olsaydı fırlayan hata `e.txHash` iliştirilmeden
-    // yukarı çıkar, çağıran "Gönderilemedi" basar ve YAYINLANMIŞ bir tx'in
-    // hash'i ekrandan kaybolurdu — bu dosyanın aşağıdaki catch'inin tam da
-    // önlemek için var olduğu şey. Burada ise aynı kurtarma yolu geçerli:
-    // hash iliştirilir, kullanıcı Etherscan'den bakabilir.
-    if (onSubmitted) onSubmitted(tx.hash);
+    // KENDİ try/catch'i var ve hata YUTULUYOR — bilerek. Callback bir DOM
+    // yazması; fırlatırsa bu bir UI hatasıdır ve **tx akışını değiştirmemeli**.
+    // Korumasız hâlinde `tx.wait()` HİÇ çağrılmıyordu: zincirde başarıyla
+    // gerçekleşen bir tx ekranda hata olarak görünürdü — üstelik receipt hiç
+    // okunmadığı için gas'ı, bloğu ve status'ü de kaybederdik.
+    //
+    // Yutmak SESSİZ DEĞİL: hata `console.error`a yazılır. Bu kod tabanının
+    // kuralı "sessiz başarısızlık yok"; burada akışı kesmemek ile haberi
+    // kaybetmemek arasındaki denge, kesmeyip bildirmek.
+    try {
+      if (onSubmitted) onSubmitted(tx.hash);
+    } catch (cbError) {
+      console.error('onSubmitted callback fırlattı — YUTULDU, gönderim akışı sürüyor:', cbError);
+    }
     receipt = await tx.wait();
   } catch (e) {
     if (e?.code === 'CALL_EXCEPTION' && e.receipt) {

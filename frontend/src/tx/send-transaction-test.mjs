@@ -338,6 +338,67 @@ const revertReceipt = { status: 0, gasUsed: 123456n, blockNumber: 9000001 };
   check('callback yok → gasLimit aynı (tahmin * 1.2)', r?.gasLimit === 240000n, `gelen: ${r?.gasLimit}`);
 }
 
+// 8. FIRLATAN callback tx akışını DEĞİŞTİRMEZ.
+//
+//    Kapattığı delik: callback korumasızken `tx.wait()` HİÇ çağrılmıyordu.
+//    Zincirde başarıyla gerçekleşen bir tx ekranda hata olarak görünür, üstelik
+//    receipt hiç okunmadığı için gas'ı, bloğu ve status'ü de kaybolurdu. Bir UI
+//    hatasının zincir akışını kesmesi, bu kod tabanının her yerde kaçındığı
+//    "ekran ile gerçek ayrışması"nın en pahalı hali.
+//
+//    Yutma SESSİZ olmamalı: console.error çağrıldı mı, o da assert ediliyor.
+//    (console.error testin kendi çıktısını kirletmesin diye geçici olarak
+//    değiştiriliyor ve HEMEN geri konuyor.)
+{
+  const order = [];
+  const signer = {
+    async estimateGas() {
+      return 200000n;
+    },
+    async sendTransaction() {
+      return {
+        hash: '0xcccc',
+        async wait() {
+          order.push('wait-çağrıldı');
+          return okReceipt;
+        },
+      };
+    },
+  };
+
+  const logged = [];
+  const realConsoleError = console.error;
+  console.error = (...args) => logged.push(args);
+
+  let thrown = null;
+  let r = null;
+  try {
+    r = await sendExecute({
+      signer,
+      calldata: CALLDATA,
+      onSubmitted: () => {
+        order.push('onSubmitted-fırlattı');
+        throw new Error('UI patladı');
+      },
+    });
+  } catch (e) {
+    thrown = e;
+  } finally {
+    console.error = realConsoleError;
+  }
+
+  check('fırlatan callback → sendExecute FIRLATMIYOR', thrown === null, `fırlayan: ${thrown?.message}`);
+  check('fırlatan callback → wait() YİNE çağrıldı', order.includes('wait-çağrıldı'), `sıra: ${order.join(' → ')}`);
+  check(
+    'fırlatan callback → SIRA korunuyor (önce callback, sonra wait)',
+    order.join('|') === 'onSubmitted-fırlattı|wait-çağrıldı',
+    `sıra: ${order.join(' → ')}`,
+  );
+  check('fırlatan callback → receipt çağırana ulaşıyor', r?.receipt?.status === 1, `gelen: ${r?.receipt?.status}`);
+  check('fırlatan callback → hash çağırana ulaşıyor', r?.hash === '0xcccc');
+  check('fırlatan callback → hata SESSİZCE yutulmuyor (console.error)', logged.length === 1, `kayıt sayısı: ${logged.length}`);
+}
+
 
 console.log('\n=== classifyNegativeProofError() — ÜÇ YOL ===\n');
 
