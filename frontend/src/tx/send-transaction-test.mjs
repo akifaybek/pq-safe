@@ -273,6 +273,71 @@ const revertReceipt = { status: 0, gasUsed: 123456n, blockNumber: 9000001 };
   check('receipt\'siz CALL_EXCEPTION → hash iliştirilmiş', thrown?.txHash === '0xaaaa');
 }
 
+// 6. onSubmitted — hash ile receipt arasındaki pencerenin haberi.
+//
+//    NEDEN MOCK: bu pencere tarayıcıda gözlenemedi, çünkü gözlemek gerçek bir
+//    tx gerektiriyor ve nonce 5 kayıtlı demoya ayrılmış durumda. Ölçülen şey
+//    ekranın kendisi DEĞİL, sendExecute'un ÇAĞRI SIRASI: callback `wait()`
+//    çözülmeden önce mi çağrılıyor?
+//
+//    Sıra, zamanlamaya değil GÖZLENEN SIRAYA bağlanıyor: sahte `wait()`
+//    bilerek 20 ms gecikiyor ve çözüldüğünde kendini `order`a yazıyor. Callback
+//    `await tx.wait()`in ALTINA taşınırsa iki kayıt yer değiştirir ve assertion
+//    kırmızı yanar — asılma değil, kırmızı (bu paketin 15 Eylül'de öğrendiği
+//    ders: § 7.1).
+{
+  const order = [];
+  const signer = {
+    async estimateGas() {
+      return 200000n;
+    },
+    async sendTransaction() {
+      return {
+        hash: '0xbbbb',
+        async wait() {
+          await new Promise((res) => setTimeout(res, 20));
+          order.push('wait-çözüldü');
+          return okReceipt;
+        },
+      };
+    },
+  };
+  const r = await sendExecute({
+    signer,
+    calldata: CALLDATA,
+    onSubmitted: (h) => order.push(`onSubmitted:${h}`),
+  });
+  check('onSubmitted ÇAĞRILDI', order.some((x) => x.startsWith('onSubmitted:')), `sıra: ${order.join(' → ')}`);
+  check('onSubmitted DOĞRU hash ile çağrıldı', order.includes('onSubmitted:0xbbbb'), `sıra: ${order.join(' → ')}`);
+  check(
+    'SIRA: onSubmitted, wait() ÇÖZÜLMEDEN önce',
+    order.join('|') === 'onSubmitted:0xbbbb|wait-çözüldü',
+    `sıra: ${order.join(' → ')}`,
+  );
+  check('onSubmitted tam BİR kez çağrıldı', order.filter((x) => x.startsWith('onSubmitted:')).length === 1);
+  check('callback varken receipt yine dönüyor', r.receipt.status === 1);
+  check('callback varken hash yine dönüyor', r.hash === '0xbbbb');
+}
+
+// 7. Callback VERİLMEZSE davranış bugünküyle birebir aynı — opsiyonelliğin
+//    kendisi sabitleniyor. (Yukarıdaki 1-5 numaralı testlerin hepsi zaten
+//    callback'siz koşuyor; bu blok o sessiz varsayımı açık bir assertion'a
+//    çeviriyor.)
+{
+  const signer = fakeSigner({ estimateGas: 200000n, waitResult: okReceipt });
+  let thrown = null;
+  let r = null;
+  try {
+    r = await sendExecute({ signer, calldata: CALLDATA }); // onSubmitted YOK
+  } catch (e) {
+    thrown = e;
+  }
+  check('callback yok → fırlatmıyor', thrown === null, `fırlayan: ${thrown?.message}`);
+  check('callback yok → hash aynı', r?.hash === '0xaaaa');
+  check('callback yok → receipt aynı', r?.receipt?.status === 1);
+  check('callback yok → gasLimit aynı (tahmin * 1.2)', r?.gasLimit === 240000n, `gelen: ${r?.gasLimit}`);
+}
+
 
 console.log('\n=== classifyNegativeProofError() — ÜÇ YOL ===\n');
 

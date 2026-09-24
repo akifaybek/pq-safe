@@ -194,7 +194,17 @@ export function classifyNegativeProofError(e) {
 //
 // DÖNÜŞ: { hash, receipt, gasLimit }. receipt.status'u ÇAĞIRAN kontrol eder —
 // bu fonksiyon "başarılı" demez, yalnızca "zincire yazıldı" der.
-export async function sendExecute({ signer, calldata }) {
+//
+// `onSubmitted(txHash)` — İSTEĞE BAĞLI. MetaMask hash'i döndürdükten SONRA,
+// `tx.wait()`'ten ÖNCE bir kez çağrılır. Verilmezse davranış birebir eskisi
+// gibidir; bu dosya DOM'a dokunmaz ve dokunmayacak.
+//
+// Neden var: hash ile receipt arasında ölçülmüş 12-15 saniyelik bir pencere
+// var (Sprint 3) ve o pencerede çağıranın ekranında hâlâ "MetaMask onayı
+// bekleniyor" yazıyordu — kullanıcı çoktan onaylamışken. Pencereyi yalnızca
+// bu fonksiyon görebiliyor, çünkü hash burada doğuyor. UI'yi buraya taşımak
+// yerine haberi dışarı veriyoruz.
+export async function sendExecute({ signer, calldata, onSubmitted }) {
   let gasLimit;
   let gasEstimated = true;
   try {
@@ -224,6 +234,16 @@ export async function sendExecute({ signer, calldata }) {
   // denemez); onlar hash'i taşıyarak yeniden fırlatılır.
   let receipt;
   try {
+    // ÇAĞRI SIRASI: hash var, receipt YOK. Bu satır `await tx.wait()`ten önce
+    // ve senkron çalışır, yani çağıran ekranı tazelemeyi garanti eder.
+    //
+    // try'ın İÇİNDE olması bilerek: callback bir DOM yazması ve prensipte
+    // fırlatabilir. Dışarıda olsaydı fırlayan hata `e.txHash` iliştirilmeden
+    // yukarı çıkar, çağıran "Gönderilemedi" basar ve YAYINLANMIŞ bir tx'in
+    // hash'i ekrandan kaybolurdu — bu dosyanın aşağıdaki catch'inin tam da
+    // önlemek için var olduğu şey. Burada ise aynı kurtarma yolu geçerli:
+    // hash iliştirilir, kullanıcı Etherscan'den bakabilir.
+    if (onSubmitted) onSubmitted(tx.hash);
     receipt = await tx.wait();
   } catch (e) {
     if (e?.code === 'CALL_EXCEPTION' && e.receipt) {

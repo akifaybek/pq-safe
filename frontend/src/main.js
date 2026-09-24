@@ -363,7 +363,9 @@ btnBuildSign.addEventListener('click', async () => {
   // yeşil yandığı, tx'in ekranda yazandan BAŞKA bir adrese gittiği durumdur.
   const txInputs = TX_INPUT_IDS.map((id) => document.getElementById(id));
   for (const el of txInputs) el.disabled = true;
-  txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~7-8 sn)</p>';
+  // "~10 sn": 24 Eylül'de tarayıcıda ÖLÇÜLDÜ — 9.303,4 ms. Eski metin "~7-8 sn"
+  // diyordu ve ekranın kendi bildirdiği süreyle çelişiyordu.
+  txOut.innerHTML = '<p>Digest hesaplanıyor ve imzalanıyor… (~10 sn)</p>';
   try {
     const { domainSeparator, digest, fields, signature, sigBytes, signMs } = await buildAndSign({
       walletAddress: CONTRACTS.pqWallet,
@@ -718,8 +720,26 @@ btnSend.addEventListener('click', async () => {
     const { hash, receipt, gasLimit, gasEstimated } = await sendExecute({
       signer: conn.signer,
       calldata,
+      // MetaMask hash'i döndürdü, tx YAYINLANDI — ama bloğa girmedi.
+      //
+      // Bu satır olmadan ekran, kullanıcı onayladıktan sonra blok gelene kadar
+      // (ölçüldü: Sprint 3'te 12-15 sn) hâlâ "MetaMask ONAYI BEKLENİYOR"
+      // yazıyordu. Etiket yanlıştı: onay çoktan verilmişti.
+      //
+      // `stage` BURADA 'zincir' oluyor ve başka hiçbir yerde atanmıyor —
+      // tek kaynak. Bundan sonra bir hata düşerse (wait timeout, ağ) dış
+      // catch GÖNDERİLEMEDİ basar, ÖN-UÇUŞ değil; headline da `e.txHash`
+      // sayesinde "Gönderim sonrası hata" olur.
+      onSubmitted: (txHash) => {
+        stage = 'zincir';
+        sendOut.innerHTML = `
+          ${statusLine('ZİNCİRDE BEKLENİYOR')}
+          <p>İşlem yayınlandı, bloğa girmesi bekleniyor…</p>
+          <label>Tx hash</label>
+          <div class="field">${esc(txHash)}</div>
+        `;
+      },
     });
-    stage = 'zincir';
 
     // Tx zincire yazıldı. BAŞARILI OLDUĞU ANLAMINA GELMEZ — ayırt edici alan
     // receipt.status (1 = başarılı, 0 = revert).
