@@ -1431,3 +1431,86 @@ eksik burada kapanıyor, kapsamıyla.
 > taranması olurdu, **yapılmadı**. Çıkarımı güçlü kılan şey iki değerin
 > **birlikte** tutmasıdır: araya giren bir işlem hem nonce'u hem bakiyeyi
 > beklenen noktada bırakmak zorunda kalırdı.
+
+---
+
+## TARİHLİ EK — 24 Eylül 2026, nonce 5: KAYITLI demo koşusu
+
+Defter kuralı gereği yukarısı **silinmedi**. Bu ek yalnız yeni koşunun bu
+dosyayı ilgilendiren yanını kaydeder; **sayılar burada tekrarlanmaz**, tek
+kaynak `crypto-tests/sprint4-recorded-demo-run.md`'dir.
+
+**Tx:** `0x6b8bbecd…cd312ff` · blok 11774374 · `status 1`
+**Ön kayıt:** `evidence/demo-nonce5-prerecord.md`, commit `aca6578`, push
+`2026-09-24T19:04:43Z` (GitHub `pushed_at`) — tx bloğundan **73 dk 29 sn önce**.
+
+### 1. §12 deseni ikinci kez uygulandı — ve tuttu
+
+§12 nonce 4 için ne yaptıysa, `demo-nonce5-prerecord.md` nonce 5 için aynısını
+yaptı: beklentiler gönderimden önce yazıldı ve push edildi. **Bu koşuda
+`gasUsed` beklentisi SIFIR farkla tuttu.**
+
+Düzeltme formülü bu dosyadan alındı — `:721` (B'nin ters çözümü), `:279`
+(B'nin `z` = 205 tabanı), `:1122-1131` (12 gas/sıfır bayt katsayısı). Ölçülen
+`z` zincirden sayıldı ve formül uygulandı; karşılaştırma tablosu kanıt
+notunun § 3 ve § 4'ündedir.
+
+### 2. §6'NIN AÇIK KALEMİ İÇİN VERİ — afin model üçüncü kez tuttu
+
+`:733`'teki `Δ ≈ U/126 + 1168` bu koşuda da uyumlu çıktı; kalan yine negatif
+ve 1'den küçük, `:735-743` tablosundaki dört satırın deseniyle aynı. Ayrıntı:
+kanıt notu § 4.2.
+
+**"Ofset mi oran mı" kalemi kapanmadı** — bu koşu afin ilişkiye beşinci
+uyumlu noktayı ekliyor, ama ayırt edici bir deney değil.
+
+### 3. YAN BULGU — dördüncü koşu, ve daha keskin
+
+*"Bizim `gasLimit`'imiz zincire ulaşmıyor"* hükmü (`:1396-1399`) dördüncü
+koşuda da geçerli. Dört koşunun tablosu kanıt notu § 7'dedir.
+
+**Yeni olan:** §13'te *"219.153 MetaMask'in ham tahminidir"* bir **ÇIKARIM**
+olarak etiketlenmişti (`:1379-1394`), çünkü MetaMask'e ne sorulduğu
+kaydedilmemişti. Nonce 5 koşusunda **UI'nın gösterdiği paylı limitin tekil
+ters çözümü** bizim kodumuzun aldığı ham tahmini veriyor ve o sayı zincirdeki
+limitle **eşit** çıkıyor — yani karşılaştırılan iki sayı da bizim tarafımızdan
+ölçülüyor.
+
+**§13'ün çıkarımı çürümedi, güçlendi.** Ama elenmemiş alternatif duruyor:
+MetaMask'in kendi bağımsız tahmininin bizimkiyle çakışması. Elenmesi için
+MetaMask'e giden isteğin kaydedilmesi gerekir; **yapılmadı.**
+
+### 4. AÇIK KALEM — ham tahmin yolunda 1 gas
+
+Ters çözüm yolu tam tuttu; **ham tahmin yolu 1 gas şaştı** (kanıt notu § 4.1).
+Sebep **ölçülmedi, atanmadı**. Tamsayı bölmesi yuvarlaması bir hipotezdir,
+ayırt edecek deney yapılmadı.
+
+### 5. §12'nin açık kalemleri — durum
+
+- **"Added protection" ile Smart account şalterinin ayrılması:** hâlâ
+  **YAPILMADI**. Nonce 5 koşusu ikisini de §12'nin ön koşullarına göre
+  ayarladı, yani yine tek değişkenli değildi.
+- **Trace:** hâlâ **ALINMADI**. Bu koşu da temiz geldi.
+- **`138.097` ile karşılaştırma:** yine **YAPILMADI** ve bu koşuda
+  yapılamaz — o sayı A satırının yürütme bileşeniydi, nonce 5 koşusu B
+  satırıdır. Farklı satırlar, doğrudan karşılaştırılamaz.
+
+### 6. TASK 7 TABLOSU — B artık ÖLÇÜM
+
+`:721-722`'deki ters çözümler bugüne kadar B ve C'nin tek kaynağıydı ve
+zincirde ölçülmüş tek satır A'ydı. **B artık zincirde ölçüldü.**
+
+| satır | alıcı durumu | kaynak |
+|---|---|---|
+| **B** | soğuk + var olan | **ÖLÇÜM** — nonce 5, bu ek |
+| A | sıcak + var olan | ÖLÇÜM — §13 |
+| C | soğuk + boş | **ÇIKARIM** — ters çözüm, `:722` |
+| — | İLK tx, nonce 0→1 | ÖLÇÜM — Hakan, 7 Eylül |
+
+**"Manşet satır bir ÇIKARIM olur mu" sorusu kapandı:** manşet B ve B ölçüldü.
+
+> **B ile A doğrudan karşılaştırılamaz — uyarı.** İkisinin `z`'si ve nonce'u
+> farklı. Ham farkı EIP-2929'un +2.500'üyle karşılaştırmadan önce `z`
+> uzlaştırması gerekir. **Bu ekte yapılmadı**, dört satırlık tablo yazılırken
+> yapılacak (plan `:1085`, Adım 3 hâlâ `- [ ]`).

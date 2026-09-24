@@ -2267,3 +2267,78 @@ BLOK B — HAKAN'IN 22 EYLÜL RAPORU. 23 Eylül'de deftere girdi.
     uyuyorum, 22'ye kadar PQWallet'a dokunmuyorum." "22" tarih mi task no mu
     BELİRSİZ. ÖLÇÜM: contracts/src/PQWallet.sol'un son commit'i f4cdff7,
     24 Ağustos — o tarihten beri dosyaya dokunulmamış.
+
+BLOK C — 24 EYLÜL. VIDEO ÖNCESİ UI GEÇİŞİ + KAYITLI DEMO KOŞUSU.
+  Tek kaynak: docs/evidence/crypto-tests/sprint4-recorded-demo-run.md
+  Sayılar burada TEKRARLANMIYOR, yalnız durum kaydı.
+
+  UI GEÇİŞİ (dört madde, üç commit):
+    1. Sayı biçimi — gas/wei binlik ayraçlı + birim etiketli. Biçimlendirme
+       DOM'suz src/format.js'te; format-test.mjs 8 assertion, kırmızı/yeşil
+       kontrolüyle. Bayt sayıları ve blok numaraları BİLEREK dışarıda.
+    2. DURUM etiketleri — handler'a yerel `let stage`, hata NESNESİNE alan
+       yazılmıyor (strict mode'da TypeError orijinal hatayı ezerdi).
+       Sonra: onSubmitted callback'i (ZİNCİRDE BEKLENİYOR) ve stage='zincir'
+       iken SONUÇ ALINAMADI etiketi. sendExecute UI'ya HÂLÂ dokunmuyor.
+    3. Mnemonic DOM'da mı — RAPOR: zaten kapalıydı (a64129b). Kod değişmedi.
+    4. Ekran tutarlılığı — RAPOR: zaten girmişti (6722910). Kod değişmedi.
+    DOKUNULMADI, diff ile doğrulandı: syncSendButtons, koşulsuz
+    disabled=false, üç kalkanın sırası ve çağrıları, preflight fonksiyonu.
+    send-transaction-test: 83 → 99.
+
+  ÖN KAYIT DÜZELTMESİ — ÖNEMLİ:
+    §12 nonce 4'ün ön kaydıydı, nonce 5'in DEĞİL; §13'te tüketilip kapandı.
+    Nonce 5 için depoda HİÇBİR ön kayıt yoktu (yalnız "nonce 5 ile çekilecek"
+    ataması). Daha önce "tek başarılı execute §12 ön kaydını bozar" diye
+    yazılmıştı — YANLIŞ. §12 bozulmaz, kapandı; risk altındaki şey nonce 5'in
+    demoya ayrılmış olmasıydı.
+    Boşluk kapatıldı: evidence/demo-nonce5-prerecord.md (aca6578).
+
+  KAYITLI DEMO KOŞUSU — nonce 5, tx 0x6b8bbecd…cd312ff, blok 11774374,
+  status 1. Kesintisiz tek çekim. K2 KAPANDI.
+    ÖN KAYITLI gasUsed BEKLENTİSİ SIFIR FARKLA TUTTU. Düzeltme formülü
+      (taban 218.781, z=205, −12 gas/sıfır bayt) ön kayıtta yazılıydı;
+      ölçülen z zincirden sayıldı ve formül uygulandı.
+    SIRA DOĞRULANDI — commit tarihiyle DEĞİL, PUSH ile:
+      GitHub pushed_at = 2026-09-24T19:04:43Z (sunucu tarafı)
+      yerel reflog     = 19:04:44Z (1 sn fark, iki bağımsız saat)
+      tx bloğu         = 20:18:12Z
+      MARJ 73 dk 29 sn, push tx'ten ÖNCE.
+      ŞERH: pushed_at SON push'u gösterir; bir sonraki push'ta bu ölçüm
+      YENİDEN ÜRETİLEMEZ. Ham API cevabı kanıt notunun tarihli ekinde.
+      GitHub olay akışı 24 Eylül push'larını göstermedi, o uç kullanılamadı.
+    DIGEST ÜÇ BAĞIMSIZ YOLDAN aynı çıktı: elle cast (dondurulmuş formül),
+      kontratın _computeDigest'i, tarayıcının kendi hesabı. Üçü de ölçümden
+      önce ya da ölçüm anında. Ekran karesi videodan alındı.
+    ALICI: Hakan EOA 0x7268a7c3… — B satırının tahminlerini üreten adresin
+      ta kendisi, bu yüzden adres kaynaklı z sapması YOK; tek fark nonce 2→5.
+
+  TASK 7 MANŞET SORUSU KAPANDI: B artık ÖLÇÜM (bu koşu). C hâlâ ters
+    çözümden geliyor ve öyle etiketlenmeli. Dört satırlık tablo YAZILMADI —
+    B↔A karşılaştırması z uzlaştırması istiyor (z 210 vs 206), o iş tabloya
+    ait. Plan Adım 3 hâlâ açık.
+
+  YAN BULGU 4. KEZ, DAHA KESKİN: UI'daki paylı limitin TEKİL ters çözümü =
+    zincirdeki gaz limiti. §13'te bu bir ÇIKARIM'dı (MetaMask'e ne sorulduğu
+    kaydedilmemişti); burada karşılaştırılan iki sayı da bizim tarafımızdan
+    ölçülüyor. ÇÜRÜMEDİ, GÜÇLENDİ. Elenmemiş alternatif: MetaMask'in kendi
+    bağımsız tahmininin bizimkiyle çakışması — ölçülmedi.
+
+  DURUM ETİKETLERİ, ekranda ilk kez:
+    ONAYLANDI          → GÖZLENDİ, EKRAN GÖRÜNTÜSÜ VAR
+    ZİNCİRDE BEKLENİYOR → GÖZLENDİ, OPERATÖR RAPORU (kare saklanmadı)
+    MetaMask ONAYI BEK. → GÖZLENDİ, OPERATÖR RAPORU (bu koşuda kare yok)
+    KONTROL            → GÖZLENMEDİ (1 sn'den kısa)
+    ZİNCİRDE REVERT    → GÖRÜLMEDİ (tx revert etmedi — beklenen)
+    SONUÇ ALINAMADI    → GÖRÜLMEDİ (yayın sonrası hata yok — beklenen)
+
+  AÇIK KALEMLER:
+    - Ham tahmin yolunda −1 gas. SEBEP ÖLÇÜLMEDİ, ATANMADI.
+    - Trace hâlâ alınmadı. 138.097 ile karşılaştırma bu koşuda YAPILAMAZ:
+      o sayı A satırının yürütme bileşeni, bu koşu B satırı.
+    - "Added protection" ile Smart account şalteri HÂLÂ AYRILMADI.
+    - Betikli mnemonic kanaryası koşulmadı; kontrol GÖRSEL.
+    - Etherscan ekran görüntüsü alınmadı.
+
+  GİZLİ TARAMA (scan-secrets.mjs), değişen dosyaların hepsinde: aşağıdaki
+    commit mesajında desen desen sayımla.

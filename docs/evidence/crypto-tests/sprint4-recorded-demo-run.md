@@ -405,3 +405,113 @@ sorusu kapandı.** Dört satırlık tablonun yazılması ayrı bir kalem
 > `z` düzeltmesi uygulanmadan EIP-2929'un +2.500'üyle karşılaştırılamaz. Bu
 > uzlaştırma **bu belgede yapılmadı**, dört satırlık tablo yazılırken
 > yapılacak.
+
+---
+
+## TARİHLİ EK — 24 Eylül 2026, manşetin sırası doğrulandı
+
+Defter kuralı gereği yukarısı **silinmedi**; bu ek, § 3'teki *"ön kayıtlı
+beklenti birebir tuttu"* manşetinin dayandığı **sıra iddiasını** bağımsız
+kaynaklarla sabitliyor.
+
+### Neden gerekti
+
+Manşet, düzeltme formülünün (`218.781 − 12·(z − 205)`) tx'ten **önce**
+yazılmış olmasına dayanıyor. Yukarıda bu, **commit tarihiyle** (19:04:26 UTC)
+gösterilmişti. Commit tarihi **istemci tarafından üretilir** ve geriye
+alınabilir; tek başına sıra kanıtı değildir. Bu ek iki eksiği kapatıyor:
+formülün gerçekten o commit'te olduğu, ve **push**'un tx'ten önce olduğu.
+
+### 1. Formülün üç bileşeni de `aca6578`'de — ÖLÇÜM
+
+`git show aca6578:docs/evidence/demo-nonce5-prerecord.md`, birebir alıntı:
+
+```
+136: | `z` (sıfır bayt) | **205** | **ölçülecek** | — |
+
+146: Digest nonce'a bağlı → imza gövdesi değişiyor → calldata'nın sıfır bayt
+147: sayısı `z` değişiyor. Düzeltme katsayısı zincirde iki gerçek tx ile ölçüldü:
+148: her ek sıfır bayt **−12 gas**. Nonce 4 koşusunda `z` = 206 çıkmıştı, A'nın
+149: tabanı 203'tü; üç baytlık fark −36 gas etti (`:1295-1296`).
+
+164: | `gasUsed` — ham tahmin yolu | **221.685** | `z` = 205 çıkarsa |
+165: | `gasUsed` — ters çözüm yolu | **218.781** | aynı |
+166: | düzeltme | `± 12 · (z_ölçülen − 205)` | `z` zincirden sayılacak |
+```
+
+Üçü de mevcut: taban değer **218.781** (satır 165), taban **`z` = 205**
+(136 · 164 · 166), **−12 gas/sıfır bayt** katsayısı (148 · 166).
+
+Commit: `aca6578` ·
+<https://github.com/akifaybek/pq-safe/commit/aca6578>
+
+### 2. PUSH zamanı — sunucu tarafı damga, ÖLÇÜM
+
+`gh` bu makinede kurulu değil; GitHub'ın **genel** REST API'si kullanıldı
+(salt-okuma, kimlik doğrulamasız).
+
+**Olay akışı YETMEDİ — yazılıyor:** `GET /repos/akifaybek/pq-safe/events`
+en yeni `PushEvent` olarak `2026-09-23T21:29:26Z` (`78effa6`) döndürdü;
+24 Eylül push'ları akışta **yok**. Bu uç bu koşuda kullanılamadı.
+
+**Depo nesnesi verdi:**
+
+```
+GET https://api.github.com/repos/akifaybek/pq-safe
+  private   : false
+  pushed_at : 2026-09-24T19:04:43Z
+  updated_at: 2026-09-24T19:04:47Z
+
+GET https://api.github.com/repos/akifaybek/pq-safe/commits/main
+  sha : aca6578
+```
+
+`pushed_at`, GitHub'ın **kendi sunucusunda** tuttuğu son push zamanıdır ve
+o an `main`'in ucu `aca6578`'di — yani bu değer ön kaydın push'unu gösteriyor.
+
+| kaynak | zaman | niteliği |
+|---|---|---|
+| **GitHub `pushed_at`** | **2026-09-24 19:04:43 UTC** | **sunucu tarafı, istemciden bağımsız** |
+| yerel `git reflog origin/main` | 2026-09-24 19:04:44 UTC | yerel saat, push anında yazıldı |
+| commit tarihi | 2026-09-24 19:04:26 UTC | istemci tarafı, en zayıf |
+| **tx bloğu 11774374** | **2026-09-24 20:18:12 UTC** | zincir |
+
+```
+MARJ = 20:18:12 − 19:04:43 = 4.409 saniye = 73 dakika 29 saniye
+       push, tx'ten ÖNCE
+```
+
+İki bağımsız saat — bu makine ve GitHub sunucusu — **1 saniye** içinde
+uyuşuyor.
+
+### 3. HÜKÜM: manşet KALIR
+
+Üç bileşen de ön kayıtta, push tx'ten 73 dakika önce. *"Ön kayıtlı `gasUsed`
+beklentisi sıfır farkla tuttu"* ifadesi ayakta; § 3 ve § 4 değişmiyor.
+
+### 4. ŞERH — bu ölçüm YENİDEN ÜRETİLEMEZ
+
+`pushed_at` **son** push'u gösteren bir alandır. Bir sonraki push'la bu değer
+kayacak ve `aca6578`'in push zamanı bu uçtan **bir daha okunamayacak**.
+Yukarıdaki ham cevap bu yüzden buraya yazıldı — kanıt kalıcı olsun diye.
+
+Kalıcı ve daha güçlü bir kayıt isteniyorsa `gh` kurulup
+`GET /repos/{owner}/{repo}/activity` (kimlik doğrulamalı, push başına ayrı
+kayıt tutar) okunabilir. **Yapılmadı.**
+
+### 5. Ayrıca sabitlenen — formülün bileşenleri daha da eskide
+
+**ÖLÇÜM** — `git show 78effa6:docs/evidence/crypto-tests/sprint4-gas-table-and-second-tx.md`:
+
+| bileşen | `78effa6`'daki satır |
+|---|---|
+| `218.781` | `721`: `\| B \| 221.685 \| **218.781** \| 1 \|` |
+| B'nin `z` = 205 | `279`: `\| B (soğuk, dolu) \| 221.685 \| 3908 \| 205 \| 3703 \| 81.068 \| **140.617** \|` |
+| −12 gas/sıfır bayt | `1122`: *"ÖLÇÜM — 12 gas/sıfır bayt, iki gerçek tx ile"* · `1131`: *"Bir fazla sıfır bayt → tam **12 gas** daha az"* |
+
+Üçü de `78effa6`'da yazılıydı ve o commit **`2026-09-23T21:29:26Z`**'de push
+edildi — bu kez GitHub olay akışında **`PushEvent` olarak kayıtlı**, yani
+`pushed_at` alanına bağlı olmadan, kalıcı biçimde doğrulanabilir.
+
+Yani formülün hammaddesi tx'ten **~23 saat** önce herkese açıktı. `aca6578`
+onları nonce 5 için bir beklentiye dönüştürdü; o adım da 73 dakika önde.

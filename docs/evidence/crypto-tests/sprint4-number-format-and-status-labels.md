@@ -329,3 +329,71 @@ hepsini koşan **tek bir komut yok** (`package.json`'da `scripts` alanı tanıms
 - İmzalama süresi metni ("~7-8 sn") ile ölçülen 9,3 sn arasındaki sapma
   düzeltilmedi.
 - § 5'in 4. maddesi (receipt beklerken yanlış etiket) karara bağlanmadı.
+
+---
+
+## TARİHLİ EK — 24 Eylül 2026, § 5'in iki maddesi kapandı
+
+Defter kuralı gereği yukarısı **silinmedi**. Kayıtlı demo koşusu (nonce 5,
+tx `0x6b8bbecd…cd312ff`) § 5'te *"ekranda görülmedi"* diye yazılan
+etiketlerden ikisini gösterdi. Ayrıntı ve ekran görüntüleri:
+`crypto-tests/sprint4-recorded-demo-run.md`.
+
+### § 5'in dört maddesinin güncel durumu
+
+| § 5 maddesi | eski durum | **şimdi** |
+|---|---|---|
+| 1. `DURUM: ONAYLANDI` | ekranda görülmedi | **GÖZLENDİ — ekran görüntüsü var** (`screenshots/sprint4-demo-onaylandi.png`) |
+| 2. `DURUM: ZİNCİRDE REVERT` | ekranda görülmedi | **hâlâ GÖRÜLMEDİ** — tx revert etmedi, beklenen budur |
+| 3. `DURUM: KONTROL` | gözlenmedi | **hâlâ GÖZLENMEDİ** — bir saniyeden kısa, yine yakalanmadı |
+| 4. receipt beklerken yanlış etiket | ölçüldü, düzeltilmedi | **DÜZELTİLDİ ve sahnede çalıştı** — aşağıda |
+
+### 4. maddenin kapanışı — `DURUM: ZİNCİRDE BEKLENİYOR`
+
+§ 5.4 şunu yazmıştı: *"kullanıcı onayladıktan sonra blok gelene kadar ekranda
+hâlâ 'MetaMask ONAYI BEKLENİYOR' yazıyor — onaylamış olmasına rağmen.
+Talimat gereği eklenmedi, ayrı karar."*
+
+O karar verildi ve uygulandı: `sendExecute` isteğe bağlı `onSubmitted(txHash)`
+alıyor, `main.js` callback'te `DURUM: ZİNCİRDE BEKLENİYOR` + tx hash basıyor.
+Kayıtlı koşuda **akış sırasında görüldüğü bildirildi.**
+
+### KANIT GÜCÜ AYRIMI — korunuyor
+
+Bu koşuda **ekran görüntüsüyle** belgelenen tek DURUM etiketi `ONAYLANDI`'dır.
+
+| etiket | bu koşuda | kanıt |
+|---|---|---|
+| `DURUM: ONAYLANDI` | gözlendi | **ekran görüntüsü** |
+| `DURUM: ZİNCİRDE BEKLENİYOR` | gözlendi | **operatör raporu** — kare saklanmadı |
+| `DURUM: MetaMask ONAYI BEKLENİYOR` | gözlendi | **operatör raporu** — bu koşuda kare yok; aynı etiket 24 Eylül REDDET koşusunda ekran görüntüsüyle belgelenmişti |
+| `DURUM: KONTROL` | **gözlenmedi** | — |
+| `DURUM: ZİNCİRDE REVERT` | **görülmedi** | tx revert etmedi |
+| `DURUM: SONUÇ ALINAMADI (tx gönderildi)` | **görülmedi** | yayın sonrası hata olmadı |
+
+Son ikisinin görünmemesi **doğru sonuçtur**, eksiklik değil; ikisi de hâlâ
+yalnız kodda ve davranışları ölçülmedi.
+
+### § 4.1'in kanarya şerhi — durum değişmedi
+
+§ 4.1 kanaryanın **görsel** olduğunu, betikli BIP-39 taramasının
+koşulmadığını yazmıştı. Kayıtlı koşuda da **betikli kanarya koşulmadı**;
+`screenshots/sprint4-demo-sections-1-3.png`'de mnemonic alanı boş ve yalnız
+yer tutucu görünüyor — yine **görsel** kontrol.
+
+### Sayı biçimi sahnede okundu — ÖLÇÜM
+
+§ 2'nin işi kamera karşısında doğrulandı:
+`50.500.000.000.000.000 wei = 0,0505 ETH` ·
+`218.721 gas kullanıldı (limit: 265.948 gas)` ·
+`100.000.000.000.000 wei = 0,0001 ETH`.
+
+Bayt sayısı bilerek biçimlendirilmemişti; ekranda **`İmza (3688 bayt)`**
+görünüyor — oracle regex'i (`sprint4-screen-consistency.md:89`) sağlam.
+
+### Ekran tutarlılığı düzeltmesi de sahnede çalıştı
+
+İmza tüketilince `#tx-out` bloğu *"İmza bu işlemde kullanıldı"* ile
+değiştirildi; digest karesi bu yüzden son ekranda **yok**, videodan alındı.
+Aynı karede `Zincire gönder` ve `Bozuk imzayla dene` düğmeleri **gri** —
+`syncSendButtons()` tüketilmiş imzayla ikinci gönderimi kapattı.

@@ -29,3 +29,13 @@
 | `Migration.proveOwnership()` | [`0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609`](https://sepolia.etherscan.io/tx/0x1ccc11f14c8eaaad4fd0cb8e346234dc6256576c9e9c900c3632d4c32c75a609) | ✅ Başarılı (gas: 73753) |
 | `PQWallet.execute()` (transfer, 0.001 ETH) | [`0xd62b812e6a0e0c31d79d4a85c1bd61c738e02368fe51490c57a19ea6ca631ad9`](https://sepolia.etherscan.io/tx/0xd62b812e6a0e0c31d79d4a85c1bd61c738e02368fe51490c57a19ea6ca631ad9) | ✅ Başarılı (gas: 233429) |
 | `PQWallet.execute()` (0.0001 ETH, kendine iade) | [`0x320e03d98cec857bbae8ecb49bcb0736c960287d76a19f2fad39b471b09e50da`](https://sepolia.etherscan.io/tx/0x320e03d98cec857bbae8ecb49bcb0736c960287d76a19f2fad39b471b09e50da) | ✅ Başarılı (gas: 216.221) |
+| `PQWallet.execute()` (0.0001 ETH, **kayıtlı demo**, nonce 5, soğuk+dolu alıcı) | [`0x6b8bbecd0bc7fefc36ed5120d09410af7aff970950599652510828c28cd312ff`](https://sepolia.etherscan.io/tx/0x6b8bbecd0bc7fefc36ed5120d09410af7aff970950599652510828c28cd312ff) | ✅ Başarılı (gas: 218.721) |
+
+> **24 Eylül 2026 eki.** Son satır Sprint 4'ün **kayıtlı demo koşusudur** ve
+> Task 7 gas tablosunun **B satırının ölçümüdür** (soğuk + var olan alıcı,
+> `data = 0x`). Ön kayıtlı `gasUsed` beklentisi sıfır farkla tuttu; ayrıntı,
+> karşılaştırma tablosu ve ekran görüntüleri:
+> `crypto-tests/sprint4-recorded-demo-run.md`. Sayılar burada tekrarlanmaz.
+>
+> Üstteki `216.221` satırı §13'te **216.269** olarak yeniden ölçülen koşudan
+> ayrıdır ve **o günkü haliyle bırakılmıştır** — defter kuralı.
