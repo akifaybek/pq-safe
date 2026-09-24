@@ -2342,3 +2342,69 @@ BLOK C — 24 EYLÜL. VIDEO ÖNCESİ UI GEÇİŞİ + KAYITLI DEMO KOŞUSU.
 
   GİZLİ TARAMA (scan-secrets.mjs), değişen dosyaların hepsinde: aşağıdaki
     commit mesajında desen desen sayımla.
+
+BLOK D — 25 EYLÜL. C ÖLÇÜMÜ (nonce 6) + TASK 7 DÖRT SATIRLIK TABLO.
+  Tek kaynak: docs/evidence/crypto-tests/sprint4-c-row-measurement.md
+  Sayılar burada TEKRARLANMIYOR.
+
+  C ÖLÇÜLDÜ. tx 0x222556c3…4b11475 · blok 11774980 · status 1.
+    ÖN KAYITLI BEKLENTİ İKİNCİ KEZ SIFIR FARKLA TUTTU.
+      Ön kayıt: evidence/c-nonce6-prerecord.md, commit 95f93e1.
+      Taban ve z, ön kayıtta dosya:satır kaynağıyla yazılıydı.
+    SIRA — push, commit DEĞİL: GitHub pushed_at 2026-09-24T21:49:10Z,
+      blok 22:19:36Z, MARJ 30 dk 26 sn, push ÖNDE.
+      ŞERH: pushed_at SON push'u gösterir, sonraki push'ta bu ölçüm
+      YENİDEN ÜRETİLEMEZ. Ham çıktı kanıt notunda.
+    TEK SEFERLİK kuralı uygulandı: gönderimden hemen önce alıcı yeniden
+      ölçüldü, boş çıktı. Tx sonrası artık boş DEĞİL — C bu adresle bir
+      daha ölçülemez.
+
+  ASIL BULGU — z UZLAŞTIRMASI SONRASI ÜÇ FARK DA TAM OTURDU:
+    Yöntem: gasUsed − intrinsic = yürütme. Intrinsic zaten z'nin
+    fonksiyonu, çıkarınca z farkı düşüyor.
+      B − A =  2.500   (EIP-2929 soğuk erişim 2600−100)
+      C − B = 25.000   (boş hesap oluşturma, G_newaccount)
+      C − A = 27.500
+    Üçü de SAPMASIZ. Ham gasUsed farkları (2.452 / 25.096 / 27.548)
+    z farkını taşıdığı için KARŞILAŞTIRILAMAZ.
+
+  BÖLÜM 3'ÜN ":290-300" AÇIK SORUSU KAPANDI:
+    O tablodaki sapmalar (+20 / +218 / +198) TAHMİNLER arasındaydı,
+    gasUsed'lar arasında değil. Sapmanın kaynağı est()'in çarpımsal
+    ×1,0079 çarpanı — dosyanın KENDİ § 3'ünde ölçülmüştü:
+      25.000 × 0,00792 = 198 · 2.500 × 0,008 = 20 · 27.500 × 0,00793 = 218
+    ":296-300"ün "sapma modelin dışından geliyor" cümlesi DOĞRUYDU;
+    dışarısı tahmin fonksiyonuymuş.
+
+  TASK 7 TABLOSU YAZILDI (plan Adım 3). Üç satır ÖLÇÜM, manşet B.
+    ÇERÇEVE korundu: TAHMİN edilen şey YÜRÜTME bileşeniydi; z düzeltmesi
+    (16−4=12 gas/bayt) SPESİFİKASYON gereği, ölçülmedi tahmin edilmedi.
+    REFERANS DURUMU: EIP-2929 / Yellow Paper G_newaccount / EIP-161 /
+      EIP-2028 bu oturumda SPEC METNİNE KARŞI DOĞRULANMADI, hafızadan
+      yazıldı. Sayılar zincirde ölçüldü, EŞLEŞTİRİLEN KAYNAKLAR TEYİDE
+      MUHTAÇ — Hakan'a ya da spec'e doğrulatılacak.
+    EIP-7623 TABANI HESAPLANDI, üçünde de BAĞLAMIYOR:
+      taban = 21000 + 10·(z + 4·nz); A 171.140 · B 171.020 · C 171.260,
+      gasUsed'lar 45–72 bin gas üstünde. Sabitler de spec'e karşı
+      doğrulanmadı ama pay o kadar geniş ki sonuç değişmez.
+
+  SINIRLAR (tablonun altında yazılı):
+    - Her satır TEK koşu, tekrarlanabilirlik ÖLÇÜLMEDİ.
+    - nonce++ maliyeti üç koşuda aynı VARSAYILDI, ölçülmedi. Üçü de
+      sıfırdan-farklı güncelleme; farkların temiz çıkması DESTEK'tir,
+      kanıt değil.
+    - Üç satır üç farklı nonce'ta — yapısal sınır, aynı nonce imkânsız.
+    - Yürütme bileşeni ARİTMETİKLE türetildi, trace alınmadı.
+
+  YAN BULGU 5. KOŞU: UI 296.302 → tekil ters çözüm 246.919 = zincirdeki
+    limit. Elenmemiş alternatif aynen duruyor (MetaMask'in kendi
+    tahmininin çakışması) — ölçülmedi.
+
+  AFİN MODEL 6. uyumlu nokta: kalan −1,06; dosyadaki en büyük kalanla
+    (−1,04) aynı mertebede. "Hepsi 1'den küçük" ifadesi ikisi için de
+    geçerli değil, not düşüldü.
+
+  −1 GAS AÇIK KALEMİ: iki veri noktası oldu — B −1, C 0. KAPANMADI,
+    sebep ÖLÇÜLMEDİ. Ters çözüm yolu iki koşuda da tam tuttu.
+
+  GİZLİ TARAMA: commit mesajlarında desen desen sayımla.
