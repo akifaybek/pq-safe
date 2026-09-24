@@ -10,7 +10,7 @@
 
 ---
 
-## 0. ÖNCE OKU — nonce 5'in ön kaydı YOK
+## 0. ÖNCE OKU — nonce 5'in ön kaydı YOKTU, yazıldı
 
 **ÖLÇÜM.** §12 (`crypto-tests/sprint4-gas-table-and-second-tx.md:1175`)
 **nonce 4'ün** ön kaydıdır, nonce 5'in değil. §13'te tüketildi ve kapandı;
@@ -26,42 +26,53 @@ nonce 5'in kayıtlı demoya ayrılmış olmasıdır. Ve bu projenin kendi kural�
 gereği kayıttan önce bir **nonce 5 ön kaydı yazılıp commit'lenmelidir**;
 yoksa ölçüm, beklentisi olmayan bir ölçüm olur.
 
+**Bu boşluk kapatıldı:** `docs/evidence/demo-nonce5-prerecord.md` yazıldı
+(24 Eylül). İçinde `<ALICI>` ve ondan türeyen digest **eksik** — ADIM 0.
+
 ### ADIM 0 — kayıttan ÖNCE yapılacak (kayıt değil, hazırlık)
 
-- [ ] Nonce 5 ön kaydını yaz: beklenen `gasUsed` formülü, `nonce() 5 → 6`,
-      beklenen bakiye, tx tipi, `to`, `authorizationList`, `n`.
-- [ ] Commit'le ve **blok zamanından önce olduğunu** kanıtlayabilmek için
-      commit saatini not al (§13'ün 46 saniyelik marj deseni, `:1249-1265`).
+Ön kayıt yazıldı: **`docs/evidence/demo-nonce5-prerecord.md`** (24 Eylül).
+Kapanması gereken üç şey var:
 
-**KARAR: Akif — ön kaydın içeriği.** Hazır şablon § 5.3'te.
+- [ ] `<ALICI>` belirlenecek (KARAR: Akif) ve ön kaydın § 1'indeki dört
+      kontrolden geçirilecek
+- [ ] Beklenen digest hesaplanacak (ön kayıt § 5, komut hazır ve **nonce 4
+      koşusuna karşı doğrulandı**) ve kontratın `_computeDigest`'iyle
+      eşleştiği görülecek
+- [ ] Ön kayıt **commit + PUSH** edilecek, commit saati not edilecek
+      (§13'ün 46 saniyelik marj deseni, `:1249-1265`)
+
+> **Ön kayıt push edilmeden kayda başlanmaz.** Commit'in bloktan önce olduğu,
+> beklentinin geriye dönük ayarlanmadığının tek kanıtı.
 
 ---
 
 ## 1. DEMO TX PARAMETRELERİ — kopyala-yapıştır
 
-**KARAR: Akif.** Aşağısı **nonce 4 koşusunun** zincirden çözülmüş
-parametreleridir (`cast tx 0x0fd4b9b3…c3e71c input` → `cast decode-calldata`),
-aday varsayılan olarak konuldu. Başka bir alıcı seçilecekse kayıttan önce
-değiştir ve ön kayda da aynısını yaz.
+**KARAR (24 Eylül, Akif):** Demo tx'i gas'ı ödeyen hesaba **DEĞİL**, **soğuk
+ve var olan (boş olmayan)** bir adrese gidecek. Böylece demo tx'i aynı zamanda
+**Task 7'nin B satırının ölçümü** olur.
 
 ```
-to    = 0xe0BF2D190f8e2F2fc97cF19244845F8FeBDB7351
+to    = <ALICI>
 value = 100000000000000
 data  = 0x
 ```
 
 | alan | değer | not |
 |---|---|---|
-| `to` | `0xe0BF2D190f8e2F2fc97cF19244845F8FeBDB7351` | **ÖLÇÜM**: nonce 4 koşusunun alıcısı. Bu adres aynı zamanda **gas'ı ödeyen MetaMask hesabı** — yani cüzdan gas'ı ödeyen hesaba para yolluyor |
+| `to` | **`<ALICI>`** | **KARAR: Akif** — adres henüz verilmedi. Şartları ve kontrol komutları: `demo-nonce5-prerecord.md` § 1 |
 | `value` | `100000000000000` | 0,0001 ETH. Ekranda `100.000.000.000.000 wei = 0,0001 ETH` görünecek |
-| `data` | `0x` | Alıcı EOA + boş data → gas tablosunun "alıcı EOA, `data = 0x`" etiketiyle uyumlu |
+| `data` | `0x` | Alıcı EOA + boş data → B satırının etiketi ("alıcı EOA, `data = 0x`") |
 | PQWallet | `0x2EafA294C14b6752128bfd4f5873D1EA39f000BB` | yapılandırmadan gelir, girilmez |
 
-> **KARAR: Akif — alıcı seçimi videoda nasıl anlatılacak?** `to` = gas'ı ödeyen
-> hesap olduğu için jüri "kendi kendine mi gönderiyor" diye sorabilir. Cüzdan
-> (`0x2EafA…`) ile alıcı (`0xe0BF2…`) **farklı** adresler; istenirse üçüncü bir
-> adres seçilebilir ama o zaman gas tablosunun satır etiketi değişir (soğuk/
-> boş alıcı → farklı maliyet).
+> **`<ALICI>` dört şartı sağlamalı** (ayrıntı ve `cast` komutları ön kayıtta):
+> bakiye > 0 · kod yok (EOA) · **gas'ı ödeyen hesap değil**
+> (`0xe0BF2D19…B7351`) · **PQWallet değil**. İlk ikisi "var olan", son ikisi
+> "soğuk" şartını karşılıyor.
+
+> **Bu tablo `demo-nonce5-prerecord.md` § 1 ile BİREBİR aynı olmalı.**
+> Ayrışırlarsa kayıt durdurulur.
 
 ---
 
@@ -166,7 +177,7 @@ cast code    0xe0BF2D190f8e2F2fc97cF19244845F8FeBDB7351 --rpc-url $RPC
 | Saklanan gerçek imza bozulur mu? | **HAYIR** | `buildNegativeProofCalldata` yalnız okur; `pqwallet-test.mjs`'te assert'li |
 
 **"MetaMask'te onaylanırsa" diye bir yol yok** — buton MetaMask'e hiç
-ulaşmıyor. **Demoya girip girmeyeceği: KARAR: Akif** (spec girmesini istiyor).
+ulaşmıyor. **KARAR (24 Eylül, Akif): negatif kanıt demoda VAR**, sahne 8.
 
 ### Sahne listesi
 
@@ -176,7 +187,7 @@ ulaşmıyor. **Demoya girip girmeyeceği: KARAR: Akif** (spec girmesini istiyor)
 | 2 | Sepolia bağlantı testi | **Bağlantıyı test et** | `Chain ID 11155111` · son blok · `Sepolia'ya bağlantı doğrulandı` | ~2 sn | okuma |
 | 3 | Owner anahtarını içe aktar | mnemonic gir → **İçe aktar** | `Mnemonic içe aktarıldı (ekranda gösterilmiyor)` · `✓ Zincirdeki ownerPublicKey ile AYNI` · *"Yeni anahtar çifti üret" kapatıldı* | ~1 sn | okuma |
 | 4 | Zincirden yenile (nonce'u kadrajda göster) | **Zincirden yenile** | nonce **5**, bakiye | ~2 sn | okuma |
-| 5 | Alanları doldur | `to` / `value` / `data` yapıştır | — | ~10 sn | — |
+| 5 | Alanları doldur | `to` = **`<ALICI>`** · `value` · `data` yapıştır | girilen değerler kadrajda okunur | ~10 sn | — |
 | 6 | Cüzdanı bağla | **Cüzdanı bağla** → MetaMask **Connect** | `MetaMask bağlandı, ağ Sepolia (11155111)` · bağlı hesap | ~5 sn | — |
 | 7 | **İmzala** | **Digest hesapla ve imzala** | `Digest hesaplanıyor ve imzalanıyor… (~10 sn)` → DOMAIN_SEPARATOR, digest, `value geri okuma`, `✓ imza uzunluğu 3688 bayt`, `imzalama tamamlandı (…ms)` | **~10 sn** (ÖLÇÜM: 9.303,4 ms) | — |
 | 8 | **Negatif kanıt** | **Bozuk imzayla dene** | `✓ Kontrat bozuk imzayı reddetti — imza gerçekten doğrulanıyor.` + `PQWallet: invalid signature` + *"Gaz harcanmadı… Saklanan gerçek imza değişmedi"* | ~2 sn | **eth_call, tx YOK** |
@@ -189,19 +200,19 @@ ulaşmıyor. **Demoya girip girmeyeceği: KARAR: Akif** (spec girmesini istiyor)
 
 **Toplam tahmini: ~1,5–2 dakika** (10. adım okuma süresi hariç).
 
-> **KARAR: Akif — MetaMask REDDET sahnesi demoda olsun mu?**
-> *Lehte:* reddedilebilirliği ve buton kilidinin geri açılmasını gösterir;
-> `DURUM: REDDEDİLDİ (MetaMask)` etiketi kadraja girer.
-> *Aleyhte:* MetaMask penceresini **iki kez** açmak gerekir (önce Reddet,
-> sonra Confirm) ve yanlış düğmeye basma riski ikiye katlanır. Ayrıca
-> reddediş imzayı tüketmediği için sürekliliğe zarar vermez.
-> Eklenecekse yeri **9 ile 10 arasıdır** (aynı imza korunur).
->
-> **KARAR: Akif — rastgele anahtarla ön-uçuş reddi sahnesi demoda olsun mu?**
-> Bu sahne sayfayı yenilemeyi ve owner anahtarını **yeniden** içe aktarmayı
-> gerektirir; tek çekim şartını bozmaz ama akışı ~30 sn uzatır. 24 Eylül'de
-> zaten ölçüldü ve kanıt dosyasında duruyor
-> (`crypto-tests/sprint4-number-format-and-status-labels.md` § 4.1).
+### Demoya GİRMEYEN sahneler — KARAR (24 Eylül, Akif)
+
+| sahne | durum | nerede kayıtlı |
+|---|---|---|
+| MetaMask **REDDET** yolu | **YOK** | `crypto-tests/sprint4-number-format-and-status-labels.md` § 4.2 |
+| **Rastgele anahtarla** ön-uçuş reddi | **YOK** | aynı dosya § 4.1 |
+
+İkisi de 24 Eylül'de ölçüldü ve kanıt dosyasında duruyor; kayda girmeleri
+MetaMask penceresini ikinci kez açmayı (yanlış düğme riski) ya da sayfayı
+yenileyip owner anahtarını yeniden içe aktarmayı gerektirirdi.
+
+**MetaMask penceresi bu kayıtta TAM İKİ KEZ açılır:** sahne 6 (Connect) ve
+sahne 10 (Confirm). Üçüncü bir pencere beklenmiyor — açılırsa § 4 uygulanır.
 
 ---
 
@@ -277,24 +288,39 @@ cast code 0xe0BF2D190f8e2F2fc97cF19244845F8FeBDB7351 --rpc-url $RPC   # beklenen
 
 ### 5.3 Ön kayıt ↔ ölçüm karşılaştırması
 
-Ön kayıt ADIM 0'da yazılıp commit'lenecek. Kayıttan sonra satır satır doldur:
+Ön kayıt: **`docs/evidence/demo-nonce5-prerecord.md`**. Kayıttan sonra satır
+satır doldur:
 
 | kalem | ön kayıt | ölçülen | eşit mi |
 |---|---|---|---|
+| **digest** | ön kayıt § 5 | ............ | ☐ |
 | tx tipi | `0x2` | ............ | ☐ |
 | tx `to` | PQWallet `0x2EafA…f000BB` | ............ | ☐ |
 | `authorizationList` | YOK | ............ | ☐ |
 | `n` | 3908 | ............ | ☐ |
-| `gasUsed` | `216.305 − 12·(z − 203)` → ............ | ............ | ☐ |
 | `nonce()` | 5 → **6** | ............ | ☐ |
-| PQWallet bakiye | `50600000000000000` → ............ | ............ | ☐ |
-| `cast code <EOA>` | `0x` | ............ | ☐ |
+| PQWallet bakiye | `50600000000000000` → **`50500000000000000`** | ............ | ☐ |
+| `<ALICI>` bakiyesi | **+`100000000000000`** | ............ | ☐ |
+| `receipt.status` | **1** | ............ | ☐ |
+| `cast code <ödeyen EOA>` | `0x` | ............ | ☐ |
 | ön kayıt commit saati | ............ | blok saati: ............ | commit önde mi ☐ |
 
-> **KARAR: Akif — `gasUsed` formülü nonce 5 için aynen mi geçerli?**
-> Formül nonce 3 ve 4'ten türedi, iki koşuda doğrulandı (`:1295-1300`).
-> Farklı bir `to` seçilirse (soğuk/boş alıcı) **taban değişir** ve formül
-> olduğu gibi uygulanamaz — § 1'deki alıcı kararına bağlı.
+**`gasUsed` ayrı tutulur — TAHMİN, eşitlik beklenmiyor:**
+
+| | tahmin | ölçülen | fark |
+|---|---|---|---|
+| ham `eth_estimateGas` (B) | **221.685** | ............ | ............ |
+| ters çözüm `inv` (B) | **218.781** | ............ | ............ |
+| `z` (sıfır bayt) | tahmin koşusunda **205** | ............ | ............ |
+
+> **Eşik YOK.** Ölçülen ne çıkarsa yazılır, fark olduğu gibi raporlanır;
+> "yaklaşık tuttu" denmez (`plans/…-demo-measurement-report.md:1099-1103`).
+>
+> **Tahmin nonce 2 ile ve `to` = `0x7268a7c3…` ile üretildi** (ön kayıt § 3).
+> `<ALICI>` o adres değilse iki tahmin **doğrudan karşılaştırılamaz** — adres
+> baytları `z`'yi değiştirir (ÖLÇÜM: A/B/C'de `z` 203/205/206) ve fark iki
+> ayrı kaynaktan gelir. O durumda karşılaştırma **yapılmaz** ve yapılmadığı
+> yazılır.
 
 ### 5.4 Ekran görüntüleri
 
@@ -347,13 +373,22 @@ Ayrıca **TARİHLİ EK** olarak (defter kuralı — yukarısı silinmez):
 
 ---
 
-## KARAR: AKİF — kayıttan önce kapatılacaklar
+## KARARLAR — 24 Eylül, Akif
 
-1. **Nonce 5 ön kaydı** yazılıp commit'lenecek mi, içeriği ne? (§ 0 ADIM 0, § 5.3)
-2. **Demo tx parametreleri** — nonce 4'ünkiler mi kullanılacak, yoksa başka bir
-   `to` mu? (§ 1)
-3. **Alıcının gas'ı ödeyen hesapla aynı olması** videoda nasıl anlatılacak? (§ 1)
-4. **Negatif kanıt sahnesi** demoda olsun mu? (spec istiyor; § 3)
-5. **MetaMask REDDET sahnesi** eklensin mi? (§ 3, yeri 9-10 arası)
-6. **Rastgele anahtarla ön-uçuş reddi sahnesi** eklensin mi? (§ 3)
-7. **`gasUsed` formülü** nonce 5 için aynen mi geçerli — alıcı kararına bağlı? (§ 5.3)
+| # | konu | karar |
+|---|---|---|
+| 2+3 | demo tx'in alıcısı | gas'ı ödeyen hesaba **DEĞİL**; **soğuk + var olan** bir adrese. Demo tx'i = **Task 7 B ölçümü** |
+| 4 | negatif kanıt sahnesi | **VAR** (sahne 8) |
+| 5 | MetaMask REDDET sahnesi | **YOK** |
+| 6 | rastgele anahtarlı ön-uçuş sahnesi | **YOK** |
+| 1 | nonce 5 ön kaydı | **YAZILDI** — `demo-nonce5-prerecord.md` |
+| 7 | `gasUsed` beklentisi | formül değil, **B'nin iki tahmini** (221.685 / 218.781), eşik yok |
+
+## AÇIK — kayıttan önce kapatılacak
+
+1. **`<ALICI>` adresi** belirlenecek (KARAR: Akif) ve ön kaydın § 1'indeki
+   dört kontrolden geçirilecek
+2. **Beklenen digest** hesaplanacak (ön kayıt § 5) ve kontratın
+   `_computeDigest`'iyle eşleştiği görülecek
+3. **Ön kayıt commit + PUSH** edilecek, commit saati not edilecek — **bu
+   yapılmadan kayda başlanmaz**
