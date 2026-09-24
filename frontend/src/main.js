@@ -1,6 +1,8 @@
 import { generateNewMnemonic, keygen, signDigest, C13_SIG_BYTES } from './crypto/signer.js';
 import { checkSepoliaConnection } from './network/sepolia.js';
-import { formatEther } from 'ethers';
+// Sayı biçimi DOM'suz ayrı modülde: ekranın kullandığı fonksiyonun ta kendisi
+// node'dan import edilip doğrulanabilsin diye (bkz. format.js başlığı).
+import { fmtGas, fmtWei } from './format.js';
 import { buildAndSign, buildDigest } from './tx/buildTransaction.js';
 import { CONTRACTS } from './config/contracts.js';
 import {
@@ -161,7 +163,7 @@ async function refreshChainState({ quiet = false } = {}) {
     const [n, b] = await Promise.all([readNonce(), readBalance()]);
     chainNonce = n;
     nonceDisplay.textContent = String(n);
-    balanceDisplay.textContent = `${b} wei = ${formatEther(b)} ETH`;
+    balanceDisplay.textContent = fmtWei(b);
     return { nonce: n, balance: b };
   } catch (e) {
     nonceDisplay.textContent = '—';
@@ -371,7 +373,7 @@ btnBuildSign.addEventListener('click', async () => {
       <label>digest</label>
       <div class="field">${digest}</div>
       <label>value geri okuma</label>
-      <div class="field">${fields.value} wei = ${formatEther(fields.value)} ETH</div>
+      <div class="field">${fmtWei(fields.value)}</div>
       <label>İmza (${sigBytes} bayt)</label>
       <div class="field">${signature}</div>
       <p class="${lengthOk ? 'ok' : 'err'}">${lengthOk ? '✓ imza uzunluğu 3688 bayt (C13 beklenen)' : '✗ beklenmeyen uzunluk'}</p>
@@ -700,7 +702,7 @@ btnSend.addEventListener('click', async () => {
       <label>Etherscan</label>
       <div class="field"><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></div>
       <label>Gas</label>
-      <div class="field">${esc(receipt.gasUsed)} kullanıldı (limit: ${esc(gasLimit)}${gasNote})</div>
+      <div class="field">${esc(fmtGas(receipt.gasUsed))} kullanıldı (limit: ${esc(fmtGas(gasLimit))}${gasNote})</div>
       <label>Blok</label>
       <div class="field">${esc(receipt.blockNumber)}</div>
     `;
@@ -758,7 +760,7 @@ btnSend.addEventListener('click', async () => {
         const nonceChanged = chainState.nonce !== sig.nonce;
         diagnosis = `
           <label>Revert sonrası zincir durumu</label>
-          <div class="field">zincirdeki nonce: ${esc(chainState.nonce)} · imzalanan nonce: ${esc(sig.nonce)} · bakiye: ${esc(chainState.balance)} wei = ${esc(formatEther(chainState.balance))} ETH</div>
+          <div class="field">zincirdeki nonce: ${esc(chainState.nonce)} · imzalanan nonce: ${esc(sig.nonce)} · bakiye: ${esc(fmtWei(chainState.balance))}</div>
           <p class="warn">${
             nonceChanged
               ? 'Nonce DEĞİŞMİŞ — imzanız bu nonce\'a bağlı olduğu için artık geçmez. Yeniden imzalayın; tekrar göndermeyi denerseniz kalkan 1 zaten durduracak.'
