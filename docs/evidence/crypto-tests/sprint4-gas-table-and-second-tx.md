@@ -1514,3 +1514,163 @@ zincirde ölçülmüş tek satır A'ydı. **B artık zincirde ölçüldü.**
 > farklı. Ham farkı EIP-2929'un +2.500'üyle karşılaştırmadan önce `z`
 > uzlaştırması gerekir. **Bu ekte yapılmadı**, dört satırlık tablo yazılırken
 > yapılacak (plan `:1085`, Adım 3 hâlâ `- [ ]`).
+
+---
+
+## TARİHLİ EK — 25 Eylül 2026, TASK 7 DÖRT SATIRLIK TABLO
+
+Defter kuralı gereği yukarısı **silinmedi**. Plan `2026-09-14-sprint4-demo-
+measurement-report.md:1085-1094`'ün Adım 3'ü burada uygulanıyor. Üç satırın
+üçü de artık **zincirde ölçüldü**; sayıların kaynağı
+`crypto-tests/sprint4-recorded-demo-run.md` (B) ve
+`crypto-tests/sprint4-c-row-measurement.md` (C).
+
+### ÇERÇEVE — neyin tahmin, neyin spesifikasyon olduğu
+
+Bu ayrım tabloyu okumanın ön şartıdır:
+
+| | ne |
+|---|---|
+| **TAHMİN edilen** | satırların **yürütme** bileşeni. Hipotez EIP-2929 ve boş hesap oluşturma maliyetlerinden kuruldu, `est()`'in ters çözümüyle sayıya dönüştürüldü |
+| **SPESİFİKASYON gereği** | `z` düzeltmesi. Sıfır bayt 4 gas, sıfır-dışı 16 gas → fark **12 gas/bayt** kesindir, ölçülmedi, tahmin edilmedi |
+
+Yani "model tahmin etti" **yalnız yürütme bileşeni** için geçerlidir;
+intrinsic ve `z` düzeltmesi spesifikasyondan gelir.
+
+### Tablo — üç satır ÖLÇÜM
+
+**Her satırın etiketi: ALICI EOA, `data = 0x`, `value = 100000000000000`.**
+
+| satır | alıcı durumu | `gasUsed` | `z` | intrinsic | **yürütme** | koşu |
+|---|---|---|---|---|---|---|
+| **B** | soğuk + var olan | **218.721** | 210 | 81.008 | **137.713** | nonce 5 · `0x6b8bbecd…` |
+| A | sıcak + var olan | **216.269** | 206 | 81.056 | **135.213** | nonce 4 · `0x0fd4b9b3…` |
+| C | soğuk + **boş** | **243.817** | 202 | 81.104 | **162.713** | nonce 6 · `0x222556c3…` |
+| — | İLK tx, nonce 0→1 | 233.429 | — | — | — | Hakan, 7 Eylül · `0xd62b812e…` |
+
+**MANŞET SATIR B** — tipik kullanıcı işlemi. A kendine iade, yani test
+düzeneği (`specs/2026-09-14-sprint4-scope-design.md:430`). Dördüncü satır
+tek seferlik `SSTORE_SET` taşıdığı için diğerleriyle karşılaştırılamaz.
+
+`intrinsic = 21000 + 4·z + 16·(3908 − z)` · `yürütme = gasUsed − intrinsic`
+
+### Fark satırları — yürütme bileşeni üzerinden
+
+Ham `gasUsed` farkları `z` farkını taşır ve karşılaştırılamaz; aşağıdakiler
+intrinsic arındırılmış farklardır.
+
+| fark | **ölçülen** | EVM karşılığı | kaynak |
+|---|---|---|---|
+| **B − A** | **2.500** | soğuk hesap erişimi − sıcak: `2600 − 100` | **EIP-2929** (`COLD_ACCOUNT_ACCESS_COST` 2600, `WARM_STORAGE_READ_COST` 100) |
+| **C − B** | **25.000** | boş hesap oluşturma (`G_newaccount`) | **Yellow Paper Appendix G**, `G_newaccount = 25000`; "boş"un tanımı **EIP-161** |
+| **C − A** | **27.500** | 2.500 + 25.000 | yukarıdakilerin toplamı |
+| `z` düzeltmesi | **12 gas/bayt** | sıfır-dışı − sıfır: `16 − 4` | sıfır-dışı 16: **EIP-2028**; sıfır 4: Yellow Paper `G_txdatazero` |
+
+> **Referansların durumu:** yukarıdaki EIP numaraları ve sabitler bu oturumda
+> **spesifikasyon metnine karşı doğrulanmadı** — hafızadan yazıldı. Sayıların
+> kendisi zincirde ölçüldü; **eşleştirdiğim kaynaklar teyide muhtaçtır.**
+> Hakan'a ya da spesifikasyona doğrulatılmalı.
+
+### Sonuç — üçü de sapmasız
+
+Üç farkın üçü de EVM'in kesin sayılarına **tam** oturdu. Bölüm 3'ün
+*"Yapı tuttu, sayılar tutmadı"* hükmü **tahminler** için doğruydu; gerçek
+`gasUsed`'lar için sapma **yok**. Ayrıntı: aşağıdaki ikinci tarihli ek.
+
+---
+
+### SINIRLAR — tablonun hemen altında
+
+1. **Her satır TEK koşu.** Tekrarlanabilirlik **ölçülmedi**. Aynı satırın
+   ikinci bir koşusu farklı çıkarsa bu tablo değişir.
+2. **`nonce++` maliyeti üç koşuda aynı VARSAYILDI, ölçülmedi.** Üçü de
+   sıfırdan-farklı bir değeri güncelliyor (nonce 4→5, 5→6, 6→7), yani aynı
+   `SSTORE` sınıfındalar. Beklenen budur ama **ayrı ölçülmedi**; farklı
+   olsaydı yürütme farkları bu kadar temiz çıkmazdı — bu bir **destek**tir,
+   kanıt değil.
+3. **Üç satır üç farklı nonce'ta ölçüldü.** Aynı nonce'ta ölçmek mümkün değil
+   (nonce her tx'te artıyor), dolayısıyla bu bir yapısal sınırdır.
+4. **Alıcı adresleri farklı**, dolayısıyla `z`'leri farklı. Uzlaştırma
+   intrinsic çıkarılarak yapıldı; başka bir uzlaştırma yöntemi farklı sonuç
+   verebilir.
+5. **Trace alınmadı.** Yürütme bileşeni aritmetikle türetildi
+   (`gasUsed − intrinsic`), frame bazında ölçülmedi.
+
+#### EIP-7623 taban kuralı bu calldata'da DEVREYE GİRMİYOR — hesapla
+
+EIP-7623 işlem maliyetine bir **taban** koyuyor:
+`taban = 21000 + 10 · (z + 4·nz)`, ve ödenen `max(standart, taban)`.
+Bizim üç koşuda:
+
+| satır | `z` | `nz` | token = `z + 4·nz` | **taban** | `gasUsed` | bağlıyor mu |
+|---|---|---|---|---|---|---|
+| A | 206 | 3702 | 15.014 | **171.140** | 216.269 | **HAYIR** (+45.129) |
+| B | 210 | 3698 | 15.002 | **171.020** | 218.721 | **HAYIR** (+47.701) |
+| C | 202 | 3706 | 15.026 | **171.260** | 243.817 | **HAYIR** (+72.557) |
+
+Üçünde de `gasUsed` tabanın **belirgin biçimde üstünde**, yani taban kuralı
+hiçbirinde devreye girmedi ve `intrinsic = 21000 + 4z + 16nz` formülü
+geçerli. Zaten ölçülen `gasUsed`'lar bu formülle tutarlı çıktı — taban
+bağlasaydı tutmazlardı.
+
+> **Referans durumu:** EIP-7623'ün sabitleri (`TOTAL_COST_FLOOR_PER_TOKEN`
+> = 10, token = `z + 4·nz`) bu oturumda **spec metnine karşı doğrulanmadı**.
+> Hesabın sonucu (taban bağlamıyor) yüksek marjla doğru — sabitler bir miktar
+> farklı olsa bile 45.000–72.000 gas'lık pay kapanmaz.
+
+---
+
+## TARİHLİ EK — 25 Eylül 2026, BÖLÜM 3'ÜN ":290-300" TABLOSU: sapmanın kaynağı bulundu
+
+Defter kuralı gereği `:286-327` arası **silinmedi**, düzeltilmedi. Bu ek o
+bölümün açık bıraktığı soruyu kapatıyor.
+
+### O bölüm ne demişti
+
+`:290-294`:
+
+```
+| B − A | +2.500  | +2.520  | +20  |
+| C − A | +27.500 | +27.718 | +218 |
+| C − B | +25.000 | +25.198 | +198 |
+```
+
+ve `:296-300`: *"Yapı tuttu, sayılar tutmadı… `+2.500` ve `+25.000` EVM
+spesifikasyonunda **kesin** sayılardır, yaklaşık değil. **Sapma varsa modelin
+dışından geliyor.**"*
+
+### Sapma nereden geliyormuş — ÖLÇÜM
+
+**O tablo `eth_estimateGas` çıktılarının farkıydı, `gasUsed`'ların değil.**
+Zincirde ölçülen `gasUsed`'ların yürütme farkları:
+
+```
+B − A =  2.500      sapma 0
+C − B = 25.000      sapma 0
+C − A = 27.500      sapma 0
+```
+
+Sapma, bu dosyanın **kendi § 3'ünde ölçülmüş** olan şeyden geliyor: `est()`
+çarpımsal bir `×1,0079` taşıyor (`:302-327`, "eps ≈ +%0,79–0,81").
+
+```
+25.000 × 0,00792 = 198      ölçülen sapma: +198
+ 2.500 × 0,00800 =  20      ölçülen sapma:  +20
+27.500 × 0,00793 = 218      ölçülen sapma: +218
+```
+
+Üç sapmanın üçü de, beklenen farkın `est()` çarpanıyla çarpımı.
+
+### Hüküm
+
+**`:296-300`'ün cümlesi doğruydu — sapma gerçekten "modelin dışından"
+geliyordu: tahmin fonksiyonundan.** EVM tarafında sapma **yok**; gerçek
+`gasUsed` farkları spesifikasyonun kesin sayılarına tam oturuyor.
+
+Bölüm 3'ün *"EIP-2929 modelinin şekli ayakta ama sayılar tutmadı"* ifadesi
+artık daraltılabilir: **şekil de sayı da tutuyor**, yeter ki karşılaştırma
+tahminler üzerinde değil ölçümler üzerinde ve intrinsic arındırılmış yapılsın.
+
+> **Sınırı:** bu, A/B/C'nin **birer** koşusuna dayanıyor (yukarıdaki SINIRLAR
+> listesi aynen geçerli). Üç fark da tam çıktı, ama üç örnekten "her zaman tam
+> çıkar" **sonucu çıkarılamaz**.
