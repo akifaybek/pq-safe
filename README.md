@@ -125,12 +125,23 @@ edilmiş adresler" bölümü).
 
 Yukarıdaki tablo Sprint 2 test suite'inden (mock verifier'lı testler dahil)
 geliyor ve execute() ortalamasını olduğundan düşük gösteriyor. Gerçek Sepolia
-işlemlerinde ölçülen rakamlar:
+işlemlerinde ölçülen rakamlar (hepsi `docs/evidence/tx-hashes.md`'de tx
+hash'leriyle kayıtlı, hiçbiri tahmini değil):
 
 | İşlem | Gas | Not |
 |---|---|---|
 | `Migration.proveOwnership` | 73.753 | Gerçek migration tx, `0x1ccc11f1...c75a609` |
-| `PQWallet.execute` (var olan alıcıya) | 233.429 | Gerçek transfer tx, `0xd62b812e...631ad9` |
-| `PQWallet.execute` (hiç kullanılmamış/yeni adrese) | 258.429 | 233.429 + ~25.000 hesap oluşturma maliyeti (tahmini, henüz zincirde ölçülmedi) |
+| `PQWallet.execute` (var olan alıcıya, ilk gerçek transfer) | 233.429 | `0xd62b812e...631ad9`, 7 Eylül |
+| `PQWallet.execute` (0,0001 ETH, kendine iade) | 216.221 | `0x320e03d9...` |
+| `PQWallet.execute` (**kayıtlı demo**, nonce 5, soğuk+dolu alıcı — Task 7 B satırı) | 218.721 | `0x6b8bbecd...`, ön kayıtlı beklenti sıfır farkla tuttu, bkz. `sprint4-recorded-demo-run.md` |
+| `PQWallet.execute` (nonce 6, soğuk+**boş** alıcı — Task 7 C satırı) | 243.817 | `0x222556c3...`, eski "258.429 tahmini" satırının yerini alıyor — artık ÖLÇÜM, bkz. `sprint4-c-row-measurement.md` |
 
-Detaylı analiz: `docs/evidence/gas-reports/sprint3-execute-real-gas.md`.
+Yukarıdaki B/C satırlarının ham `gasUsed` farkı (243.817 − 218.721 = 25.096)
+calldata'daki sıfır-bayt farkından (intrinsic'i de kaydırıyor) gürültülü;
+intrinsic çıkarılmış **yürütme** sütununda fark tam **25.000** — EIP-161
+boş-hesap-oluşturma sabitiyle birebir (B: yürütme 137.713, `sprint4-recorded-demo-run.md`
+satır 60; C: yürütme 162.713, `sprint4-c-row-measurement.md` §2 calldata tablosu).
+
+Detaylı analiz (233.429'un EVM-içi/intrinsic/calldata ayrıştırması, 88.247
+tablosunun neden farklı bir ölçüm bazından geldiği): 
+`docs/evidence/gas-reports/sprint3-execute-real-gas.md`.
