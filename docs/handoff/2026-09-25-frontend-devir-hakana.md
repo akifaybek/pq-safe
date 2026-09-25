@@ -347,3 +347,173 @@ elin serbest.
   numaralarıyla. Ama *"bunlara dokunmak neyi bozar"* iddiası büyük ölçüde
   **kodun kendi yorumlarına ve geçmiş kayıtlara** dayanıyor — her senaryoyu
   yeniden koşup kırmadım.
+
+---
+
+# TARİHLİ EK — 25 Eylül 2026, aynı gün ikinci oturum
+
+**Yukarısı değiştirilmedi.** Bu ek § 6.2'deki açığı kapatıyor.
+
+§ 6.2 doğru bir şey söylüyordu — *"dört test ekranı korumuyor"* — ama sana
+**yerine bir koruma vermiyordu.** Teşhis edip çözümsüz bırakmak, teşhis
+etmemekten çok da iyi değil. Aşağıdaki kontrol o boşluğun **bir kısmını**
+kapatıyor; neyi kapatmadığı Ek.5'te açıkça yazılı.
+
+## Ek.1 JS'in DOM'dan aradığı her şey — ÖLÇÜM
+
+`frontend/src` altında DOM'a dokunan **tek dosya `main.js`** (ÖLÇÜM:
+`grep -rln "getElementById\|querySelector\|getElementsBy\|classList" src/`).
+
+**`querySelector`, `querySelectorAll`, `getElementsByClassName`,
+`getElementsByTagName` ve `classList` hiç kullanılmamış** — aynı grep sıfır
+eşleşme veriyor. Erişimin tamamı `getElementById`. Bu iyi haber: kontrol edilecek
+yüzey küçük ve kesin.
+
+### 24 id (hepsi `getElementById`)
+
+| id | `main.js` satırı |
+|---|---|
+| `btn-build-sign` | `:296` |
+| `btn-check-connection` | `:273` |
+| `btn-connect-wallet` | `:516` |
+| `btn-import-mnemonic` | `:429` |
+| `btn-keygen` | `:84`, `:207` |
+| `btn-negative-proof` | `:79` |
+| `btn-refresh-chain` | `:80` |
+| `btn-send` | `:78` |
+| `btn-sign` | `:239` |
+| `chain-warn` | `:68` |
+| `connection-out` | `:204` |
+| `digest` | `:244` |
+| `import-mnemonic` | `:432` |
+| `keygen-out` | `:202` |
+| `send-out` | `:69` |
+| `sign-out` | `:203` |
+| `tx-balance-display` | `:65` |
+| `tx-data` | `:317` + dolaylı |
+| `tx-nonce-display` | `:64` |
+| `tx-out` | `:205` |
+| `tx-to` | `:315` + dolaylı |
+| `tx-value` | `:316` + dolaylı |
+| `tx-wallet-display` | `:63` |
+| `wallet-out` | `:77` |
+
+**Dolaylı yol:** `TX_INPUT_IDS` (`:88`) üç id'yi dizi olarak tutuyor ve üç yerde
+geziliyor — `:153` (imza düşürme dinleyicileri), `:364` ve `:628` (kilitler).
+Bu üç id literal listede **zaten var**, yani dolaylı yol yeni id eklemiyor.
+Ama dizi bozulursa kaybolan şey bir `getElementById` değil, **imzayı düşüren
+dinleyici** olur (§ 5.4) — kontrol bunu görmez.
+
+### 6 sınıf (JS'in DOM'a *yazdığı*, CSS'in tanımladığı)
+
+| sınıf | `main.js`'te kaç yerde | `index.html` tanımı |
+|---|---|---|
+| `.field` | 23 | `:13` |
+| `.err` | 21 | `:16` |
+| `.warn` | 20 | `:15` |
+| `.ok` | 10 | `:14` |
+| `.neutral` | 2 (`:970`, `:1024`) | `:25` |
+| `.finding` | 1 (`:1008`) | `:24` |
+
+Toplam **77 kullanım**. `.finding` ve `.neutral`'ın neden ayrı durması
+gerektiği § 5.5'te.
+
+**Toplam yüzey: 24 id + 6 sınıf = 30 seçici.**
+
+## Ek.2 Değişiklikten sonra koşacağın TEK komut
+
+`frontend/` içinde, tek satır. Listeyi **elle tutmuyor** — her koşuda
+`main.js`'ten yeniden çıkarıyor, yani yeni bir `getElementById` eklersen
+kontrol onu kendiliğinden kapsar.
+
+```
+node -e 'const fs=require("fs");const m=fs.readFileSync("src/main.js","utf8"),h=fs.readFileSync("index.html","utf8");const ids=new Set([...m.matchAll(/getElementById\(([\x27"])([^\x27"]+)\1\)/g)].map(x=>x[2]));const a=m.match(/TX_INPUT_IDS = .*/);if(a)(a[0].match(/[\x27"][a-z][a-z0-9-]*[\x27"]/g)||[]).forEach(s=>ids.add(s.slice(1,-1)));const cls=new Set([...m.matchAll(/class="([^"{}]+)"/g)].flatMap(x=>x[1].trim().split(/\s+/)));const bad=[];ids.forEach(i=>{if(h.indexOf("id=\""+i+"\"")<0)bad.push("EKSIK id: "+i)});cls.forEach(c=>{if(!new RegExp("\\."+c+"\\s*\\{").test(h))bad.push("EKSIK class kurali: ."+c)});console.log("kontrol: "+ids.size+" id + "+cls.size+" class");if(bad.length){console.log(bad.join("\n"));process.exit(1)}console.log("HEPSI BULUNDU")'
+```
+
+Bulunamayan olursa **adını yazar** ve **çıkış kodu 1** döner; § 6.1'deki dört
+komutun yanına beşinci olarak koyabilirsin.
+
+**Depoya betik dosyası eklenmedi** (bilerek — kapsam dışı). Komut bu notta
+duruyor, kopyala-yapıştır.
+
+## Ek.3 Kırmızı/yeşil — ÖLÇÜM, 25 Eylül 2026
+
+Üç durum da bu makinede koşuldu, çıktılar birebir:
+
+**YEŞİL — bozulmamış ağaç**
+```
+kontrol: 24 id + 6 class
+HEPSI BULUNDU
+cikis: 0
+```
+
+**KIRMIZI 1** — `index.html`'de `id="btn-send"` → `id="btn-send-BOZUK"`
+```
+kontrol: 24 id + 6 class
+EKSIK id: btn-send
+cikis: 1
+```
+
+**KIRMIZI 2** — `<style>` içinde `.warn {` → `.note {`
+```
+kontrol: 24 id + 6 class
+EKSIK class kurali: .warn
+cikis: 1
+```
+
+**Geri dönüş doğrulandı:** her iki mutasyon geri alındı, `index.html`'in md5'i
+`3b701338fe6107e0a241501ab261da73` — yani § 4'teki kapı değerine döndü — ve
+`git diff index.html` **boş**. Depoda iz kalmadı.
+
+## Ek.4 Komutun ilk hâli YANLIŞ NEGATİF verdi — kayda geçiyor
+
+İlk yazdığım kontrol sınıfı düz metin araması yapıyordu (`h.indexOf("."+c)`).
+KIRMIZI 2'yi **yakalayamadı**: `.warn` yeniden adlandırıldığı hâlde çıktı
+`HEPSI BULUNDU` ve çıkış kodu 0 oldu.
+
+**Sebep ölçüldü:** `.warn` dizisi `index.html:20`'deki açıklama yorumunun
+içinde de geçiyor (*"`.warn`'un 12px'lik dipnot görünümü…"*), yani düz metin
+araması CSS kuralı silinse bile eşleşiyordu.
+
+**Düzeltme:** sınıf kontrolü artık **CSS kuralını** arıyor — `.<sınıf>` ve
+ardından `{` (`new RegExp("\\."+c+"\\s*\\{")`). Yukarıdaki Ek.2 komutu
+düzeltilmiş hâlidir; Ek.3'teki üç çıktı da onunla alınmıştır.
+
+Bunu yazıyorum çünkü sınanmamış bir kontrol, kontrol değildir — id dalını
+sınayıp sınıf dalını sınamasaydım, kontrolün yarısı doğrulanmamış hâlde sana
+teslim edilmiş olacaktı.
+
+## Ek.5 Bu kontrolün KORUMADIĞI şey — açıkça
+
+Kontrol **seçicinin VARLIĞINI** doğrular. Başka hiçbir şeyi doğrulamaz:
+
+| korur | KORUMAZ |
+|---|---|
+| `getElementById`'nin aradığı id `index.html`'de duruyor mu | O id **doğru elemanda** mı (butonun id'sini yanlışlıkla `<div>`'e taşımak) |
+| JS'in yazdığı sınıfın CSS **kuralı** duruyor mu | Kuralın **içeriği** doğru mu — `.neutral`'ı kırmızı yapmak kontrolden geçer |
+| — | **Görsel doğruluk.** Hizalama, kontrast, okunabilirlik: hiçbiri |
+| — | **Eleman sırası ve yerleşimi.** İki bölümü yer değiştirirsen sessiz geçer |
+| — | `TX_INPUT_IDS` dinleyicilerinin bağlı kalması (§ 5.4) |
+| — | **Hiç gözlenmemiş ekranlar** — aşağıya bak |
+
+### Hiç gözlenmemiş iki ekran
+
+`DURUM: ZİNCİRDE REVERT` (`main.js:778`) ve `DURUM: SONUÇ ALINAMADI
+(tx gönderildi)` (`:880`) **hiç gözlenmedi** — açık kalem, `2026-09-25-devir.md`
+§ A.3 #6. Bu iki yol yalnızca kodda var; ne testi var, ne ekran görüntüsü.
+
+Bu kontrol onları da korumaz ve koruyormuş gibi okunmasın: `statusLine`'ın
+ürettiği HTML'i bozarsan kontrol yine `HEPSI BULUNDU` der, çünkü `.err`
+kuralı yerinde durur. Gözlenmemiş bir yolu bozup bozmadığını anlamanın bu
+depoda bir yolu yok.
+
+**Ayrım net olsun:** kontrat davranışı Foundry ile kanıtlı
+(`contracts/test/PQWallet.t.sol:100-110`, `receipt.status === 0` testi var ve
+geçiyor). Kanıtsız olan **arayüzün** o durumdaki ekranı.
+
+### Sonuç
+
+Bu kontrol § 6.2'deki boşluğu **kapatmıyor, daraltıyor.** En sık ve en sessiz
+kırılmayı (bir id ya da sınıfı yeniden adlandırmak) yakalıyor. Geri kalanı
+hâlâ **gözle kontrol + md5 kapısı**. Ekran metnini ya da yerleşimi
+değiştirdiysen Akif'e söyle.
